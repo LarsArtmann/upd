@@ -173,7 +173,7 @@ import ducky             from "ducky"
             userAgent: `${packageInfo.name}/${packageInfo.version}`,
             timeout: 20 * 1000
         }).catch((err) => {
-            throw new Error(`package information retrival failed: ${err}`)
+            throw new Error(`package information retrieval failed: ${err}`)
         })
     }
 
