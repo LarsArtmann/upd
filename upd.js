@@ -140,13 +140,10 @@ import ducky             from "ducky"
         for (const module of Object.keys(pkgOBJ[section])) {
             const sOld = pkgOBJ[section][module]
             let vOld = sOld
-            let state = !(
-                   argv._.length === 0
-                || micromatch(
-                       [ module ],
-                       (argv._[0].match(/^!/) !== null ? [ "**" ] : []).concat(argv._)
-                   ).length > 0
-            ) ? "ignored" : "todo"
+            const noPatterns = argv._.length === 0
+            const patterns = noPatterns ? [] : (argv._[0].match(/^!/) ? [ "**" ] : []).concat(argv._)
+            const matchesPattern = noPatterns || micromatch([ module ], patterns).length > 0
+            let state = matchesPattern ? "todo" : "ignored"
             if (state === "todo") {
                 /*  extract semantic version number from dependency string  */
                 const m = sOld.match(/^\s*(?:[\^~]\s*)?(\d+[^<>=|\s]*)\s*$/)
