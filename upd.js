@@ -104,8 +104,20 @@ import ducky             from "ducky"
     }
 
     /*  parse configuration file content  */
-    const pkgOBJ = JSON.parse(pkgTXT)
-    const pkgAST = JsonAsty.parse(pkgTXT)
+    let pkgOBJ
+    try {
+        pkgOBJ = JSON.parse(pkgTXT)
+    }
+    catch (err) {
+        throw new Error(`failed to parse NPM package configuration file "${argv.file}": ${err.message}`)
+    }
+    let pkgAST
+    try {
+        pkgAST = JsonAsty.parse(pkgTXT)
+    }
+    catch (err) {
+        throw new Error(`failed to parse NPM package configuration file "${argv.file}" (AST): ${err.message}`)
+    }
 
     /*  honor embedded command line arguments  */
     if (pkgOBJ.upd !== undefined) {
