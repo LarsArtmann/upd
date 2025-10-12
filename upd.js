@@ -218,15 +218,13 @@ import ducky             from "ducky"
         msg = msg.padEnd(24, " ")
         return fetchPackageInfo(name.toLowerCase()).then((body) => {
             bytes += JSON.stringify(body).length
-            progressBar.tick(1, { bytes: prettyBytes(bytes).replace(/ /g, ""), msg })
-            if (progressBar.complete)
-                process.stderr.write("\r")
             return { name, data: body }
         }, (error) => {
+            return { name, error }
+        }).finally(() => {
             progressBar.tick(1, { bytes: prettyBytes(bytes).replace(/ /g, ""), msg })
             if (progressBar.complete)
                 process.stderr.write("\r")
-            return { name, error }
         })
     }, argv.concurrency)
     let updates = 0
