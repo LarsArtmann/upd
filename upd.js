@@ -135,7 +135,7 @@ import ducky             from "ducky"
     /*  determine the old NPM module versions (via local package.json)  */
     const manifest = {}
     const mixin = (section) => {
-        if (typeof pkgOBJ[section] !== "object")
+        if (pkgOBJ[section] === null || typeof pkgOBJ[section] !== "object")
             return
         for (const module of Object.keys(pkgOBJ[section])) {
             const sOld = pkgOBJ[section][module]
