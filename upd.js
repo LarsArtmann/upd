@@ -146,6 +146,7 @@ import ducky             from "ducky"
             const patterns = noPatterns ? [] : (argv._[0].match(/^!/) ? [ "**" ] : []).concat(argv._)
             const matchesPattern = noPatterns || micromatch([ module ], patterns).length > 0
             let state = matchesPattern ? "todo" : "ignored"
+            let isLatest = false
             if (state === "todo") {
                 /*  extract semantic version number from dependency string  */
                 const m = sOld.match(/^\s*(?:[\^~]\s*)?(\d+[^<>=|\s]*)\s*$/)
@@ -156,13 +157,14 @@ import ducky             from "ducky"
                 else if (argv.pinLatest && /^\s*latest\s*$/i.test(sOld)) {
                     vOld = sOld.trim()
                     state = "check"
+                    isLatest = true
                 }
                 else
                     state = "skipped"
             }
             if (manifest[module] === undefined)
                 manifest[module] = []
-            manifest[module].push({ section, sOld, vOld, sNew: sOld, vNew: vOld, state })
+            manifest[module].push({ section, sOld, vOld, sNew: sOld, vNew: vOld, state, isLatest })
         }
     }
     mixin("optionalDependencies")
@@ -261,7 +263,7 @@ import ducky             from "ducky"
                 let needsUpdate = false
                 if (spec.vOld === spec.vNew)
                     spec.state = "kept"
-                else if (/^latest$/i.test(spec.vOld))
+                else if (spec.isLatest)
                     needsUpdate = true
                 else if (semver.gt(spec.vOld, spec.vNew))
                     spec.state = "kept"
@@ -273,11 +275,7 @@ import ducky             from "ducky"
                     updates++
 
                     /*  update manifest  */
-                    let re
-                    if (/^latest$/i.test(spec.vOld))
-                        re = /latest/i
-                    else
-                        re = new RegExp(escRE(spec.vOld), "")
+                    const re = spec.isLatest ? /latest/i : new RegExp(escRE(spec.vOld), "")
                     spec.sNew = spec.sOld.replace(re, spec.vNew)
                     if (spec.sNew === spec.sOld)
                         throw new Error(`failed to update module "${name}" version string "${spec.sOld}" ` +
