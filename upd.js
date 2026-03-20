@@ -54,7 +54,7 @@ import ducky             from "ducky"
     /*  command-line option parsing  */
     const argv = yargs()
         /* eslint @stylistic/indent: off */
-        .usage("Usage: $0 [-h] [-V] [-q] [-n] [-C] [-m <name>] [-f <file>] [-g] [-a] [-c <concurrency>] [<pattern> ...]")
+        .usage("Usage: $0 [-h] [-V] [-q] [-n] [-C] [-m <name>] [-f <file>] [-g] [-a] [-c <concurrency>] [-P] [<pattern> ...]")
         .help("h").alias("h", "help").default("h", false)
             .describe("h", "show usage help")
         .boolean("V").alias("V", "version").default("V", false)
@@ -73,6 +73,8 @@ import ducky             from "ducky"
             .describe("a", "show all packages (instead of just updated ones)")
         .number("c").nargs("c", 1).alias("c", "concurrency").default("c", 8)
             .describe("c", "number of concurrent network connections to NPM registry")
+        .boolean("P").alias("P", "pin-latest").default("P", false)
+            .describe("P", "pin 'latest' tag to exact semver version")
         .version(false)
         .strict()
         .showHelpOnFail(true)
@@ -149,6 +151,10 @@ import ducky             from "ducky"
                 const m = sOld.match(/^\s*(?:[\^~]\s*)?(\d+[^<>=|\s]*)\s*$/)
                 if (m !== null) {
                     vOld = m[1]
+                    state = "check"
+                }
+                else if (argv.pinLatest && /^\s*latest\s*$/i.test(sOld)) {
+                    vOld = sOld.trim()
                     state = "check"
                 }
                 else
@@ -252,16 +258,26 @@ import ducky             from "ducky"
             if (spec.state === "check") {
                 spec.vNew = vNew
                 spec.sNew = vNew
+                let needsUpdate = false
                 if (spec.vOld === spec.vNew)
                     spec.state = "kept"
+                else if (/^latest$/i.test(spec.vOld))
+                    needsUpdate = true
                 else if (semver.gt(spec.vOld, spec.vNew))
                     spec.state = "kept"
-                else {
+                else
+                    needsUpdate = true
+
+                if (needsUpdate) {
                     spec.state = "updated"
                     updates++
 
                     /*  update manifest  */
-                    const re = new RegExp(escRE(spec.vOld), "")
+                    let re
+                    if (/^latest$/i.test(spec.vOld))
+                        re = /latest/i
+                    else
+                        re = new RegExp(escRE(spec.vOld), "")
                     spec.sNew = spec.sOld.replace(re, spec.vNew)
                     if (spec.sNew === spec.sOld)
                         throw new Error(`failed to update module "${name}" version string "${spec.sOld}" ` +
