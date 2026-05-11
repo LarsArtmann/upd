@@ -1,6 +1,4 @@
-
-UPD
-===
+# UPD
 
 **Upgrade NPM Package Dependencies**
 
@@ -10,8 +8,7 @@ UPD
 [![npm (project release)](https://img.shields.io/npm/v/upd?logo=npm&label=npm%20release&color=%23cc3333)](https://npmjs.com/upd)
 [![npm (project downloads)](https://img.shields.io/npm/dm/upd?logo=npm&label=npm%20downloads&color=%23cc3333)](https://npmjs.com/upd)
 
-Abstract
---------
+## Abstract
 
 This is a small Command-Line Interface (CLI) for upgrading the
 JavaScript package dependencies in an Node Package Manager (NPM)
@@ -19,20 +16,17 @@ JavaScript package dependencies in an Node Package Manager (NPM)
 formatting of the existing JSON syntax and intentionally skipping
 version constraint formulas.
 
-Example
--------
+## Example
 
 ![UPD usage](screenshot.png)
 
-Installation
-------------
+## Installation
 
 ```
 $ npm install -g upd
 ```
 
-Usage
------
+## Usage
 
 ```
 $ upd [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [<pattern> ...]
@@ -60,8 +54,7 @@ $ upd [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [<patter
   Positive or negative (if prefixed with `!`) Glob pattern for matching
   names of dependencies to update.
 
-License
--------
+## License
 
 Copyright &copy; 2015-2025 Dr. Ralf S. Engelschall (http://engelschall.com/)
 
@@ -83,4 +76,3 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
