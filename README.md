@@ -7,8 +7,17 @@ Node Package Manager (NPM) `package.json` configuration file while
 strictly preserving the formatting of the existing JSON syntax and
 intentionally skipping version constraint formulas.
 
-Originally written in JavaScript by [Dr. Ralf S. Engelschall](https://engelschall.com/).
-This is a Go port.
+## Origin
+
+This project is a port of the original **`upd`** utility from
+**JavaScript to Go**.
+
+- Originally written in **JavaScript** by
+  [Dr. Ralf S. Engelschall](https://engelschall.com/).
+- Ported to **Go** by [Lars Artmann](https://lars.software/).
+
+The Go port keeps the same CLI behavior and philosophy while leveraging
+Go's performance, type safety, and single-binary distribution.
 
 ## Installation
 
