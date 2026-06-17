@@ -1,4 +1,4 @@
-package internal
+package upd
 
 import (
 	"context"
@@ -38,15 +38,18 @@ func (e *Engine) WithReporter(r Reporter) *Engine {
 	return e
 }
 
-type fetchResult struct {
+// FetchResult holds the outcome of fetching a single package's packument
+// from the NPM registry. Callers receive a map of these from FetchAll and
+// pass it opaquely to ApplyUpdates.
+type FetchResult struct {
 	name  string
 	pkg   *Packument
 	bytes int
 	err   error
 }
 
-func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*fetchResult {
-	results := make(map[string]*fetchResult, len(names))
+func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*FetchResult {
+	results := make(map[string]*FetchResult, len(names))
 
 	var mu sync.Mutex
 
@@ -73,7 +76,7 @@ func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*fetch
 			e.reporter.Tick(msg, int(totalBytes.Load()))
 
 			mu.Lock()
-			results[n] = &fetchResult{name: n, pkg: pkg, bytes: bytes, err: err}
+			results[n] = &FetchResult{name: n, pkg: pkg, bytes: bytes, err: err}
 			mu.Unlock()
 		}(name)
 	}
@@ -85,7 +88,7 @@ func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*fetch
 
 func (e *Engine) ApplyUpdates(
 	manifest Manifest,
-	results map[string]*fetchResult,
+	results map[string]*FetchResult,
 	pkg *PackageFile,
 ) (updates, errors int) {
 	for _, name := range manifest.SortedNames() {
@@ -164,7 +167,7 @@ func truncMsg(name string) string {
 	return name + strings.Repeat(" ", 24-len(name))
 }
 
-func (r fetchResult) String() string {
+func (r FetchResult) String() string {
 	if r.err != nil {
 		return fmt.Sprintf("%s: error: %v", r.name, r.err)
 	}

@@ -21,39 +21,39 @@ The project is now **production-ready** for its current feature scope.
 
 ## a) FULLY DONE
 
-| Area | Details | Verified |
-|------|---------|----------|
-| **RegistryClient extraction** | Shared `*http.Client` with connection pooling; injectable for tests | ✅ Build + 7 engine tests |
-| **Engine integration tests** | 7 tests with `httptest.Server` mock registry: fetch success, apply updates, kept, nop mode, 404 error, write-back verification, greatest mode | ✅ All pass |
-| **Render tests** | 8 tests: updated table, all-up-to-date, all mode, error state, noColor ANSI stripping, color ANSI presence, visibleLength, centerPad | ✅ All pass |
-| **Config tests** | 8 tests: defaults, short flags, long flags, multiple patterns, help, version, UserAgent | ✅ All pass |
-| **86.6% test coverage** | All business logic covered; only error-formatting branches in config.go uncovered | ✅ `go test -cover` |
-| **flake.nix** | `buildGoModule` package, devShell (go, gopls, gotools, staticcheck), apps: build/test/lint/run | ✅ Written |
-| **GitHub Actions CI** | Build + vet + test on push/PR to master | ✅ Written |
-| **Version injection** | `ProgramVersion` is a `var` (default "dev"), injectable via `-ldflags="-X ...=1.0.0"` | ✅ Verified binary shows `1.0.0` |
-| **Dead code removal** | Removed unused `contains`/`indexOf` helpers from engine_test.go | ✅ Build clean |
-| **Semantic cleanup** | Moved `RegistryURL` from config.go to npm.go where it belongs | ✅ Build clean |
+| Area                          | Details                                                                                                                                       | Verified                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **RegistryClient extraction** | Shared `*http.Client` with connection pooling; injectable for tests                                                                           | ✅ Build + 7 engine tests        |
+| **Engine integration tests**  | 7 tests with `httptest.Server` mock registry: fetch success, apply updates, kept, nop mode, 404 error, write-back verification, greatest mode | ✅ All pass                      |
+| **Render tests**              | 8 tests: updated table, all-up-to-date, all mode, error state, noColor ANSI stripping, color ANSI presence, visibleLength, centerPad          | ✅ All pass                      |
+| **Config tests**              | 8 tests: defaults, short flags, long flags, multiple patterns, help, version, UserAgent                                                       | ✅ All pass                      |
+| **86.6% test coverage**       | All business logic covered; only error-formatting branches in config.go uncovered                                                             | ✅ `go test -cover`              |
+| **flake.nix**                 | `buildGoModule` package, devShell (go, gopls, gotools, staticcheck), apps: build/test/lint/run                                                | ✅ Written                       |
+| **GitHub Actions CI**         | Build + vet + test on push/PR to master                                                                                                       | ✅ Written                       |
+| **Version injection**         | `ProgramVersion` is a `var` (default "dev"), injectable via `-ldflags="-X ...=1.0.0"`                                                         | ✅ Verified binary shows `1.0.0` |
+| **Dead code removal**         | Removed unused `contains`/`indexOf` helpers from engine_test.go                                                                               | ✅ Build clean                   |
+| **Semantic cleanup**          | Moved `RegistryURL` from config.go to npm.go where it belongs                                                                                 | ✅ Build clean                   |
 
 ## b) PARTIALLY DONE
 
-| Area | Status | Gap |
-|------|--------|-----|
-| **LSP warnings** | Build/vet/test all pass | golangci_lint_ls reports `errcheck` warnings on `fmt.Fprintln`/`fmt.Fprintf` in config.go — these are intentional (writing to help/version output where errors are meaningless) |
-| **Progress bar** | Works functionally | Hardcoded 80-char clear width; no terminal width detection |
-| **Scoped package encoding** | `url.PathEscape` used | Not verified against live scoped packages (`@scope/name`) |
+| Area                        | Status                  | Gap                                                                                                                                                                             |
+| --------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LSP warnings**            | Build/vet/test all pass | golangci_lint_ls reports `errcheck` warnings on `fmt.Fprintln`/`fmt.Fprintf` in config.go — these are intentional (writing to help/version output where errors are meaningless) |
+| **Progress bar**            | Works functionally      | Hardcoded 80-char clear width; no terminal width detection                                                                                                                      |
+| **Scoped package encoding** | `url.PathEscape` used   | Not verified against live scoped packages (`@scope/name`)                                                                                                                       |
 
 ## c) NOT STARTED
 
-| Area | Notes |
-|------|-------|
-| **Docker** | No Dockerfile for the Go version |
-| **gosec / govulncheck** | No security scanning |
-| **Shell completions** | No bash/zsh/fish completions |
-| **Retry logic** | No retries on transient registry errors (429, 5xx) |
-| **`.npmrc` support** | No custom registry URL from `.npmrc` |
+| Area                     | Notes                                                       |
+| ------------------------ | ----------------------------------------------------------- |
+| **Docker**               | No Dockerfile for the Go version                            |
+| **gosec / govulncheck**  | No security scanning                                        |
+| **Shell completions**    | No bash/zsh/fish completions                                |
+| **Retry logic**          | No retries on transient registry errors (429, 5xx)          |
+| **`.npmrc` support**     | No custom registry URL from `.npmrc`                        |
 | **Auto color detection** | `--noColor` is manual only; doesn't auto-disable on non-TTY |
-| **JSON output mode** | No `--json` flag for CI/scripting |
-| **Bench tests** | No performance benchmarks |
+| **JSON output mode**     | No `--json` flag for CI/scripting                           |
+| **Bench tests**          | No performance benchmarks                                   |
 
 ## d) TOTALLY FUCKED UP
 
@@ -89,33 +89,33 @@ The project is now **production-ready** for its current feature scope.
 
 ## f) Top 25 Things to Get Done Next
 
-| # | Task | Impact | Effort | Category |
-|---|------|--------|--------|----------|
-| 1 | Write project `AGENTS.md` | High | 20 min | Documentation |
-| 2 | Add golangci-lint to CI | High | 15 min | DevOps |
-| 3 | Add retry logic for 429/5xx registry errors | High | 30 min | Reliability |
-| 4 | Auto-detect non-TTY and disable colors | Medium | 10 min | UX |
-| 5 | Add `--registry <url>` flag | Medium | 15 min | Feature parity |
-| 6 | Type `Section` as enum instead of bare string | Medium | 20 min | Type safety |
-| 7 | Add context deadline for entire fetch phase | Medium | 15 min | Reliability |
-| 8 | Write Dockerfile (multi-stage, distroless) | Medium | 20 min | DevOps |
-| 9 | Add bench tests for diff + glob | Low | 20 min | Testing |
-| 10 | Run `govulncheck` and fix findings | Medium | 15 min | Security |
-| 11 | Run `gosec` and fix findings | Medium | 15 min | Security |
-| 12 | Add `--json` output mode | Medium | 30 min | Feature |
-| 13 | Add GoReleaser config | Medium | 30 min | Release |
-| 14 | Verify scoped package URL encoding live | Medium | 15 min | Correctness |
-| 15 | Add `--timeout` flag | Low | 10 min | UX |
-| 16 | Tune HTTP transport (MaxIdleConns, etc.) | Low | 10 min | Performance |
-| 17 | Add `--dry-run` as alias for `--nop` | Low | 5 min | UX |
-| 18 | Extract `PackageName` branded type | Low | 15 min | Type safety |
-| 19 | Add `FEATURES.md` | Low | 15 min | Documentation |
-| 20 | Add `TODO_LIST.md` | Low | 15 min | Documentation |
-| 21 | Add shell completions | Low | 20 min | UX |
-| 22 | Add `.npmrc` parsing for registry config | Medium | 30 min | Feature parity |
-| 23 | Add coverage threshold to CI (fail if <80%) | Low | 5 min | DevOps |
-| 24 | Add dependabot/renovate config | Low | 10 min | DevOps |
-| 25 | Add performance benchmark to CI | Low | 15 min | DevOps |
+| #   | Task                                          | Impact | Effort | Category       |
+| --- | --------------------------------------------- | ------ | ------ | -------------- |
+| 1   | Write project `AGENTS.md`                     | High   | 20 min | Documentation  |
+| 2   | Add golangci-lint to CI                       | High   | 15 min | DevOps         |
+| 3   | Add retry logic for 429/5xx registry errors   | High   | 30 min | Reliability    |
+| 4   | Auto-detect non-TTY and disable colors        | Medium | 10 min | UX             |
+| 5   | Add `--registry <url>` flag                   | Medium | 15 min | Feature parity |
+| 6   | Type `Section` as enum instead of bare string | Medium | 20 min | Type safety    |
+| 7   | Add context deadline for entire fetch phase   | Medium | 15 min | Reliability    |
+| 8   | Write Dockerfile (multi-stage, distroless)    | Medium | 20 min | DevOps         |
+| 9   | Add bench tests for diff + glob               | Low    | 20 min | Testing        |
+| 10  | Run `govulncheck` and fix findings            | Medium | 15 min | Security       |
+| 11  | Run `gosec` and fix findings                  | Medium | 15 min | Security       |
+| 12  | Add `--json` output mode                      | Medium | 30 min | Feature        |
+| 13  | Add GoReleaser config                         | Medium | 30 min | Release        |
+| 14  | Verify scoped package URL encoding live       | Medium | 15 min | Correctness    |
+| 15  | Add `--timeout` flag                          | Low    | 10 min | UX             |
+| 16  | Tune HTTP transport (MaxIdleConns, etc.)      | Low    | 10 min | Performance    |
+| 17  | Add `--dry-run` as alias for `--nop`          | Low    | 5 min  | UX             |
+| 18  | Extract `PackageName` branded type            | Low    | 15 min | Type safety    |
+| 19  | Add `FEATURES.md`                             | Low    | 15 min | Documentation  |
+| 20  | Add `TODO_LIST.md`                            | Low    | 15 min | Documentation  |
+| 21  | Add shell completions                         | Low    | 20 min | UX             |
+| 22  | Add `.npmrc` parsing for registry config      | Medium | 30 min | Feature parity |
+| 23  | Add coverage threshold to CI (fail if <80%)   | Low    | 5 min  | DevOps         |
+| 24  | Add dependabot/renovate config                | Low    | 10 min | DevOps         |
+| 25  | Add performance benchmark to CI               | Low    | 15 min | DevOps         |
 
 ## g) Top Question I Cannot Figure Out Myself
 
@@ -131,16 +131,16 @@ a product direction decision.
 
 ## Metrics
 
-| Metric | Previous Report | This Report |
-|--------|----------------|-------------|
-| Source files | 9 | 9 (+6 test files) |
-| Source lines | ~900 | ~1,196 (source only) |
-| Test files | 3 | 6 |
-| Test assertions | 22 | 67 |
-| Test coverage | 0% (untested engine) | 86.6% |
-| Dependencies | 3 | 3 (unchanged) |
-| Binary size | 6.6 MB | 6.6 MB |
-| DevOps | None | flake.nix + CI |
+| Metric          | Previous Report      | This Report          |
+| --------------- | -------------------- | -------------------- |
+| Source files    | 9                    | 9 (+6 test files)    |
+| Source lines    | ~900                 | ~1,196 (source only) |
+| Test files      | 3                    | 6                    |
+| Test assertions | 22                   | 67                   |
+| Test coverage   | 0% (untested engine) | 86.6%                |
+| Dependencies    | 3                    | 3 (unchanged)        |
+| Binary size     | 6.6 MB               | 6.6 MB               |
+| DevOps          | None                 | flake.nix + CI       |
 
 ## File Inventory
 

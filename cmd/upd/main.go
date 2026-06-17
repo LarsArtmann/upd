@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/LarsArtmann/upd/internal"
+	"github.com/LarsArtmann/upd"
 )
 
 func main() {
@@ -18,16 +18,16 @@ func main() {
 }
 
 func run(args []string) error {
-	cfg, err := internal.ParseFlags(args)
+	cfg, err := upd.ParseFlags(args)
 	if err != nil {
-		if errors.Is(err, internal.ErrHelp) || errors.Is(err, internal.ErrVersion) {
+		if errors.Is(err, upd.ErrHelp) || errors.Is(err, upd.ErrVersion) {
 			return nil
 		}
 
 		return err
 	}
 
-	pkg, err := internal.ReadPackageFile(cfg.File)
+	pkg, err := upd.ReadPackageFile(cfg.File)
 	if err != nil {
 		return err
 	}
@@ -37,13 +37,13 @@ func run(args []string) error {
 		cfg.Patterns = append(embedded, cfg.Patterns...)
 	}
 
-	manifest := internal.BuildManifest(pkg, cfg.Patterns)
+	manifest := upd.BuildManifest(pkg, cfg.Patterns)
 	toCheck := manifest.ToCheck()
 
-	engine := internal.NewEngine(cfg)
+	engine := upd.NewEngine(cfg)
 
 	if !cfg.Quiet && len(toCheck) > 0 {
-		reporter := internal.NewProgressReporter(os.Stderr, len(toCheck), cfg.NoColor)
+		reporter := upd.NewProgressReporter(os.Stderr, len(toCheck), cfg.NoColor)
 		reporter.Start()
 		engine = engine.WithReporter(reporter)
 		results := engine.FetchAll(context.Background(), toCheck)
@@ -63,13 +63,13 @@ func run(args []string) error {
 }
 
 func finalizeRun(
-	cfg *internal.Config,
-	manifest internal.Manifest,
-	pkg *internal.PackageFile,
+	cfg *upd.Config,
+	manifest upd.Manifest,
+	pkg *upd.PackageFile,
 	updates, errCount int,
 ) error {
 	if !cfg.Quiet {
-		renderer := internal.NewRenderer(os.Stdout, cfg.NoColor)
+		renderer := upd.NewRenderer(os.Stdout, cfg.NoColor)
 		renderer.RenderTable(manifest, updates, errCount, cfg.All)
 	}
 
