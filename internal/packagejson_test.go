@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -23,22 +24,22 @@ func TestUpdateDependencyPreservesFormatting(t *testing.T) {
 	result := string(pkg.raw)
 
 	// The new value should be present
-	if !contains(result, `"^19.0.0"`) {
+	if !strings.Contains(result, `"^19.0.0"`) {
 		t.Errorf("expected ^19.0.0 in result:\n%s", result)
 	}
 
 	// The old value should NOT be present
-	if contains(result, `"^18.0.0"`) {
+	if strings.Contains(result, `"^18.0.0"`) {
 		t.Errorf("old value ^18.0.0 still present:\n%s", result)
 	}
 
 	// Other deps should be unchanged
-	if !contains(result, `"4.17.21"`) {
+	if !strings.Contains(result, `"4.17.21"`) {
 		t.Errorf("lodash version changed:\n%s", result)
 	}
 
 	// Formatting should be preserved (2-space indent)
-	if !contains(result, "  \"dependencies\"") {
+	if !strings.Contains(result, "  \"dependencies\"") {
 		t.Errorf("formatting lost:\n%s", result)
 	}
 }
@@ -63,10 +64,10 @@ func TestUpdateDependencyMultipleSections(t *testing.T) {
 	}
 
 	result := string(pkg.raw)
-	if !contains(result, `"^19.0.0"`) {
+	if !strings.Contains(result, `"^19.0.0"`) {
 		t.Errorf("react not updated:\n%s", result)
 	}
-	if !contains(result, `"^30.0.0"`) {
+	if !strings.Contains(result, `"^30.0.0"`) {
 		t.Errorf("jest not updated:\n%s", result)
 	}
 }
@@ -109,15 +110,4 @@ func TestGetUpdArgs(t *testing.T) {
 	})
 }
 
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && indexOf(s, substr) >= 0
-}
 
-func indexOf(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
-}
