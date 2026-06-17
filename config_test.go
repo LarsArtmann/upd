@@ -45,11 +45,18 @@ func assertErr(t *testing.T, err, target error) {
 	}
 }
 
-func TestParseFlagsDefaults(t *testing.T) {
-	cfg, err := ParseFlags([]string{})
+func mustParseFlags(t *testing.T, args []string) *Config {
+	t.Helper()
+
+	cfg, err := ParseFlags(args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	return cfg
+}
+
+func TestParseFlagsDefaults(t *testing.T) {
+	cfg := mustParseFlags(t, []string{})
 
 	assertFile(t, cfg, "package.json")
 	assertConcurrency(t, cfg, 8)
@@ -61,10 +68,7 @@ func TestParseFlagsDefaults(t *testing.T) {
 }
 
 func TestParseFlagsShortFlags(t *testing.T) {
-	cfg, err := ParseFlags([]string{"-n", "-C", "-g", "-a", "-q", "-c", "16", "react*"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	cfg := mustParseFlags(t, []string{"-n", "-C", "-g", "-a", "-q", "-c", "16", "react*"})
 
 	assertFlagTrue(t, "Nop", cfg.Nop)
 	assertFlagTrue(t, "NoColor", cfg.NoColor)
@@ -79,12 +83,9 @@ func TestParseFlagsShortFlags(t *testing.T) {
 }
 
 func TestParseFlagsLongFlags(t *testing.T) {
-	cfg, err := ParseFlags(
-		[]string{"--nop", "--noColor", "--greatest", "--all", "--concurrency", "4", "--file", "other.json"},
-	)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	cfg := mustParseFlags(t, []string{
+		"--nop", "--noColor", "--greatest", "--all", "--concurrency", "4", "--file", "other.json",
+	})
 
 	assertFlagTrue(t, "Nop", cfg.Nop)
 	assertFlagTrue(t, "NoColor", cfg.NoColor)
@@ -95,10 +96,7 @@ func TestParseFlagsLongFlags(t *testing.T) {
 }
 
 func TestParseFlagsMultiplePatterns(t *testing.T) {
-	cfg, err := ParseFlags([]string{"react*", "!react-dom", "lodash"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	cfg := mustParseFlags(t, []string{"react*", "!react-dom", "lodash"})
 
 	if len(cfg.Patterns) != 3 {
 		t.Fatalf("expected 3 patterns, got %d", len(cfg.Patterns))
