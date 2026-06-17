@@ -265,17 +265,3 @@ func TestEngineGreatestMode(t *testing.T) {
 		t.Errorf("greatest vNew = %q, want 19.0.0", manifest["react"][0].VNew)
 	}
 }
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && indexOf(s, substr) >= 0
-}
-
-func indexOf(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-
-	return -1
-}
