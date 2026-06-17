@@ -2,28 +2,18 @@
 
 **Upgrade NPM Package Dependencies**
 
-[![github (author stars)](https://img.shields.io/github/stars/rse?logo=github&label=author%20stars&color=%233377aa)](https://github.com/rse)
-[![github (author followers)](https://img.shields.io/github/followers/rse?label=author%20followers&logo=github&color=%234477aa)](https://github.com/rse)
-<br/>
-[![npm (project release)](https://img.shields.io/npm/v/upd?logo=npm&label=npm%20release&color=%23cc3333)](https://npmjs.com/upd)
-[![npm (project downloads)](https://img.shields.io/npm/dm/upd?logo=npm&label=npm%20downloads&color=%23cc3333)](https://npmjs.com/upd)
+A fast Go CLI for upgrading the JavaScript package dependencies in a
+Node Package Manager (NPM) `package.json` configuration file while
+strictly preserving the formatting of the existing JSON syntax and
+intentionally skipping version constraint formulas.
 
-## Abstract
-
-This is a small Command-Line Interface (CLI) for upgrading the
-JavaScript package dependencies in an Node Package Manager (NPM)
-`package.json` configuration file while strictly preserving the
-formatting of the existing JSON syntax and intentionally skipping
-version constraint formulas.
-
-## Example
-
-![UPD usage](screenshot.png)
+Originally written in JavaScript by [Dr. Ralf S. Engelschall](https://engelschall.com/).
+This is a Go port.
 
 ## Installation
 
 ```
-$ npm install -g upd
+$ go install github.com/LarsArtmann/upd/cmd/upd@latest
 ```
 
 ## Usage
@@ -53,6 +43,14 @@ $ upd [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [<patter
 - `<pattern>`<br/>
   Positive or negative (if prefixed with `!`) Glob pattern for matching
   names of dependencies to update.
+
+## Development
+
+```
+$ go build ./cmd/upd           # Build
+$ go test ./...                # Test
+$ go vet ./...                 # Vet
+```
 
 ## License
 
