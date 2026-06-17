@@ -10,11 +10,12 @@ import (
 )
 
 const (
-	ProgramName    = "upd"
-	ProgramVersion = "1.0.0"
-	ProgramDesc    = "Upgrade NPM Package Dependencies"
-	ProgramURL     = "https://github.com/LarsArtmann/upd"
+	ProgramName = "upd"
+	ProgramDesc = "Upgrade NPM Package Dependencies"
+	ProgramURL  = "https://github.com/LarsArtmann/upd"
 )
+
+var ProgramVersion = "dev"
 
 var (
 	ErrHelp    = errors.New("help requested")

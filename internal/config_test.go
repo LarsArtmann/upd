@@ -151,7 +151,7 @@ func TestUserAgent(t *testing.T) {
 	cfg := DefaultConfig()
 
 	ua := cfg.UserAgent()
-	if ua != "upd/1.0.0" {
-		t.Errorf("UserAgent = %q, want upd/1.0.0", ua)
+	if ua != "upd/dev" {
+		t.Errorf("UserAgent = %q, want upd/dev", ua)
 	}
 }

@@ -30,7 +30,12 @@
               src = ./.;
               vendorHash = null;
               subPackages = [ "cmd/upd" ];
-              ldflags = [ "-s" "-w" ];
+              ldflags = [
+                "-s"
+                "-w"
+                "-X"
+                "github.com/LarsArtmann/upd/internal.ProgramVersion=${version}"
+              ];
               meta = with pkgs.lib; {
                 description = "Upgrade NPM package dependencies while preserving formatting";
                 homepage = "https://github.com/LarsArtmann/upd";

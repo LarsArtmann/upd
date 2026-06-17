@@ -20,7 +20,7 @@ jobs:
         run: go mod download
 
       - name: Build
-        run: go build -ldflags="-s -w" -trimpath ./cmd/upd
+        run: go build -ldflags="-s -w -X github.com/LarsArtmann/upd/internal.ProgramVersion=ci" -trimpath ./cmd/upd
 
       - name: Vet
         run: go vet ./...
