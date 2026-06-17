@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -42,6 +43,7 @@ func (c *RegistryClient) FetchPackument(ctx context.Context, name string) (*Pack
 	if err != nil {
 		return nil, 0, fmt.Errorf("package information retrieval failed: %w", err)
 	}
+
 	req.Header.Set("User-Agent", c.userAgent)
 	req.Header.Set("Accept", "application/json")
 
@@ -66,30 +68,35 @@ func (c *RegistryClient) FetchPackument(ctx context.Context, name string) (*Pack
 func (p *Packument) LatestVersion() (string, error) {
 	r := gjson.GetBytes(p.raw, "dist-tags.latest")
 	if !r.Exists() {
-		return "", fmt.Errorf("no \"latest\" dist-tag found")
+		return "", errors.New("no \"latest\" dist-tag found")
 	}
+
 	return r.String(), nil
 }
 
 func (p *Packument) GreatestVersion() (string, error) {
 	versions := p.VersionKeys()
 	if len(versions) == 0 {
-		return "", fmt.Errorf("no valid versions found")
+		return "", errors.New("no valid versions found")
 	}
 
 	var greatest *semver.Version
+
 	for _, v := range versions {
 		sv, err := semver.NewVersion(v)
 		if err != nil {
 			continue
 		}
+
 		if greatest == nil || sv.GreaterThan(greatest) {
 			greatest = sv
 		}
 	}
+
 	if greatest == nil {
-		return "", fmt.Errorf("no valid semver versions found")
+		return "", errors.New("no valid semver versions found")
 	}
+
 	return greatest.Original(), nil
 }
 
@@ -98,11 +105,15 @@ func (p *Packument) VersionKeys() []string {
 	if !result.IsObject() {
 		return nil
 	}
+
 	var keys []string
+
 	result.ForEach(func(key, _ gjson.Result) bool {
 		keys = append(keys, key.String())
+
 		return true
 	})
 	sort.Strings(keys)
+
 	return keys
 }

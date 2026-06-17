@@ -7,9 +7,11 @@ func TestDiffCharsEqual(t *testing.T) {
 	if len(chunks) != 1 {
 		t.Fatalf("expected 1 chunk, got %d", len(chunks))
 	}
+
 	if chunks[0].op != opEqual {
 		t.Errorf("expected opEqual, got %d", chunks[0].op)
 	}
+
 	if chunks[0].text != "1.0.0" {
 		t.Errorf("text = %q", chunks[0].text)
 	}
@@ -27,6 +29,7 @@ func reconstructDiff(chunks []diffChunk) (oldStr, newStr string) {
 			newStr += c.text
 		}
 	}
+
 	return oldStr, newStr
 }
 
@@ -43,10 +46,12 @@ func TestDiffCharsReplace(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			chunks := diffChars(tt.old, tt.new)
+
 			oldStr, newStr := reconstructDiff(chunks)
 			if oldStr != tt.wantOld {
 				t.Errorf("oldStr = %q, want %q", oldStr, tt.wantOld)
 			}
+
 			if newStr != tt.wantNew {
 				t.Errorf("newStr = %q, want %q", newStr, tt.wantNew)
 			}
@@ -97,6 +102,7 @@ func TestResolveGreatest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if got != "2.0.0-beta.1" {
 		t.Errorf("GreatestVersion() = %q, want 2.0.0-beta.1", got)
 	}
@@ -109,10 +115,12 @@ func TestResolveLatest(t *testing.T) {
 	}`
 
 	pkg := &Packument{raw: []byte(json)}
+
 	got, err := pkg.LatestVersion()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if got != "3.1.0" {
 		t.Errorf("LatestVersion() = %q, want 3.1.0", got)
 	}
@@ -120,6 +128,7 @@ func TestResolveLatest(t *testing.T) {
 
 func TestResolveLatestMissing(t *testing.T) {
 	pkg := &Packument{raw: []byte(`{"versions": {}}`)}
+
 	_, err := pkg.LatestVersion()
 	if err == nil {
 		t.Fatal("expected error for missing dist-tags.latest")

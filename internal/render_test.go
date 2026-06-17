@@ -19,6 +19,7 @@ func TestRenderTableUpdated(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
+
 	r := NewRenderer(&buf, true) // noColor=true for deterministic output
 	r.RenderTable(manifest, 1, 0, false)
 
@@ -26,12 +27,15 @@ func TestRenderTableUpdated(t *testing.T) {
 	if !strings.Contains(output, "react") {
 		t.Errorf("expected 'react' in output:\n%s", output)
 	}
+
 	if !strings.Contains(output, "^18.0.0") {
 		t.Errorf("expected old version in output:\n%s", output)
 	}
+
 	if !strings.Contains(output, "^19.0.0") {
 		t.Errorf("expected new version in output:\n%s", output)
 	}
+
 	if !strings.Contains(output, "updated") {
 		t.Errorf("expected 'updated' state in output:\n%s", output)
 	}
@@ -43,6 +47,7 @@ func TestRenderTableAllUpToDate(t *testing.T) {
 	manifest := BuildManifest(pkg, nil)
 
 	var buf bytes.Buffer
+
 	r := NewRenderer(&buf, true)
 	r.RenderTable(manifest, 0, 0, false)
 
@@ -65,6 +70,7 @@ func TestRenderTableAllMode(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
+
 	r := NewRenderer(&buf, true)
 	r.RenderTable(manifest, 1, 0, true) // showAll=true
 
@@ -73,6 +79,7 @@ func TestRenderTableAllMode(t *testing.T) {
 	if !strings.Contains(output, "react") {
 		t.Errorf("expected 'react' in all-mode output:\n%s", output)
 	}
+
 	if !strings.Contains(output, "lodash") {
 		t.Errorf("expected 'lodash' in all-mode output:\n%s", output)
 	}
@@ -88,6 +95,7 @@ func TestRenderTableErrorState(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
+
 	r := NewRenderer(&buf, true)
 	r.RenderTable(manifest, 0, 1, false)
 
@@ -109,6 +117,7 @@ func TestRenderNoColorStripsANSI(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
+
 	r := NewRenderer(&buf, true) // noColor
 	r.RenderTable(manifest, 1, 0, false)
 
@@ -130,6 +139,7 @@ func TestRenderWithColorContainsANSI(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
+
 	r := NewRenderer(&buf, false) // color
 	r.RenderTable(manifest, 1, 0, false)
 
@@ -163,6 +173,7 @@ func TestCenterPad(t *testing.T) {
 	if len(got) != 10 {
 		t.Errorf("centerPad length = %d, want 10", len(got))
 	}
+
 	if !strings.Contains(got, "hi") {
 		t.Errorf("centerPad lost content: %q", got)
 	}

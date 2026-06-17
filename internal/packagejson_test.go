@@ -7,6 +7,7 @@ import (
 
 func assertContains(t *testing.T, haystack, needle, label string) {
 	t.Helper()
+
 	if !strings.Contains(haystack, needle) {
 		t.Errorf("%s: expected %q in:\n%s", label, needle, haystack)
 	}
@@ -14,7 +15,9 @@ func assertContains(t *testing.T, haystack, needle, label string) {
 
 func updateDep(t *testing.T, pkg *PackageFile, section, dep, version, label string) {
 	t.Helper()
-	if err := pkg.UpdateDependency(section, dep, version); err != nil {
+
+	err := pkg.UpdateDependency(section, dep, version)
+	if err != nil {
 		t.Fatalf("%s: %v", label, err)
 	}
 }
@@ -79,10 +82,12 @@ func TestUpdateDependencyNotFound(t *testing.T) {
 func TestGetUpdArgs(t *testing.T) {
 	t.Run("array form", func(t *testing.T) {
 		pkg := &PackageFile{raw: []byte(`{"upd": ["react*", "!react-dom"], "dependencies": {}}`)}
+
 		args := pkg.GetUpdArgs()
 		if len(args) != 2 {
 			t.Fatalf("expected 2 args, got %d", len(args))
 		}
+
 		if args[0] != "react*" || args[1] != "!react-dom" {
 			t.Errorf("args = %v", args)
 		}
@@ -90,6 +95,7 @@ func TestGetUpdArgs(t *testing.T) {
 
 	t.Run("string form", func(t *testing.T) {
 		pkg := &PackageFile{raw: []byte(`{"upd": "react*", "dependencies": {}}`)}
+
 		args := pkg.GetUpdArgs()
 		if len(args) != 1 || args[0] != "react*" {
 			t.Errorf("args = %v", args)
@@ -98,6 +104,7 @@ func TestGetUpdArgs(t *testing.T) {
 
 	t.Run("missing", func(t *testing.T) {
 		pkg := &PackageFile{raw: []byte(`{"dependencies": {}}`)}
+
 		args := pkg.GetUpdArgs()
 		if len(args) != 0 {
 			t.Errorf("expected no args, got %v", args)

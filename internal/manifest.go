@@ -82,7 +82,9 @@ func BuildManifest(pkg *PackageFile, patterns []string) Manifest {
 
 func (m Manifest) ToCheck() []string {
 	seen := make(map[string]bool)
+
 	var names []string
+
 	for name, specs := range m {
 		for _, spec := range specs {
 			if spec.State == StateCheck && !seen[name] {
@@ -91,6 +93,7 @@ func (m Manifest) ToCheck() []string {
 			}
 		}
 	}
+
 	return names
 }
 
@@ -99,7 +102,9 @@ func (m Manifest) SortedNames() []string {
 	for name := range m {
 		names = append(names, name)
 	}
+
 	sort.Strings(names)
+
 	return names
 }
 
@@ -112,12 +117,15 @@ func matchesPatterns(name string, patterns []string) bool {
 	hasPositive := len(positive) > 0
 
 	matched := !hasPositive
+
 	for _, p := range positive {
 		if p.Match(name) {
 			matched = true
+
 			break
 		}
 	}
+
 	if !matched {
 		return false
 	}
@@ -127,6 +135,7 @@ func matchesPatterns(name string, patterns []string) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -142,6 +151,7 @@ func splitPatterns(patterns []string) (positive, negative []glob.Glob) {
 			}
 		}
 	}
+
 	return positive, negative
 }
 

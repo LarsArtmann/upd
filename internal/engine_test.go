@@ -25,8 +25,10 @@ func mockRegistry(versions map[string]map[string]any) *httptest.Server {
 
 func newTestEngine(t *testing.T, server *httptest.Server, cfg *Config) *Engine {
 	t.Helper()
+
 	engine := NewEngine(cfg)
 	engine.registry.baseURL = server.URL
+
 	return engine
 }
 
@@ -62,10 +64,12 @@ func TestEngineFetchAllSuccess(t *testing.T) {
 	if react.err != nil {
 		t.Fatalf("react fetch error: %v", react.err)
 	}
+
 	v, err := react.pkg.LatestVersion()
 	if err != nil {
 		t.Fatalf("react latest error: %v", err)
 	}
+
 	if v != "19.0.0" {
 		t.Errorf("react latest = %q, want 19.0.0", v)
 	}
@@ -75,11 +79,11 @@ func TestEngineApplyUpdates(t *testing.T) {
 	registry := mockRegistry(map[string]map[string]any{
 		"react": {
 			"dist-tags": map[string]string{"latest": "19.0.0"},
-			"versions": map[string]any{"19.0.0": map[string]any{}},
+			"versions":  map[string]any{"19.0.0": map[string]any{}},
 		},
 		"lodash": {
 			"dist-tags": map[string]string{"latest": "4.17.21"},
-			"versions": map[string]any{"4.17.21": map[string]any{}},
+			"versions":  map[string]any{"4.17.21": map[string]any{}},
 		},
 	})
 	defer registry.Close()
@@ -103,6 +107,7 @@ func TestEngineApplyUpdates(t *testing.T) {
 	if errors != 0 {
 		t.Errorf("expected 0 errors, got %d", errors)
 	}
+
 	if updates != 2 {
 		t.Errorf("expected 2 updates, got %d", updates)
 	}
@@ -111,9 +116,11 @@ func TestEngineApplyUpdates(t *testing.T) {
 	if reactSpec.State != StateUpdated {
 		t.Errorf("react state = %s, want updated", reactSpec.State)
 	}
+
 	if reactSpec.VNew != "19.0.0" {
 		t.Errorf("react vNew = %q, want 19.0.0", reactSpec.VNew)
 	}
+
 	if reactSpec.SNew != "^19.0.0" {
 		t.Errorf("react sNew = %q, want ^19.0.0", reactSpec.SNew)
 	}
@@ -123,7 +130,7 @@ func TestEngineApplyUpdatesKept(t *testing.T) {
 	registry := mockRegistry(map[string]map[string]any{
 		"react": {
 			"dist-tags": map[string]string{"latest": "18.0.0"},
-			"versions": map[string]any{"18.0.0": map[string]any{}},
+			"versions":  map[string]any{"18.0.0": map[string]any{}},
 		},
 	})
 	defer registry.Close()
@@ -141,6 +148,7 @@ func TestEngineApplyUpdatesKept(t *testing.T) {
 	if updates != 0 {
 		t.Errorf("expected 0 updates for same version, got %d", updates)
 	}
+
 	if manifest["react"][0].State != StateKept {
 		t.Errorf("react state = %s, want kept", manifest["react"][0].State)
 	}
@@ -150,7 +158,7 @@ func TestEngineApplyUpdatesNop(t *testing.T) {
 	registry := mockRegistry(map[string]map[string]any{
 		"react": {
 			"dist-tags": map[string]string{"latest": "19.0.0"},
-			"versions": map[string]any{"19.0.0": map[string]any{}},
+			"versions":  map[string]any{"19.0.0": map[string]any{}},
 		},
 	})
 	defer registry.Close()
@@ -194,6 +202,7 @@ func TestEngineApplyUpdatesError(t *testing.T) {
 	if errors == 0 {
 		t.Error("expected errors for 404 package, got 0")
 	}
+
 	if manifest["nonexistent"][0].State != StateError {
 		t.Errorf("state = %s, want error", manifest["nonexistent"][0].State)
 	}
@@ -203,7 +212,7 @@ func TestEngineApplyUpdatesWritesPackageJSON(t *testing.T) {
 	registry := mockRegistry(map[string]map[string]any{
 		"react": {
 			"dist-tags": map[string]string{"latest": "19.0.0"},
-			"versions": map[string]any{"19.0.0": map[string]any{}},
+			"versions":  map[string]any{"19.0.0": map[string]any{}},
 		},
 	})
 	defer registry.Close()
@@ -222,6 +231,7 @@ func TestEngineApplyUpdatesWritesPackageJSON(t *testing.T) {
 	if !strings.Contains(result, "19.0.0") {
 		t.Errorf("expected 19.0.0 in result after apply:\n%s", result)
 	}
+
 	if strings.Contains(result, "18.0.0") {
 		t.Errorf("old version 18.0.0 still present:\n%s", result)
 	}
@@ -232,9 +242,9 @@ func TestEngineGreatestMode(t *testing.T) {
 		"react": {
 			"dist-tags": map[string]string{"latest": "18.0.0"},
 			"versions": map[string]any{
-				"18.0.0": map[string]any{},
+				"18.0.0":        map[string]any{},
 				"19.0.0-beta.1": map[string]any{},
-				"19.0.0": map[string]any{},
+				"19.0.0":        map[string]any{},
 			},
 		},
 	})
@@ -266,5 +276,6 @@ func indexOf(s, substr string) int {
 			return i
 		}
 	}
+
 	return -1
 }

@@ -60,20 +60,25 @@ func ParseFlags(args []string) (*Config, error) {
 	stringVar(fs, &cfg.File, "f", "file", "package.json", "package configuration to use")
 	intVar(fs, &cfg.Concurrency, "c", "concurrency", 8, "number of concurrent network connections to NPM registry")
 
-	if err := fs.Parse(args); err != nil {
+	err := fs.Parse(args)
+	if err != nil {
 		return nil, err
 	}
 
 	if help {
 		PrintUsage(os.Stdout)
+
 		return nil, ErrHelp
 	}
+
 	if version {
 		PrintVersion(os.Stdout)
+
 		return nil, ErrVersion
 	}
 
 	cfg.Patterns = fs.Args()
+
 	return cfg, nil
 }
 
@@ -93,11 +98,16 @@ func intVar(fs *flag.FlagSet, p *int, short, long string, def int, usage string)
 }
 
 func PrintUsage(w io.Writer) {
-	fmt.Fprintf(w, "Usage: %s [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [<pattern> ...]\n", ProgramName)
+	fmt.Fprintf(
+		w,
+		"Usage: %s [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [<pattern> ...]\n",
+		ProgramName,
+	)
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Upgrade NPM package dependencies in package.json while preserving formatting.")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Options:")
+
 	lines := []struct{ short, long, desc string }{
 		{"-h", "--help", "show usage help"},
 		{"-V", "--version", "show program version information"},
@@ -112,6 +122,7 @@ func PrintUsage(w io.Writer) {
 	for _, l := range lines {
 		fmt.Fprintf(w, "  %-4s %-16s  %s\n", l.short, l.long, l.desc)
 	}
+
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Patterns:")
 	fmt.Fprintln(w, "  Positive or negative (prefixed with !) glob patterns for")

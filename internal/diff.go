@@ -43,11 +43,14 @@ func diffChars(oldStr, newStr string) []diffChunk {
 
 	// Backtrack to produce diff
 	var chunks []diffChunk
+
 	i, j := m, n
+
 	type step struct {
 		op   diffOp
 		char rune
 	}
+
 	var steps []step
 
 	for i > 0 || j > 0 {

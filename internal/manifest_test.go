@@ -29,6 +29,7 @@ func TestVersionRegex(t *testing.T) {
 				if m == nil {
 					t.Fatalf("expected match for %q", tt.input)
 				}
+
 				if m[1] != tt.ver {
 					t.Errorf("version = %q, want %q", m[1], tt.ver)
 				}
@@ -92,16 +93,20 @@ func TestBuildManifest(t *testing.T) {
 	if len(reactSpecs) != 1 {
 		t.Fatalf("expected 1 spec for react, got %d", len(reactSpecs))
 	}
+
 	react := reactSpecs[0]
 	if react.Section != "dependencies" {
 		t.Errorf("section = %q, want dependencies", react.Section)
 	}
+
 	if react.SOld != "^18.0.0" {
 		t.Errorf("sOld = %q, want ^18.0.0", react.SOld)
 	}
+
 	if react.VOld != "18.0.0" {
 		t.Errorf("vOld = %q, want 18.0.0", react.VOld)
 	}
+
 	if react.State != StateCheck {
 		t.Errorf("state = %q, want check", react.State)
 	}
@@ -110,6 +115,7 @@ func TestBuildManifest(t *testing.T) {
 	if len(localSpecs) != 1 {
 		t.Fatalf("expected 1 spec for local-pkg, got %d", len(localSpecs))
 	}
+
 	if localSpecs[0].State != StateSkipped {
 		t.Errorf("local-pkg state = %q, want skipped", localSpecs[0].State)
 	}
@@ -157,6 +163,7 @@ func TestManifestToCheck(t *testing.T) {
 	if len(toCheck) != 1 {
 		t.Fatalf("expected 1 to check, got %d", len(toCheck))
 	}
+
 	if toCheck[0] != "react" {
 		t.Errorf("expected react, got %s", toCheck[0])
 	}

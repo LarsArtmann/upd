@@ -34,6 +34,7 @@ func NewEngine(cfg *Config) *Engine {
 
 func (e *Engine) WithReporter(r Reporter) *Engine {
 	e.reporter = r
+
 	return e
 }
 
@@ -46,14 +47,19 @@ type fetchResult struct {
 
 func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*fetchResult {
 	results := make(map[string]*fetchResult, len(names))
+
 	var mu sync.Mutex
 
 	sem := make(chan struct{}, e.cfg.Concurrency)
-	var wg sync.WaitGroup
-	var totalBytes atomic.Int64
+
+	var (
+		wg         sync.WaitGroup
+		totalBytes atomic.Int64
+	)
 
 	for _, name := range names {
 		wg.Add(1)
+
 		sem <- struct{}{}
 
 		go func(n string) {
@@ -73,10 +79,15 @@ func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*fetch
 	}
 
 	wg.Wait()
+
 	return results
 }
 
-func (e *Engine) ApplyUpdates(manifest Manifest, results map[string]*fetchResult, pkg *PackageFile) (updates, errors int) {
+func (e *Engine) ApplyUpdates(
+	manifest Manifest,
+	results map[string]*fetchResult,
+	pkg *PackageFile,
+) (updates, errors int) {
 	for _, name := range manifest.SortedNames() {
 		for _, spec := range manifest[name] {
 			if spec.State != StateCheck {
@@ -87,6 +98,7 @@ func (e *Engine) ApplyUpdates(manifest Manifest, results map[string]*fetchResult
 			if !ok || (result.err != nil && result.pkg == nil) {
 				spec.State = StateError
 				errors++
+
 				continue
 			}
 
@@ -94,6 +106,7 @@ func (e *Engine) ApplyUpdates(manifest Manifest, results map[string]*fetchResult
 			if err != nil {
 				spec.State = StateError
 				errors++
+
 				continue
 			}
 
@@ -102,13 +115,16 @@ func (e *Engine) ApplyUpdates(manifest Manifest, results map[string]*fetchResult
 
 			if spec.VOld == spec.VNew {
 				spec.State = StateKept
+
 				continue
 			}
 
 			oldV, errOld := semver.NewVersion(spec.VOld)
+
 			newV, errNew := semver.NewVersion(spec.VNew)
 			if errOld == nil && errNew == nil && !newV.GreaterThan(oldV) {
 				spec.State = StateKept
+
 				continue
 			}
 
@@ -116,7 +132,8 @@ func (e *Engine) ApplyUpdates(manifest Manifest, results map[string]*fetchResult
 			updates++
 
 			if !e.cfg.Nop {
-				if err := pkg.UpdateDependency(spec.Section, spec.Name, spec.SNew); err != nil {
+				err := pkg.UpdateDependency(spec.Section, spec.Name, spec.SNew)
+				if err != nil {
 					spec.State = StateError
 					errors++
 				}
@@ -131,6 +148,7 @@ func (e *Engine) resolveVersion(pkg *Packument) (string, error) {
 	if e.cfg.Greatest {
 		return pkg.GreatestVersion()
 	}
+
 	return pkg.LatestVersion()
 }
 
@@ -142,6 +160,7 @@ func truncMsg(name string) string {
 	if len(name) > 24 {
 		return name[:19] + "..."
 	}
+
 	return name + strings.Repeat(" ", 24-len(name))
 }
 
@@ -149,5 +168,6 @@ func (r fetchResult) String() string {
 	if r.err != nil {
 		return fmt.Sprintf("%s: error: %v", r.name, r.err)
 	}
+
 	return fmt.Sprintf("%s: ok (%d bytes)", r.name, r.bytes)
 }

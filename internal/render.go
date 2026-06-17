@@ -28,6 +28,7 @@ func (r *Renderer) color(code, text string) string {
 	if r.noColor {
 		return text
 	}
+
 	return code + text + ansiReset
 }
 
@@ -50,6 +51,7 @@ func (r *Renderer) grey(text string) string {
 func (r *Renderer) RenderTable(manifest Manifest, updates, errors int, showAll bool) {
 	if updates == 0 && errors == 0 && !showAll {
 		r.renderAllUpToDate()
+
 		return
 	}
 
@@ -109,10 +111,12 @@ func (r *Renderer) renderUpgradeTable(manifest Manifest, showAll bool) {
 				modName = r.grey(name)
 				oldVer = r.grey(spec.SOld)
 				newVer = r.grey(spec.SNew)
+
 				st := string(spec.State)
 				if st == "" {
 					st = "kept"
 				}
+
 				state = r.grey(st)
 			}
 
@@ -139,6 +143,7 @@ func borderChars(kind string) (left, mid, right string) {
 	case "bottom":
 		return "└", "┴", "┘"
 	}
+
 	return "", "", ""
 }
 
@@ -147,6 +152,7 @@ func (r *Renderer) writeBorder(left, mid, right string, widths ...int) {
 	for i, w := range widths {
 		segments[i] = strings.Repeat("─", w)
 	}
+
 	joiner := mid
 	fmt.Fprintf(r.w, "%s%s%s\n", left, strings.Join(segments, joiner), right)
 }
@@ -165,7 +171,9 @@ func (r *Renderer) diffHighlight(text, other, color string) string {
 	}
 
 	chunks := diffChars(text, other)
+
 	var sb strings.Builder
+
 	for _, c := range chunks {
 		switch c.op {
 		case opInsert:
@@ -174,6 +182,7 @@ func (r *Renderer) diffHighlight(text, other, color string) string {
 			sb.WriteString(c.text)
 		}
 	}
+
 	return sb.String()
 }
 
@@ -181,9 +190,11 @@ func centerPad(text string, width int) string {
 	if len(text) >= width {
 		return text[:width]
 	}
+
 	total := width - len(text)
 	left := total / 2
 	right := total - left
+
 	return strings.Repeat(" ", left) + text + strings.Repeat(" ", right)
 }
 
@@ -192,6 +203,7 @@ func padCell(text string, width int) string {
 	if visibleLen >= width {
 		return text
 	}
+
 	return text + strings.Repeat(" ", width-visibleLen)
 }
 
@@ -199,18 +211,24 @@ func visibleLength(text string) int {
 	// Strip ANSI escape sequences for length calculation
 	out := make([]byte, 0, len(text))
 	inEscape := false
+
 	for _, c := range []byte(text) {
 		if c == '\x1b' {
 			inEscape = true
+
 			continue
 		}
+
 		if inEscape {
 			if c == 'm' {
 				inEscape = false
 			}
+
 			continue
 		}
+
 		out = append(out, c)
 	}
+
 	return len(string(out))
 }
