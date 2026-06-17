@@ -67,7 +67,7 @@ func diffChars(oldStr, newStr string) []diffChunk {
 	for k := len(steps) - 1; k >= 0; k-- {
 		s := steps[k]
 		if len(chunks) > 0 && chunks[len(chunks)-1].op == s.op {
-			chunks[len(chunks)-1].text = string(s.char) + chunks[len(chunks)-1].text
+			chunks[len(chunks)-1].text += string(s.char)
 		} else {
 			chunks = append(chunks, diffChunk{op: s.op, text: string(s.char)})
 		}
