@@ -6,39 +6,37 @@ import (
 	"testing"
 )
 
+func markUpdated(manifest Manifest, dep string) {
+	for _, spec := range manifest[dep] {
+		spec.State = StateUpdated
+		spec.SNew = "^19.0.0"
+		spec.VNew = "19.0.0"
+	}
+}
+
+func renderManifest(t *testing.T, manifest Manifest, updated, errored int, noColor, showAll bool) string {
+	t.Helper()
+
+	var buf bytes.Buffer
+
+	r := NewRenderer(&buf, noColor)
+	r.RenderTable(manifest, updated, errored, showAll)
+
+	return buf.String()
+}
+
 func TestRenderTableUpdated(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
 	manifest := BuildManifest(pkg, nil)
+	markUpdated(manifest, "react")
 
-	// Simulate an update
-	for _, spec := range manifest["react"] {
-		spec.SNew = "^19.0.0"
-		spec.VNew = "19.0.0"
-		spec.State = StateUpdated
-	}
+	output := renderManifest(t, manifest, 1, 0, true, false)
 
-	var buf bytes.Buffer
-
-	r := NewRenderer(&buf, true) // noColor=true for deterministic output
-	r.RenderTable(manifest, 1, 0, false)
-
-	output := buf.String()
-	if !strings.Contains(output, "react") {
-		t.Errorf("expected 'react' in output:\n%s", output)
-	}
-
-	if !strings.Contains(output, "^18.0.0") {
-		t.Errorf("expected old version in output:\n%s", output)
-	}
-
-	if !strings.Contains(output, "^19.0.0") {
-		t.Errorf("expected new version in output:\n%s", output)
-	}
-
-	if !strings.Contains(output, "updated") {
-		t.Errorf("expected 'updated' state in output:\n%s", output)
-	}
+	assertContains(t, output, "react", "package name")
+	assertContains(t, output, "^18.0.0", "old version")
+	assertContains(t, output, "^19.0.0", "new version")
+	assertContains(t, output, "updated", "state label")
 }
 
 func TestRenderTableAllUpToDate(t *testing.T) {
@@ -46,43 +44,21 @@ func TestRenderTableAllUpToDate(t *testing.T) {
 	pkg := &PackageFile{raw: []byte(json)}
 	manifest := BuildManifest(pkg, nil)
 
-	var buf bytes.Buffer
+	output := renderManifest(t, manifest, 0, 0, true, false)
 
-	r := NewRenderer(&buf, true)
-	r.RenderTable(manifest, 0, 0, false)
-
-	output := buf.String()
-	if !strings.Contains(output, "UP-TO-DATE") {
-		t.Errorf("expected 'UP-TO-DATE' message:\n%s", output)
-	}
+	assertContains(t, output, "UP-TO-DATE", "status banner")
 }
 
 func TestRenderTableAllMode(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0", "lodash": "4.17.21"}}`
 	pkg := &PackageFile{raw: []byte(json)}
 	manifest := BuildManifest(pkg, nil)
+	markUpdated(manifest, "react")
 
-	// Mark react as updated, lodash stays skipped
-	for _, spec := range manifest["react"] {
-		spec.State = StateUpdated
-		spec.SNew = "^19.0.0"
-		spec.VNew = "19.0.0"
-	}
+	output := renderManifest(t, manifest, 1, 0, true, true)
 
-	var buf bytes.Buffer
-
-	r := NewRenderer(&buf, true)
-	r.RenderTable(manifest, 1, 0, true) // showAll=true
-
-	output := buf.String()
-	// Both packages should appear
-	if !strings.Contains(output, "react") {
-		t.Errorf("expected 'react' in all-mode output:\n%s", output)
-	}
-
-	if !strings.Contains(output, "lodash") {
-		t.Errorf("expected 'lodash' in all-mode output:\n%s", output)
-	}
+	assertContains(t, output, "react", "package name")
+	assertContains(t, output, "lodash", "package name")
 }
 
 func TestRenderTableErrorState(t *testing.T) {
@@ -94,59 +70,31 @@ func TestRenderTableErrorState(t *testing.T) {
 		spec.State = StateError
 	}
 
-	var buf bytes.Buffer
+	output := renderManifest(t, manifest, 0, 1, true, false)
 
-	r := NewRenderer(&buf, true)
-	r.RenderTable(manifest, 0, 1, false)
-
-	output := buf.String()
-	if !strings.Contains(output, "error") {
-		t.Errorf("expected 'error' state in output:\n%s", output)
-	}
+	assertContains(t, output, "error", "state label")
 }
 
 func TestRenderNoColorStripsANSI(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
 	manifest := BuildManifest(pkg, nil)
+	markUpdated(manifest, "react")
 
-	for _, spec := range manifest["react"] {
-		spec.State = StateUpdated
-		spec.SNew = "^19.0.0"
-		spec.VNew = "19.0.0"
-	}
+	output := renderManifest(t, manifest, 1, 0, true, false)
 
-	var buf bytes.Buffer
-
-	r := NewRenderer(&buf, true) // noColor
-	r.RenderTable(manifest, 1, 0, false)
-
-	output := buf.String()
-	if strings.Contains(output, "\x1b[") {
-		t.Errorf("noColor output contains ANSI codes:\n%s", output)
-	}
+	assertNotContains(t, output, "\x1b[", "ANSI escape sequences")
 }
 
 func TestRenderWithColorContainsANSI(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
 	manifest := BuildManifest(pkg, nil)
+	markUpdated(manifest, "react")
 
-	for _, spec := range manifest["react"] {
-		spec.State = StateUpdated
-		spec.SNew = "^19.0.0"
-		spec.VNew = "19.0.0"
-	}
+	output := renderManifest(t, manifest, 1, 0, false, false)
 
-	var buf bytes.Buffer
-
-	r := NewRenderer(&buf, false) // color
-	r.RenderTable(manifest, 1, 0, false)
-
-	output := buf.String()
-	if !strings.Contains(output, "\x1b[") {
-		t.Errorf("color output missing ANSI codes:\n%s", output)
-	}
+	assertContains(t, output, "\x1b[", "ANSI escape sequences")
 }
 
 func TestVisibleLength(t *testing.T) {

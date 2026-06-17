@@ -1,17 +1,8 @@
 package upd
 
 import (
-	"strings"
 	"testing"
 )
-
-func assertContains(t *testing.T, haystack, needle, label string) {
-	t.Helper()
-
-	if !strings.Contains(haystack, needle) {
-		t.Errorf("%s: expected %q in:\n%s", label, needle, haystack)
-	}
-}
 
 func updateDep(t *testing.T, pkg *PackageFile, section, dep, version, label string) {
 	t.Helper()
@@ -45,9 +36,7 @@ func TestUpdateDependencyPreservesFormatting(t *testing.T) {
 	assertContains(t, result, "  \"dependencies\"", "formatting")
 
 	// The old value should NOT be present
-	if strings.Contains(result, `"^18.0.0"`) {
-		t.Errorf("old value ^18.0.0 still present:\n%s", result)
-	}
+	assertNotContains(t, result, `"^18.0.0"`, "old react version")
 }
 
 func TestUpdateDependencyMultipleSections(t *testing.T) {

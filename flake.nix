@@ -23,18 +23,20 @@
           buildFlags = "-ldflags=-s -w -trimpath";
         in
         {
+          formatter = pkgs.nixpkgs-fmt;
+
           packages = {
             default = pkgs.buildGoModule {
               pname = "upd";
               inherit version;
               src = ./.;
-              vendorHash = null;
+              vendorHash = "sha256-S6Hqrr/EU4Eapyh5A8rc0xzF4OOm9Nuk7p7Xp/P9U6E=";
               subPackages = [ "cmd/upd" ];
               ldflags = [
                 "-s"
                 "-w"
                 "-X"
-                "github.com/LarsArtmann/upd/internal.ProgramVersion=${version}"
+                "github.com/LarsArtmann/upd.ProgramVersion=${version}"
               ];
               meta = with pkgs.lib; {
                 description = "Upgrade NPM package dependencies while preserving formatting";

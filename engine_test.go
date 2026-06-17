@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
@@ -23,6 +22,18 @@ func mockRegistry(versions map[string]map[string]any) *httptest.Server {
 	}))
 }
 
+func packageVersion(latest string, versions ...string) map[string]any {
+	versionMap := make(map[string]any, len(versions))
+	for _, v := range versions {
+		versionMap[v] = map[string]any{}
+	}
+
+	return map[string]any{
+		"dist-tags": map[string]string{"latest": latest},
+		"versions":  versionMap,
+	}
+}
+
 func newTestEngine(t *testing.T, server *httptest.Server, cfg *Config) *Engine {
 	t.Helper()
 
@@ -32,22 +43,33 @@ func newTestEngine(t *testing.T, server *httptest.Server, cfg *Config) *Engine {
 	return engine
 }
 
+func buildTestManifest(t *testing.T, json string) (*PackageFile, Manifest) {
+	t.Helper()
+
+	pkg := &PackageFile{raw: []byte(json)}
+	manifest := BuildManifest(pkg, nil)
+
+	return pkg, manifest
+}
+
+func setupEngineTest(t *testing.T, json, name, latest string, versions ...string) (*Engine, *PackageFile, Manifest) {
+	t.Helper()
+
+	registry := mockRegistry(map[string]map[string]any{
+		name: packageVersion(latest, versions...),
+	})
+	t.Cleanup(registry.Close)
+
+	pkg, manifest := buildTestManifest(t, json)
+	engine := newTestEngine(t, registry, DefaultConfig())
+
+	return engine, pkg, manifest
+}
+
 func TestEngineFetchAllSuccess(t *testing.T) {
 	registry := mockRegistry(map[string]map[string]any{
-		"react": {
-			"dist-tags": map[string]string{"latest": "19.0.0"},
-			"versions": map[string]any{
-				"18.0.0": map[string]any{},
-				"19.0.0": map[string]any{},
-			},
-		},
-		"lodash": {
-			"dist-tags": map[string]string{"latest": "4.17.21"},
-			"versions": map[string]any{
-				"4.17.20": map[string]any{},
-				"4.17.21": map[string]any{},
-			},
-		},
+		"react":  packageVersion("19.0.0", "18.0.0", "19.0.0"),
+		"lodash": packageVersion("4.17.21", "4.17.20", "4.17.21"),
 	})
 	defer registry.Close()
 
@@ -77,31 +99,22 @@ func TestEngineFetchAllSuccess(t *testing.T) {
 
 func TestEngineApplyUpdates(t *testing.T) {
 	registry := mockRegistry(map[string]map[string]any{
-		"react": {
-			"dist-tags": map[string]string{"latest": "19.0.0"},
-			"versions":  map[string]any{"19.0.0": map[string]any{}},
-		},
-		"lodash": {
-			"dist-tags": map[string]string{"latest": "4.17.21"},
-			"versions":  map[string]any{"4.17.21": map[string]any{}},
-		},
+		"react":  packageVersion("19.0.0", "19.0.0"),
+		"lodash": packageVersion("4.17.21", "4.17.21"),
 	})
 	defer registry.Close()
 
-	json := `{
+	pkg, manifest := buildTestManifest(t, `{
 		"dependencies": {
 			"react": "^18.0.0",
 			"lodash": "4.17.20"
 		}
-	}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	}`)
 
 	cfg := DefaultConfig()
 	engine := newTestEngine(t, registry, cfg)
 
-	toCheck := manifest.ToCheck()
-	results := engine.FetchAll(context.Background(), toCheck)
+	results := engine.FetchAll(context.Background(), manifest.ToCheck())
 	updates, errors := engine.ApplyUpdates(manifest, results, pkg)
 
 	if errors != 0 {
@@ -127,20 +140,7 @@ func TestEngineApplyUpdates(t *testing.T) {
 }
 
 func TestEngineApplyUpdatesKept(t *testing.T) {
-	registry := mockRegistry(map[string]map[string]any{
-		"react": {
-			"dist-tags": map[string]string{"latest": "18.0.0"},
-			"versions":  map[string]any{"18.0.0": map[string]any{}},
-		},
-	})
-	defer registry.Close()
-
-	json := `{"dependencies": {"react": "^18.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
-
-	cfg := DefaultConfig()
-	engine := newTestEngine(t, registry, cfg)
+	engine, pkg, manifest := setupEngineTest(t, `{"dependencies": {"react": "^18.0.0"}}`, "react", "18.0.0", "18.0.0")
 
 	results := engine.FetchAll(context.Background(), manifest.ToCheck())
 	updates, _ := engine.ApplyUpdates(manifest, results, pkg)
@@ -155,22 +155,10 @@ func TestEngineApplyUpdatesKept(t *testing.T) {
 }
 
 func TestEngineApplyUpdatesNop(t *testing.T) {
-	registry := mockRegistry(map[string]map[string]any{
-		"react": {
-			"dist-tags": map[string]string{"latest": "19.0.0"},
-			"versions":  map[string]any{"19.0.0": map[string]any{}},
-		},
-	})
-	defer registry.Close()
+	engine, pkg, manifest := setupEngineTest(t, `{"dependencies": {"react": "^18.0.0"}}`, "react", "19.0.0", "19.0.0")
+	engine.cfg.Nop = true
 
 	json := `{"dependencies": {"react": "^18.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
-
-	cfg := DefaultConfig()
-	cfg.Nop = true
-	engine := newTestEngine(t, registry, cfg)
-
 	results := engine.FetchAll(context.Background(), manifest.ToCheck())
 	updates, _ := engine.ApplyUpdates(manifest, results, pkg)
 
@@ -189,9 +177,7 @@ func TestEngineApplyUpdatesError(t *testing.T) {
 	}))
 	defer registry.Close()
 
-	json := `{"dependencies": {"nonexistent": "^1.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	pkg, manifest := buildTestManifest(t, `{"dependencies": {"nonexistent": "^1.0.0"}}`)
 
 	cfg := DefaultConfig()
 	engine := newTestEngine(t, registry, cfg)
@@ -209,54 +195,24 @@ func TestEngineApplyUpdatesError(t *testing.T) {
 }
 
 func TestEngineApplyUpdatesWritesPackageJSON(t *testing.T) {
-	registry := mockRegistry(map[string]map[string]any{
-		"react": {
-			"dist-tags": map[string]string{"latest": "19.0.0"},
-			"versions":  map[string]any{"19.0.0": map[string]any{}},
-		},
-	})
-	defer registry.Close()
-
-	json := `{"dependencies": {"react": "^18.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
-
-	cfg := DefaultConfig()
-	engine := newTestEngine(t, registry, cfg)
+	engine, pkg, manifest := setupEngineTest(t, `{"dependencies": {"react": "^18.0.0"}}`, "react", "19.0.0", "19.0.0")
 
 	results := engine.FetchAll(context.Background(), manifest.ToCheck())
 	engine.ApplyUpdates(manifest, results, pkg)
 
 	result := string(pkg.raw)
-	if !strings.Contains(result, "19.0.0") {
-		t.Errorf("expected 19.0.0 in result after apply:\n%s", result)
-	}
-
-	if strings.Contains(result, "18.0.0") {
-		t.Errorf("old version 18.0.0 still present:\n%s", result)
-	}
+	assertContains(t, result, "19.0.0", "new version")
+	assertNotContains(t, result, "18.0.0", "old version")
 }
 
 func TestEngineGreatestMode(t *testing.T) {
-	registry := mockRegistry(map[string]map[string]any{
-		"react": {
-			"dist-tags": map[string]string{"latest": "18.0.0"},
-			"versions": map[string]any{
-				"18.0.0":        map[string]any{},
-				"19.0.0-beta.1": map[string]any{},
-				"19.0.0":        map[string]any{},
-			},
-		},
-	})
-	defer registry.Close()
-
-	json := `{"dependencies": {"react": "^18.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
-
-	cfg := DefaultConfig()
-	cfg.Greatest = true
-	engine := newTestEngine(t, registry, cfg)
+	engine, pkg, manifest := setupEngineTest(
+		t,
+		`{"dependencies": {"react": "^18.0.0"}}`,
+		"react", "18.0.0",
+		"18.0.0", "19.0.0-beta.1", "19.0.0",
+	)
+	engine.cfg.Greatest = true
 
 	results := engine.FetchAll(context.Background(), manifest.ToCheck())
 	engine.ApplyUpdates(manifest, results, pkg)

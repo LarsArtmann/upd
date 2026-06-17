@@ -5,3 +5,5 @@ bin/
 reports/
 # Sensitive files
 *.db
+# Nix build output
+/result

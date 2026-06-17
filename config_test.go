@@ -5,39 +5,59 @@ import (
 	"testing"
 )
 
+func assertConcurrency(t *testing.T, cfg *Config, want int) {
+	t.Helper()
+
+	if cfg.Concurrency != want {
+		t.Errorf("Concurrency = %d, want %d", cfg.Concurrency, want)
+	}
+}
+
+func assertFile(t *testing.T, cfg *Config, want string) {
+	t.Helper()
+
+	if cfg.File != want {
+		t.Errorf("File = %q, want %s", cfg.File, want)
+	}
+}
+
+func assertFlagTrue(t *testing.T, name string, got bool) {
+	t.Helper()
+
+	if !got {
+		t.Errorf("%s should be true", name)
+	}
+}
+
+func assertFlagFalse(t *testing.T, name string, got bool) {
+	t.Helper()
+
+	if got {
+		t.Errorf("%s should default to false", name)
+	}
+}
+
+func assertErr(t *testing.T, err, target error) {
+	t.Helper()
+
+	if !errors.Is(err, target) {
+		t.Errorf("expected %v, got %v", target, err)
+	}
+}
+
 func TestParseFlagsDefaults(t *testing.T) {
 	cfg, err := ParseFlags([]string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if cfg.File != "package.json" {
-		t.Errorf("File = %q, want package.json", cfg.File)
-	}
-
-	if cfg.Concurrency != 8 {
-		t.Errorf("Concurrency = %d, want 8", cfg.Concurrency)
-	}
-
-	if cfg.Greatest {
-		t.Error("Greatest should default to false")
-	}
-
-	if cfg.All {
-		t.Error("All should default to false")
-	}
-
-	if cfg.Quiet {
-		t.Error("Quiet should default to false")
-	}
-
-	if cfg.Nop {
-		t.Error("Nop should default to false")
-	}
-
-	if cfg.NoColor {
-		t.Error("NoColor should default to false")
-	}
+	assertFile(t, cfg, "package.json")
+	assertConcurrency(t, cfg, 8)
+	assertFlagFalse(t, "Greatest", cfg.Greatest)
+	assertFlagFalse(t, "All", cfg.All)
+	assertFlagFalse(t, "Quiet", cfg.Quiet)
+	assertFlagFalse(t, "Nop", cfg.Nop)
+	assertFlagFalse(t, "NoColor", cfg.NoColor)
 }
 
 func TestParseFlagsShortFlags(t *testing.T) {
@@ -46,29 +66,12 @@ func TestParseFlagsShortFlags(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !cfg.Nop {
-		t.Error("Nop should be true")
-	}
-
-	if !cfg.NoColor {
-		t.Error("NoColor should be true")
-	}
-
-	if !cfg.Greatest {
-		t.Error("Greatest should be true")
-	}
-
-	if !cfg.All {
-		t.Error("All should be true")
-	}
-
-	if !cfg.Quiet {
-		t.Error("Quiet should be true")
-	}
-
-	if cfg.Concurrency != 16 {
-		t.Errorf("Concurrency = %d, want 16", cfg.Concurrency)
-	}
+	assertFlagTrue(t, "Nop", cfg.Nop)
+	assertFlagTrue(t, "NoColor", cfg.NoColor)
+	assertFlagTrue(t, "Greatest", cfg.Greatest)
+	assertFlagTrue(t, "All", cfg.All)
+	assertFlagTrue(t, "Quiet", cfg.Quiet)
+	assertConcurrency(t, cfg, 16)
 
 	if len(cfg.Patterns) != 1 || cfg.Patterns[0] != "react*" {
 		t.Errorf("Patterns = %v, want [react*]", cfg.Patterns)
@@ -83,29 +86,12 @@ func TestParseFlagsLongFlags(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !cfg.Nop {
-		t.Error("Nop should be true")
-	}
-
-	if !cfg.NoColor {
-		t.Error("NoColor should be true")
-	}
-
-	if !cfg.Greatest {
-		t.Error("Greatest should be true")
-	}
-
-	if !cfg.All {
-		t.Error("All should be true")
-	}
-
-	if cfg.Concurrency != 4 {
-		t.Errorf("Concurrency = %d, want 4", cfg.Concurrency)
-	}
-
-	if cfg.File != "other.json" {
-		t.Errorf("File = %q, want other.json", cfg.File)
-	}
+	assertFlagTrue(t, "Nop", cfg.Nop)
+	assertFlagTrue(t, "NoColor", cfg.NoColor)
+	assertFlagTrue(t, "Greatest", cfg.Greatest)
+	assertFlagTrue(t, "All", cfg.All)
+	assertConcurrency(t, cfg, 4)
+	assertFile(t, cfg, "other.json")
 }
 
 func TestParseFlagsMultiplePatterns(t *testing.T) {
@@ -126,24 +112,22 @@ func TestParseFlagsMultiplePatterns(t *testing.T) {
 	}
 }
 
-func TestParseFlagsHelp(t *testing.T) {
-	_, err := ParseFlags([]string{"-h"})
-	if !errors.Is(err, ErrHelp) {
-		t.Errorf("expected ErrHelp, got %v", err)
+func TestParseFlagsHelpAndVersion(t *testing.T) {
+	tests := []struct {
+		name   string
+		args   []string
+		target error
+	}{
+		{"short help", []string{"-h"}, ErrHelp},
+		{"long help", []string{"--help"}, ErrHelp},
+		{"version", []string{"-V"}, ErrVersion},
 	}
-}
 
-func TestParseFlagsVersion(t *testing.T) {
-	_, err := ParseFlags([]string{"-V"})
-	if !errors.Is(err, ErrVersion) {
-		t.Errorf("expected ErrVersion, got %v", err)
-	}
-}
-
-func TestParseFlagsHelpLong(t *testing.T) {
-	_, err := ParseFlags([]string{"--help"})
-	if !errors.Is(err, ErrHelp) {
-		t.Errorf("expected ErrHelp, got %v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ParseFlags(tt.args)
+			assertErr(t, err, tt.target)
+		})
 	}
 }
 
