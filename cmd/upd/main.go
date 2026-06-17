@@ -48,23 +48,16 @@ func run(args []string) error {
 		reporter.Finish()
 
 		updates, errCount := engine.ApplyUpdates(manifest, results, pkg)
-		if !cfg.Quiet {
-			renderer := internal.NewRenderer(os.Stdout, cfg.NoColor)
-			renderer.RenderTable(manifest, updates, errCount, cfg.All)
-		}
-
-		if updates > 0 && !cfg.Nop {
-			if err := pkg.Write(cfg.File); err != nil {
-				return fmt.Errorf("failed to write package configuration file %q: %w", cfg.File, err)
-			}
-		}
-		return nil
+		return finalizeRun(cfg, manifest, pkg, updates, errCount)
 	}
 
 	// Quiet mode or nothing to check: no progress bar
 	results := engine.FetchAll(context.Background(), toCheck)
 	updates, errCount := engine.ApplyUpdates(manifest, results, pkg)
+	return finalizeRun(cfg, manifest, pkg, updates, errCount)
+}
 
+func finalizeRun(cfg *internal.Config, manifest internal.Manifest, pkg *internal.PackageFile, updates, errCount int) error {
 	if !cfg.Quiet {
 		renderer := internal.NewRenderer(os.Stdout, cfg.NoColor)
 		renderer.RenderTable(manifest, updates, errCount, cfg.All)

@@ -15,14 +15,7 @@ func TestDiffCharsEqual(t *testing.T) {
 	}
 }
 
-func TestDiffCharsReplace(t *testing.T) {
-	// ^1.0.0 → ^2.0.0: common prefix "^", replaced "1.0.0" vs "2.0.0"
-	chunks := diffChars("^1.0.0", "^2.0.0")
-
-	// Expected: EQUAL "^", DELETE "1.0.0", INSERT "2.0.0"
-	// But LCS may produce: EQUAL "^", DELETE "1", INSERT "2", EQUAL ".0.0"
-	// Just verify total reconstructed strings are correct
-	var oldStr, newStr string
+func reconstructDiff(chunks []diffChunk) (oldStr, newStr string) {
 	for _, c := range chunks {
 		switch c.op {
 		case opEqual:
@@ -34,6 +27,17 @@ func TestDiffCharsReplace(t *testing.T) {
 			newStr += c.text
 		}
 	}
+	return oldStr, newStr
+}
+
+func TestDiffCharsReplace(t *testing.T) {
+	// ^1.0.0 → ^2.0.0: common prefix "^", replaced "1.0.0" vs "2.0.0"
+	chunks := diffChars("^1.0.0", "^2.0.0")
+
+	// Expected: EQUAL "^", DELETE "1.0.0", INSERT "2.0.0"
+	// But LCS may produce: EQUAL "^", DELETE "1", INSERT "2", EQUAL ".0.0"
+	// Just verify total reconstructed strings are correct
+	oldStr, newStr := reconstructDiff(chunks)
 	if oldStr != "^1.0.0" {
 		t.Errorf("oldStr = %q, want ^1.0.0", oldStr)
 	}
@@ -46,18 +50,7 @@ func TestDiffCharsInsert(t *testing.T) {
 	// "1.0" → "1.0.0": trailing insert
 	chunks := diffChars("1.0", "1.0.0")
 
-	var oldStr, newStr string
-	for _, c := range chunks {
-		switch c.op {
-		case opEqual:
-			oldStr += c.text
-			newStr += c.text
-		case opDelete:
-			oldStr += c.text
-		case opInsert:
-			newStr += c.text
-		}
-	}
+	oldStr, newStr := reconstructDiff(chunks)
 	if oldStr != "1.0" {
 		t.Errorf("oldStr = %q, want 1.0", oldStr)
 	}
