@@ -14,7 +14,6 @@ const (
 	ProgramVersion = "1.0.0"
 	ProgramDesc    = "Upgrade NPM Package Dependencies"
 	ProgramURL     = "https://github.com/LarsArtmann/upd"
-	RegistryURL    = "https://registry.npmjs.org"
 )
 
 var (

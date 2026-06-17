@@ -13,22 +13,39 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+const defaultRegistryURL = "https://registry.npmjs.org"
+
+type RegistryClient struct {
+	baseURL   string
+	userAgent string
+	http      *http.Client
+}
+
+func NewRegistryClient(userAgent string) *RegistryClient {
+	return &RegistryClient{
+		baseURL:   defaultRegistryURL,
+		userAgent: userAgent,
+		http: &http.Client{
+			Timeout: 20 * time.Second,
+		},
+	}
+}
+
 type Packument struct {
 	raw []byte
 }
 
-func FetchPackument(ctx context.Context, name, userAgent string) (*Packument, int, error) {
-	reqURL := RegistryURL + "/" + url.PathEscape(name)
+func (c *RegistryClient) FetchPackument(ctx context.Context, name string) (*Packument, int, error) {
+	reqURL := c.baseURL + "/" + url.PathEscape(name)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		return nil, 0, fmt.Errorf("package information retrieval failed: %w", err)
 	}
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("User-Agent", c.userAgent)
 	req.Header.Set("Accept", "application/json")
 
-	client := &http.Client{Timeout: 20 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, 0, fmt.Errorf("package information retrieval failed: %w", err)
 	}

@@ -5,6 +5,20 @@ import (
 	"testing"
 )
 
+func assertContains(t *testing.T, haystack, needle, label string) {
+	t.Helper()
+	if !strings.Contains(haystack, needle) {
+		t.Errorf("%s: expected %q in:\n%s", label, needle, haystack)
+	}
+}
+
+func updateDep(t *testing.T, pkg *PackageFile, section, dep, version, label string) {
+	t.Helper()
+	if err := pkg.UpdateDependency(section, dep, version); err != nil {
+		t.Fatalf("%s: %v", label, err)
+	}
+}
+
 func TestUpdateDependencyPreservesFormatting(t *testing.T) {
 	original := `{
   "name": "test",
@@ -23,24 +37,13 @@ func TestUpdateDependencyPreservesFormatting(t *testing.T) {
 
 	result := string(pkg.raw)
 
-	// The new value should be present
-	if !strings.Contains(result, `"^19.0.0"`) {
-		t.Errorf("expected ^19.0.0 in result:\n%s", result)
-	}
+	assertContains(t, result, `"^19.0.0"`, "new react version")
+	assertContains(t, result, `"4.17.21"`, "lodash version")
+	assertContains(t, result, "  \"dependencies\"", "formatting")
 
 	// The old value should NOT be present
 	if strings.Contains(result, `"^18.0.0"`) {
 		t.Errorf("old value ^18.0.0 still present:\n%s", result)
-	}
-
-	// Other deps should be unchanged
-	if !strings.Contains(result, `"4.17.21"`) {
-		t.Errorf("lodash version changed:\n%s", result)
-	}
-
-	// Formatting should be preserved (2-space indent)
-	if !strings.Contains(result, "  \"dependencies\"") {
-		t.Errorf("formatting lost:\n%s", result)
 	}
 }
 
@@ -56,20 +59,12 @@ func TestUpdateDependencyMultipleSections(t *testing.T) {
 
 	pkg := &PackageFile{raw: []byte(original)}
 
-	if err := pkg.UpdateDependency("dependencies", "react", "^19.0.0"); err != nil {
-		t.Fatalf("first update failed: %v", err)
-	}
-	if err := pkg.UpdateDependency("devDependencies", "jest", "^30.0.0"); err != nil {
-		t.Fatalf("second update failed: %v", err)
-	}
+	updateDep(t, pkg, "dependencies", "react", "^19.0.0", "first update")
+	updateDep(t, pkg, "devDependencies", "jest", "^30.0.0", "second update")
 
 	result := string(pkg.raw)
-	if !strings.Contains(result, `"^19.0.0"`) {
-		t.Errorf("react not updated:\n%s", result)
-	}
-	if !strings.Contains(result, `"^30.0.0"`) {
-		t.Errorf("jest not updated:\n%s", result)
-	}
+	assertContains(t, result, `"^19.0.0"`, "react version")
+	assertContains(t, result, `"^30.0.0"`, "jest version")
 }
 
 func TestUpdateDependencyNotFound(t *testing.T) {

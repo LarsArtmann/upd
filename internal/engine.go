@@ -19,16 +19,16 @@ type noopReporter struct{}
 func (noopReporter) Tick(string, int) {}
 
 type Engine struct {
-	cfg       *Config
-	userAgent string
-	reporter  Reporter
+	cfg      *Config
+	registry *RegistryClient
+	reporter Reporter
 }
 
 func NewEngine(cfg *Config) *Engine {
 	return &Engine{
-		cfg:       cfg,
-		userAgent: cfg.UserAgent(),
-		reporter:  noopReporter{},
+		cfg:      cfg,
+		registry: NewRegistryClient(cfg.UserAgent()),
+		reporter: noopReporter{},
 	}
 }
 
@@ -60,7 +60,7 @@ func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*fetch
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			pkg, bytes, err := FetchPackument(ctx, strings.ToLower(n), e.userAgent)
+			pkg, bytes, err := e.registry.FetchPackument(ctx, strings.ToLower(n))
 			totalBytes.Add(int64(bytes))
 
 			msg := truncMsg(n)

@@ -127,14 +127,18 @@ func TestBuildManifestWithPatterns(t *testing.T) {
 	pkg := &PackageFile{raw: []byte(json)}
 	manifest := BuildManifest(pkg, []string{"react*", "!react-dom"})
 
-	if manifest["react"][0].State != StateCheck {
-		t.Errorf("react should be check, got %s", manifest["react"][0].State)
+	cases := []struct {
+		pkg   string
+		state State
+	}{
+		{"react", StateCheck},
+		{"react-dom", StateIgnored},
+		{"vue", StateIgnored},
 	}
-	if manifest["react-dom"][0].State != StateIgnored {
-		t.Errorf("react-dom should be ignored, got %s", manifest["react-dom"][0].State)
-	}
-	if manifest["vue"][0].State != StateIgnored {
-		t.Errorf("vue should be ignored, got %s", manifest["vue"][0].State)
+	for _, c := range cases {
+		if got := manifest[c.pkg][0].State; got != c.state {
+			t.Errorf("%s state = %s, want %s", c.pkg, got, c.state)
+		}
 	}
 }
 

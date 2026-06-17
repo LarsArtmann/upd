@@ -31,31 +31,26 @@ func reconstructDiff(chunks []diffChunk) (oldStr, newStr string) {
 }
 
 func TestDiffCharsReplace(t *testing.T) {
-	// ^1.0.0 → ^2.0.0: common prefix "^", replaced "1.0.0" vs "2.0.0"
-	chunks := diffChars("^1.0.0", "^2.0.0")
-
-	// Expected: EQUAL "^", DELETE "1.0.0", INSERT "2.0.0"
-	// But LCS may produce: EQUAL "^", DELETE "1", INSERT "2", EQUAL ".0.0"
-	// Just verify total reconstructed strings are correct
-	oldStr, newStr := reconstructDiff(chunks)
-	if oldStr != "^1.0.0" {
-		t.Errorf("oldStr = %q, want ^1.0.0", oldStr)
+	// Verifies total reconstructed strings are correct regardless of how LCS
+	// chooses to split the diff (e.g. "^1.0.0"→"^2.0.0" may produce
+	// EQUAL "^", DELETE "1.0.0", INSERT "2.0.0" or further split on ".0.0").
+	tests := []struct {
+		name, old, new, wantOld, wantNew string
+	}{
+		{"replace minor version", "^1.0.0", "^2.0.0", "^1.0.0", "^2.0.0"},
+		{"insert trailing minor", "1.0", "1.0.0", "1.0", "1.0.0"},
 	}
-	if newStr != "^2.0.0" {
-		t.Errorf("newStr = %q, want ^2.0.0", newStr)
-	}
-}
-
-func TestDiffCharsInsert(t *testing.T) {
-	// "1.0" → "1.0.0": trailing insert
-	chunks := diffChars("1.0", "1.0.0")
-
-	oldStr, newStr := reconstructDiff(chunks)
-	if oldStr != "1.0" {
-		t.Errorf("oldStr = %q, want 1.0", oldStr)
-	}
-	if newStr != "1.0.0" {
-		t.Errorf("newStr = %q, want 1.0.0", newStr)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chunks := diffChars(tt.old, tt.new)
+			oldStr, newStr := reconstructDiff(chunks)
+			if oldStr != tt.wantOld {
+				t.Errorf("oldStr = %q, want %q", oldStr, tt.wantOld)
+			}
+			if newStr != tt.wantNew {
+				t.Errorf("newStr = %q, want %q", newStr, tt.wantNew)
+			}
+		})
 	}
 }
 
