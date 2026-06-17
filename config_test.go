@@ -52,6 +52,7 @@ func mustParseFlags(t *testing.T, args []string) *Config {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	return cfg
 }
 
