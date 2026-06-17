@@ -10,7 +10,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-type ProgressReporter interface {
+type Reporter interface {
 	Tick(msg string, bytes int)
 }
 
@@ -19,9 +19,9 @@ type noopReporter struct{}
 func (noopReporter) Tick(string, int) {}
 
 type Engine struct {
-	cfg        *Config
-	userAgent  string
-	reporter   ProgressReporter
+	cfg       *Config
+	userAgent string
+	reporter  Reporter
 }
 
 func NewEngine(cfg *Config) *Engine {
@@ -32,7 +32,7 @@ func NewEngine(cfg *Config) *Engine {
 	}
 }
 
-func (e *Engine) WithReporter(r ProgressReporter) *Engine {
+func (e *Engine) WithReporter(r Reporter) *Engine {
 	e.reporter = r
 	return e
 }
@@ -50,7 +50,7 @@ func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*fetch
 
 	sem := make(chan struct{}, e.cfg.Concurrency)
 	var wg sync.WaitGroup
-	var totalBytes int64
+	var totalBytes atomic.Int64
 
 	for _, name := range names {
 		wg.Add(1)
@@ -61,10 +61,10 @@ func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*fetch
 			defer func() { <-sem }()
 
 			pkg, bytes, err := FetchPackument(ctx, strings.ToLower(n), e.userAgent)
-			atomic.AddInt64(&totalBytes, int64(bytes))
+			totalBytes.Add(int64(bytes))
 
 			msg := truncMsg(n)
-			e.reporter.Tick(msg, int(atomic.LoadInt64(&totalBytes)))
+			e.reporter.Tick(msg, int(totalBytes.Load()))
 
 			mu.Lock()
 			results[n] = &fetchResult{name: n, pkg: pkg, bytes: bytes, err: err}
