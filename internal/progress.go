@@ -36,10 +36,7 @@ func (p *ProgressReporter) Finish() {
 }
 
 func (p *ProgressReporter) render(msg string) {
-	current := int(p.current.Add(1))
-	if current > p.total {
-		current = p.total
-	}
+	current := min(int(p.current.Add(1)), p.total)
 
 	filled := progressWidth * current / max(p.total, 1)
 	if p.total == 0 {

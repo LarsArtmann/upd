@@ -1,5 +1,7 @@
 package internal
 
+import "slices"
+
 type diffOp int
 
 const (
@@ -64,8 +66,8 @@ func diffChars(oldStr, newStr string) []diffChunk {
 	}
 
 	// Reverse and coalesce consecutive same-op chunks
-	for k := len(steps) - 1; k >= 0; k-- {
-		s := steps[k]
+	for _, v := range slices.Backward(steps) {
+		s := v
 		if len(chunks) > 0 && chunks[len(chunks)-1].op == s.op {
 			chunks[len(chunks)-1].text += string(s.char)
 		} else {

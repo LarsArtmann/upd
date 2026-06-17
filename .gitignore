@@ -1,2 +1,6 @@
 bin/
 *.exe
+# Build artifacts
+/upd
+# Sensitive files
+*.db

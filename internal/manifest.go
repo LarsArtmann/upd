@@ -142,7 +142,7 @@ func splitPatterns(patterns []string) (positive, negative []glob.Glob) {
 			}
 		}
 	}
-	return
+	return positive, negative
 }
 
 func (s *Spec) String() string {
