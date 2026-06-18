@@ -63,13 +63,13 @@ func ParseFlags(args []string) (*Config, error) {
 	fs.Usage = func() { PrintUsage(fs.Output()) }
 
 	var help, version bool
-	defineBoolFlag(fs, &help, "h", "help", false, "show usage help")
-	defineBoolFlag(fs, &version, "V", "version", false, "show program version information")
-	defineBoolFlag(fs, &cfg.Quiet, "q", "quiet", false, "quiet operation (do not output upgrade information)")
-	defineBoolFlag(fs, &cfg.Nop, "n", "nop", false, "no operation (do not modify package configuration file)")
-	defineBoolFlag(fs, &cfg.NoColor, "C", "noColor", false, "do not use any colors in output")
-	defineBoolFlag(fs, &cfg.Greatest, "g", "greatest", false, "use greatest version (instead of latest stable one)")
-	defineBoolFlag(fs, &cfg.All, "a", "all", false, "show all packages (instead of just updated ones)")
+	defineBoolFlag(fs, &help, "h", "help", "show usage help")
+	defineBoolFlag(fs, &version, "V", "version", "show program version information")
+	defineBoolFlag(fs, &cfg.Quiet, "q", "quiet", "quiet operation (do not output upgrade information)")
+	defineBoolFlag(fs, &cfg.Nop, "n", "nop", "no operation (do not modify package configuration file)")
+	defineBoolFlag(fs, &cfg.NoColor, "C", "noColor", "do not use any colors in output")
+	defineBoolFlag(fs, &cfg.Greatest, "g", "greatest", "use greatest version (instead of latest stable one)")
+	defineBoolFlag(fs, &cfg.All, "a", "all", "show all packages (instead of just updated ones)")
 	defineStringFlag(fs, &cfg.File, "f", "file", "package.json", "package configuration to use")
 	defineIntFlag(
 		fs,
@@ -104,9 +104,9 @@ func ParseFlags(args []string) (*Config, error) {
 
 // defineBoolFlag registers a flag under both its short and long form so a single
 // declaration covers both spellings (mirrors flag.FlagSet.BoolVar's per-name semantics).
-func defineBoolFlag(fs *flag.FlagSet, p *bool, short, long string, def bool, usage string) {
-	fs.BoolVar(p, short, def, usage)
-	fs.BoolVar(p, long, def, usage)
+func defineBoolFlag(fs *flag.FlagSet, p *bool, short, long, usage string) {
+	fs.BoolVar(p, short, false, usage)
+	fs.BoolVar(p, long, false, usage)
 }
 
 // defineStringFlag registers a string flag under both its short and long form.

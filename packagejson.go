@@ -119,6 +119,8 @@ func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
 	return nil
 }
 
+const packageFilePermissions = 0o600
+
 func (p *PackageFile) Write(path string) error {
-	return os.WriteFile(path, p.raw, 0o600)
+	return os.WriteFile(path, p.raw, packageFilePermissions)
 }

@@ -142,11 +142,14 @@ func matchesPatterns(name string, patterns []string) bool {
 }
 
 func splitPatterns(patterns []string) ([]glob.Glob, []glob.Glob) {
-	var positive []glob.Glob
-	var negative []glob.Glob
+	var (
+		positive []glob.Glob
+		negative []glob.Glob
+	)
 
 	for _, raw := range patterns {
 		globExpr := raw
+
 		isNegative := strings.HasPrefix(raw, "!")
 		if isNegative {
 			globExpr = raw[1:]

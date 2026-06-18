@@ -135,7 +135,8 @@ func (e *Engine) applyOne(
 		return updates, errors
 	}
 
-	if writeErr := pkg.UpdateDependency(spec.Section, spec.Name, spec.SNew); writeErr != nil {
+	writeErr := pkg.UpdateDependency(spec.Section, spec.Name, spec.SNew)
+	if writeErr != nil {
 		spec.State = StateError
 		errors++
 	}
