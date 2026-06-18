@@ -2,7 +2,6 @@ package upd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,7 +13,10 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-const defaultRegistryURL = "https://registry.npmjs.org"
+const (
+	defaultRegistryURL = "https://registry.npmjs.org"
+	registryTimeout    = 20 * time.Second
+)
 
 type RegistryClient struct {
 	baseURL   string
@@ -27,7 +29,7 @@ func NewRegistryClient(userAgent string) *RegistryClient {
 		baseURL:   defaultRegistryURL,
 		userAgent: userAgent,
 		http: &http.Client{
-			Timeout: 20 * time.Second,
+			Timeout: registryTimeout,
 		},
 	}
 }
@@ -68,7 +70,7 @@ func (c *RegistryClient) FetchPackument(ctx context.Context, name string) (*Pack
 func (p *Packument) LatestVersion() (string, error) {
 	r := gjson.GetBytes(p.raw, "dist-tags.latest")
 	if !r.Exists() {
-		return "", errors.New("no \"latest\" dist-tag found")
+		return "", ErrNoLatestDistTag
 	}
 
 	return r.String(), nil
@@ -77,7 +79,7 @@ func (p *Packument) LatestVersion() (string, error) {
 func (p *Packument) GreatestVersion() (string, error) {
 	versions := p.VersionKeys()
 	if len(versions) == 0 {
-		return "", errors.New("no valid versions found")
+		return "", ErrNoValidVersions
 	}
 
 	var greatest *semver.Version
@@ -94,7 +96,7 @@ func (p *Packument) GreatestVersion() (string, error) {
 	}
 
 	if greatest == nil {
-		return "", errors.New("no valid semver versions found")
+		return "", ErrNoSemverVersions
 	}
 
 	return greatest.Original(), nil

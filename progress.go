@@ -11,6 +11,8 @@ const (
 	progressComplete   = "█"
 	progressIncomplete = "╌"
 	progressWidth      = 24
+	terminalResetWidth = 80
+	percentMultiplier  = 100
 )
 
 type ProgressReporter struct {
@@ -20,7 +22,7 @@ type ProgressReporter struct {
 }
 
 func NewProgressReporter(w io.Writer, total int, _ bool) *ProgressReporter {
-	return &ProgressReporter{w: w, total: total}
+	return &ProgressReporter{w: w, total: total, current: atomic.Int64{}}
 }
 
 func (p *ProgressReporter) Start() {
@@ -32,7 +34,7 @@ func (p *ProgressReporter) Tick(msg string, _ int) {
 }
 
 func (p *ProgressReporter) Finish() {
-	fmt.Fprintf(p.w, "\r%s\r", strings.Repeat(" ", 80))
+	_, _ = fmt.Fprintf(p.w, "\r%s\r", strings.Repeat(" ", terminalResetWidth))
 }
 
 func (p *ProgressReporter) render(msg string) {
@@ -44,7 +46,7 @@ func (p *ProgressReporter) render(msg string) {
 	}
 
 	bar := strings.Repeat(progressComplete, filled) + strings.Repeat(progressIncomplete, progressWidth-filled)
-	percent := current * 100 / max(p.total, 1)
+	percent := current * percentMultiplier / max(p.total, 1)
 
-	fmt.Fprintf(p.w, "\rchecking: %s %3d%% %s ", bar, percent, msg)
+	_, _ = fmt.Fprintf(p.w, "\rchecking: %s %3d%% %s ", bar, percent, msg)
 }

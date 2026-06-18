@@ -12,7 +12,10 @@ const (
 	ansiRed   = "\x1b[31m"
 	ansiGreen = "\x1b[32m"
 	ansiGrey  = "\x1b[90m"
-	ansiBlue  = "\x1b[34m"
+
+	boxBorderChar = "─"
+	terminalWidth = 79
+	halfDivisor   = 2
 )
 
 type Renderer struct {
@@ -59,11 +62,11 @@ func (r *Renderer) RenderTable(manifest Manifest, updates, errors int, showAll b
 }
 
 func (r *Renderer) renderAllUpToDate() {
-	border := strings.Repeat("─", 79)
+	border := strings.Repeat(boxBorderChar, terminalWidth)
 	box := r.green("ALL PACKAGE DEPENDENCIES UP-TO-DATE")
-	fmt.Fprintf(r.w, "┌%s┐\n", border)
-	fmt.Fprintf(r.w, "│%s│\n", centerPad(box, 79))
-	fmt.Fprintf(r.w, "└%s┘\n", border)
+	_, _ = fmt.Fprintf(r.w, "┌%s┐\n", border)
+	_, _ = fmt.Fprintf(r.w, "│%s│\n", centerPad(box, terminalWidth))
+	_, _ = fmt.Fprintf(r.w, "└%s┘\n", border)
 }
 
 func (r *Renderer) renderUpgradeTable(manifest Manifest, showAll bool) {
@@ -77,7 +80,7 @@ func (r *Renderer) renderUpgradeTable(manifest Manifest, showAll bool) {
 	left, mid, right := borderChars("top")
 	r.writeBorder(left, mid, right, colName, colVer, colVer, colState)
 
-	fmt.Fprintf(
+	_, _ = fmt.Fprintf(
 		r.w, "│%s│%s│%s│%s│\n",
 		r.bold(padCell("MODULE NAME", colName)),
 		r.bold(padCell("VERSION OLD", colVer)),
@@ -88,39 +91,21 @@ func (r *Renderer) renderUpgradeTable(manifest Manifest, showAll bool) {
 	left, mid, right = borderChars("mid")
 	r.writeBorder(left, mid, right, colName, colVer, colVer, colState)
 
+	r.renderRows(manifest, showAll, colName, colVer, colState)
+
+	left, mid, right = borderChars("bottom")
+	r.writeBorder(left, mid, right, colName, colVer, colVer, colState)
+}
+
+func (r *Renderer) renderRows(manifest Manifest, showAll bool, colName, colVer, colState int) {
 	for _, name := range manifest.SortedNames() {
 		for _, spec := range manifest[name] {
 			if !showAll && spec.State != StateUpdated && spec.State != StateError {
 				continue
 			}
 
-			var modName, oldVer, newVer, state string
-
-			switch spec.State {
-			case StateUpdated:
-				modName = name
-				oldVer = r.markRed(spec.SNew, spec.SOld)
-				newVer = r.markGreen(spec.SOld, spec.SNew)
-				state = r.green(string(spec.State))
-			case StateError:
-				modName = r.grey(name)
-				oldVer = r.grey(spec.SOld)
-				newVer = r.grey(spec.SNew)
-				state = r.red(string(spec.State))
-			default:
-				modName = r.grey(name)
-				oldVer = r.grey(spec.SOld)
-				newVer = r.grey(spec.SNew)
-
-				st := string(spec.State)
-				if st == "" {
-					st = "kept"
-				}
-
-				state = r.grey(st)
-			}
-
-			fmt.Fprintf(
+			modName, oldVer, newVer, state := r.renderRow(name, spec)
+			_, _ = fmt.Fprintf(
 				r.w, "│%s│%s│%s│%s│\n",
 				padCell(modName, colName),
 				padCell(oldVer, colVer),
@@ -129,12 +114,43 @@ func (r *Renderer) renderUpgradeTable(manifest Manifest, showAll bool) {
 			)
 		}
 	}
-
-	left, mid, right = borderChars("bottom")
-	r.writeBorder(left, mid, right, colName, colVer, colVer, colState)
 }
 
-func borderChars(kind string) (left, mid, right string) {
+func (r *Renderer) renderRow(name string, spec *Spec) (string, string, string, string) {
+	switch spec.State {
+	case StateUpdated:
+		modName := name
+		oldVer := r.markRed(spec.SNew, spec.SOld)
+		newVer := r.markGreen(spec.SOld, spec.SNew)
+		state := r.green(string(spec.State))
+
+		return modName, oldVer, newVer, state
+	case StateError:
+		modName := r.grey(name)
+		oldVer := r.grey(spec.SOld)
+		newVer := r.grey(spec.SNew)
+		state := r.red(string(spec.State))
+
+		return modName, oldVer, newVer, state
+	case StateTodo, StateCheck, StateSkipped, StateKept, StateIgnored:
+		modName := r.grey(name)
+		oldVer := r.grey(spec.SOld)
+		newVer := r.grey(spec.SNew)
+
+		label := string(spec.State)
+		if label == "" {
+			label = "kept"
+		}
+
+		state := r.grey(label)
+
+		return modName, oldVer, newVer, state
+	}
+
+	return "", "", "", ""
+}
+
+func borderChars(kind string) (string, string, string) {
 	switch kind {
 	case "top":
 		return "┌", "┬", "┐"
@@ -149,12 +165,11 @@ func borderChars(kind string) (left, mid, right string) {
 
 func (r *Renderer) writeBorder(left, mid, right string, widths ...int) {
 	segments := make([]string, len(widths))
-	for i, w := range widths {
-		segments[i] = strings.Repeat("─", w)
+	for idx, width := range widths {
+		segments[idx] = strings.Repeat(boxBorderChar, width)
 	}
 
-	joiner := mid
-	fmt.Fprintf(r.w, "%s%s%s\n", left, strings.Join(segments, joiner), right)
+	_, _ = fmt.Fprintf(r.w, "%s%s%s\n", left, strings.Join(segments, mid), right)
 }
 
 func (r *Renderer) markRed(text, other string) string {
@@ -172,18 +187,20 @@ func (r *Renderer) diffHighlight(text, other, color string) string {
 
 	chunks := diffChars(text, other)
 
-	var sb strings.Builder
+	var builder strings.Builder
 
-	for _, c := range chunks {
-		switch c.op {
+	for _, chunk := range chunks {
+		switch chunk.op {
 		case opInsert:
-			sb.WriteString(r.color(color, c.text))
+			builder.WriteString(r.color(color, chunk.text))
 		case opEqual:
-			sb.WriteString(c.text)
+			builder.WriteString(chunk.text)
+		case opDelete:
+			// deleted characters exist only in the old version, no need to render
 		}
 	}
 
-	return sb.String()
+	return builder.String()
 }
 
 func centerPad(text string, width int) string {
@@ -192,7 +209,7 @@ func centerPad(text string, width int) string {
 	}
 
 	total := width - len(text)
-	left := total / 2
+	left := total / halfDivisor
 	right := total - left
 
 	return strings.Repeat(" ", left) + text + strings.Repeat(" ", right)
@@ -212,22 +229,22 @@ func visibleLength(text string) int {
 	out := make([]byte, 0, len(text))
 	inEscape := false
 
-	for _, c := range []byte(text) {
-		if c == '\x1b' {
+	for _, ch := range []byte(text) {
+		if ch == '\x1b' {
 			inEscape = true
 
 			continue
 		}
 
 		if inEscape {
-			if c == 'm' {
+			if ch == 'm' {
 				inEscape = false
 			}
 
 			continue
 		}
 
-		out = append(out, c)
+		out = append(out, ch)
 	}
 
 	return len(string(out))

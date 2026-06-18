@@ -14,6 +14,7 @@ type PackageFile struct {
 }
 
 func ReadPackageFile(path string) (*PackageFile, error) {
+	//nolint:gosec // path is supplied by the operator via -f/--file; not attacker-controlled.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -83,7 +84,7 @@ func (p *PackageFile) GetUpdArgs() []string {
 func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
 	sectionResult := gjson.GetBytes(p.raw, section)
 	if !sectionResult.Exists() {
-		return fmt.Errorf("section %q not found", section)
+		return fmt.Errorf("%w: %q", ErrSectionNotFound, section)
 	}
 
 	found := false
@@ -102,19 +103,22 @@ func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
 
 		start := value.Index
 		end := value.Index + len(value.Raw)
-		replacement := append([]byte(encoded), p.raw[end:]...)
-		p.raw = append(p.raw[:start], replacement...)
+		replacement := make([]byte, 0, len(p.raw)-end+start+len(encoded))
+		replacement = append(replacement, p.raw[:start]...)
+		replacement = append(replacement, encoded...)
+		replacement = append(replacement, p.raw[end:]...)
+		p.raw = replacement
 
 		return false
 	})
 
 	if !found {
-		return fmt.Errorf("dependency %q not found in section %q", name, section)
+		return fmt.Errorf("%w: %q in %q", ErrDependencyNotFound, name, section)
 	}
 
 	return nil
 }
 
 func (p *PackageFile) Write(path string) error {
-	return os.WriteFile(path, p.raw, 0o644)
+	return os.WriteFile(path, p.raw, 0o600)
 }

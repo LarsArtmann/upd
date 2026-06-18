@@ -10,6 +10,12 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
+const (
+	progressNameWidth = 24
+	truncPrefix       = 19
+	truncEllipsis     = "..."
+)
+
 type Reporter interface {
 	Tick(msg string, bytes int)
 }
@@ -65,18 +71,18 @@ func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*Fetch
 
 		sem <- struct{}{}
 
-		go func(n string) {
+		go func(pkgName string) {
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			pkg, bytes, err := e.registry.FetchPackument(ctx, strings.ToLower(n))
+			pkg, bytes, err := e.registry.FetchPackument(ctx, strings.ToLower(pkgName))
 			totalBytes.Add(int64(bytes))
 
-			msg := truncMsg(n)
+			msg := truncMsg(pkgName)
 			e.reporter.Tick(msg, int(totalBytes.Load()))
 
 			mu.Lock()
-			results[n] = &FetchResult{name: n, pkg: pkg, bytes: bytes, err: err}
+			results[pkgName] = &FetchResult{name: pkgName, pkg: pkg, bytes: bytes, err: err}
 			mu.Unlock()
 		}(name)
 	}
@@ -90,69 +96,106 @@ func (e *Engine) ApplyUpdates(
 	manifest Manifest,
 	results map[string]*FetchResult,
 	pkg *PackageFile,
-) (updates, errors int) {
+) (int, int) {
+	var updates, errors int
+
 	for _, name := range manifest.SortedNames() {
 		for _, spec := range manifest[name] {
 			if spec.State != StateCheck {
 				continue
 			}
 
-			result, ok := results[name]
-			if !ok || (result.err != nil && result.pkg == nil) {
-				spec.State = StateError
-				errors++
-
-				continue
-			}
-
-			vNew, err := e.resolveVersion(result.pkg)
-			if err != nil {
-				spec.State = StateError
-				errors++
-
-				continue
-			}
-
-			spec.VNew = vNew
-			spec.SNew = replaceVersion(spec.SOld, spec.VOld, vNew)
-
-			if spec.VOld == spec.VNew {
-				spec.State = StateKept
-
-				continue
-			}
-
-			oldV, errOld := semver.NewVersion(spec.VOld)
-
-			newV, errNew := semver.NewVersion(spec.VNew)
-			if errOld == nil && errNew == nil && !newV.GreaterThan(oldV) {
-				spec.State = StateKept
-
-				continue
-			}
-
-			spec.State = StateUpdated
-			updates++
-
-			if !e.cfg.Nop {
-				err := pkg.UpdateDependency(spec.Section, spec.Name, spec.SNew)
-				if err != nil {
-					spec.State = StateError
-					errors++
-				}
-			}
+			updates, errors = e.applyOne(spec, results[name], pkg, updates, errors)
 		}
 	}
 
 	return updates, errors
 }
 
-func (e *Engine) resolveVersion(pkg *Packument) (string, error) {
-	if e.cfg.Greatest {
+func (e *Engine) applyOne(
+	spec *Spec,
+	result *FetchResult,
+	pkg *PackageFile,
+	updates, errors int,
+) (int, int) {
+	if !resolveSpecVersion(spec, result, e.cfg) {
+		errors++
+
+		return updates, errors
+	}
+
+	if !shouldUpdate(spec) {
+		return updates, errors
+	}
+
+	spec.State = StateUpdated
+	updates++
+
+	if e.cfg.Nop {
+		return updates, errors
+	}
+
+	if writeErr := pkg.UpdateDependency(spec.Section, spec.Name, spec.SNew); writeErr != nil {
+		spec.State = StateError
+		errors++
+	}
+
+	return updates, errors
+}
+
+func resolveSpecVersion(spec *Spec, result *FetchResult, cfg *Config) bool {
+	if result == nil || (result.err != nil && result.pkg == nil) {
+		spec.State = StateError
+
+		return false
+	}
+
+	vNew, err := pickVersion(result.pkg, cfg)
+	if err != nil {
+		spec.State = StateError
+
+		return false
+	}
+
+	spec.VNew = vNew
+	spec.SNew = replaceVersion(spec.SOld, spec.VOld, vNew)
+
+	return true
+}
+
+func pickVersion(pkg *Packument, cfg *Config) (string, error) {
+	if cfg.Greatest {
 		return pkg.GreatestVersion()
 	}
 
 	return pkg.LatestVersion()
+}
+
+func shouldUpdate(spec *Spec) bool {
+	if spec.VOld == spec.VNew {
+		spec.State = StateKept
+
+		return false
+	}
+
+	if !versionIsGreater(spec.VOld, spec.VNew) {
+		spec.State = StateKept
+
+		return false
+	}
+
+	return true
+}
+
+func versionIsGreater(oldVer, newVer string) bool {
+	oldV, errOld := semver.NewVersion(oldVer)
+
+	newV, errNew := semver.NewVersion(newVer)
+	if errOld != nil || errNew != nil {
+		return true
+	}
+
+	return newV.GreaterThan(oldV)
 }
 
 func replaceVersion(sOld, vOld, vNew string) string {
@@ -160,11 +203,11 @@ func replaceVersion(sOld, vOld, vNew string) string {
 }
 
 func truncMsg(name string) string {
-	if len(name) > 24 {
-		return name[:19] + "..."
+	if len(name) > progressNameWidth {
+		return name[:truncPrefix] + truncEllipsis
 	}
 
-	return name + strings.Repeat(" ", 24-len(name))
+	return name + strings.Repeat(" ", progressNameWidth-len(name))
 }
 
 func (r FetchResult) String() string {

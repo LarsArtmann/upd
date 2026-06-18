@@ -132,12 +132,27 @@ linters:
     depguard:
       rules:
         main:
+          files:
+            - "$all"
+            - "!$test"
+            - "!**/cmd/**"
           allow:
             - $gostd
-            - $module
+            - github.com/LarsArtmann/upd
+            - github.com/Masterminds/semver/v3
+            - github.com/gobwas/glob
+            - github.com/tidwall/gjson
+        cmd:
+          files:
+            - "**/cmd/**"
+          allow:
+            - $gostd
+            - github.com/LarsArtmann/upd
     exhaustruct:
       exclude:
         - os/exec.Cmd
+        - net/http.Client
+        - net/http.Transport
     ginkgolinter:
       forbid-focus-container: true
       forbid-spec-pollution: true
@@ -159,6 +174,9 @@ linters:
           name: exported
         - disabled: true
           name: package-comments
+    paralleltest:
+      ignore-missing: true
+      ignore-missing-subtests: true
     testifylint:
       disable:
         - go-require
@@ -172,11 +190,29 @@ linters:
         - fn
         - t
         - i
+        - j
+        - k
         - m
+        - n
         - g
         - a
         - b
+        - c
+        - d
+        - e
+        - f
+        - h
+        - l
+        - p
+        - q
+        - r
+        - s
+        - u
         - v
+        - w
+        - x
+        - y
+        - z
       ignore-type-assert-ok: true
   exclusions:
     generated: lax

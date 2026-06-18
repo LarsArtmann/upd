@@ -21,11 +21,13 @@ const (
 	StateIgnored State = "ignored"
 )
 
-var dependencySections = []string{
-	"optionalDependencies",
-	"peerDependencies",
-	"devDependencies",
-	"dependencies",
+func dependencySectionNames() []string {
+	return []string{
+		"optionalDependencies",
+		"peerDependencies",
+		"devDependencies",
+		"dependencies",
+	}
 }
 
 var versionRe = regexp.MustCompile(`^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`)
@@ -45,7 +47,7 @@ type Manifest map[string][]*Spec
 func BuildManifest(pkg *PackageFile, patterns []string) Manifest {
 	manifest := make(Manifest)
 
-	for _, section := range dependencySections {
+	for _, section := range dependencySectionNames() {
 		deps := pkg.GetDependencySection(section)
 		for name, sOld := range deps {
 			state := StateIgnored
@@ -139,16 +141,26 @@ func matchesPatterns(name string, patterns []string) bool {
 	return true
 }
 
-func splitPatterns(patterns []string) (positive, negative []glob.Glob) {
-	for _, p := range patterns {
-		if strings.HasPrefix(p, "!") {
-			if g, err := glob.Compile(p[1:]); err == nil {
-				negative = append(negative, g)
-			}
+func splitPatterns(patterns []string) ([]glob.Glob, []glob.Glob) {
+	var positive []glob.Glob
+	var negative []glob.Glob
+
+	for _, raw := range patterns {
+		globExpr := raw
+		isNegative := strings.HasPrefix(raw, "!")
+		if isNegative {
+			globExpr = raw[1:]
+		}
+
+		compiled, err := glob.Compile(globExpr)
+		if err != nil {
+			continue
+		}
+
+		if isNegative {
+			negative = append(negative, compiled)
 		} else {
-			if g, err := glob.Compile(p); err == nil {
-				positive = append(positive, g)
-			}
+			positive = append(positive, compiled)
 		}
 	}
 

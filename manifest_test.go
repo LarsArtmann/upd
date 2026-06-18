@@ -25,18 +25,20 @@ func TestVersionRegex(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			m := versionRe.FindStringSubmatch(tt.input)
-			if tt.match {
-				if m == nil {
-					t.Fatalf("expected match for %q", tt.input)
-				}
-
-				if m[1] != tt.ver {
-					t.Errorf("version = %q, want %q", m[1], tt.ver)
-				}
-			} else {
+			if !tt.match {
 				if m != nil {
 					t.Fatalf("expected no match for %q, got %v", tt.input, m)
 				}
+
+				return
+			}
+
+			if m == nil {
+				t.Fatalf("expected match for %q", tt.input)
+			}
+
+			if m[1] != tt.ver {
+				t.Errorf("version = %q, want %q", m[1], tt.ver)
 			}
 		})
 	}

@@ -13,8 +13,14 @@ const (
 	ProgramName = "upd"
 	ProgramDesc = "Upgrade NPM Package Dependencies"
 	ProgramURL  = "https://github.com/LarsArtmann/upd"
+
+	defaultConcurrency  = 8
+	versionSeparatorLen = 40
 )
 
+// ProgramVersion is injected at build time via -ldflags="-X github.com/LarsArtmann/upd.ProgramVersion=1.2.3".
+//
+//nolint:gochecknoglobals
 var ProgramVersion = "dev"
 
 var (
@@ -36,7 +42,13 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		File:        "package.json",
-		Concurrency: 8,
+		Greatest:    false,
+		All:         false,
+		Quiet:       false,
+		Nop:         false,
+		NoColor:     false,
+		Concurrency: defaultConcurrency,
+		Patterns:    nil,
 	}
 }
 
@@ -64,7 +76,7 @@ func ParseFlags(args []string) (*Config, error) {
 		&cfg.Concurrency,
 		"c",
 		"concurrency",
-		8,
+		defaultConcurrency,
 		"number of concurrent network connections to NPM registry",
 	)
 
@@ -110,15 +122,15 @@ func defineIntFlag(fs *flag.FlagSet, p *int, short, long string, def int, usage 
 }
 
 func PrintUsage(w io.Writer) {
-	fmt.Fprintf(
+	_, _ = fmt.Fprintf(
 		w,
 		"Usage: %s [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [<pattern> ...]\n",
 		ProgramName,
 	)
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Upgrade NPM package dependencies in package.json while preserving formatting.")
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Options:")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Upgrade NPM package dependencies in package.json while preserving formatting.")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Options:")
 
 	lines := []struct{ short, long, desc string }{
 		{"-h", "--help", "show usage help"},
@@ -132,19 +144,19 @@ func PrintUsage(w io.Writer) {
 		{"-c", "--concurrency", "concurrent NPM registry connections (default: 8)"},
 	}
 	for _, l := range lines {
-		fmt.Fprintf(w, "  %-4s %-16s  %s\n", l.short, l.long, l.desc)
+		_, _ = fmt.Fprintf(w, "  %-4s %-16s  %s\n", l.short, l.long, l.desc)
 	}
 
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Patterns:")
-	fmt.Fprintln(w, "  Positive or negative (prefixed with !) glob patterns for")
-	fmt.Fprintln(w, "  matching dependency names to update.")
+	_, _ = fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w, "Patterns:")
+	_, _ = fmt.Fprintln(w, "  Positive or negative (prefixed with !) glob patterns for")
+	_, _ = fmt.Fprintln(w, "  matching dependency names to update.")
 }
 
 func PrintVersion(w io.Writer) {
-	fmt.Fprintf(w, "%s %s <%s>\n", ProgramName, ProgramVersion, ProgramURL)
-	fmt.Fprintf(w, "%s\n", ProgramDesc)
-	fmt.Fprintln(w, strings.Repeat("-", 40))
-	fmt.Fprintln(w, "Original: Copyright (c) 2015-2025 Dr. Ralf S. Engelschall")
-	fmt.Fprintln(w, "Go port:  MIT License")
+	_, _ = fmt.Fprintf(w, "%s %s <%s>\n", ProgramName, ProgramVersion, ProgramURL)
+	_, _ = fmt.Fprintf(w, "%s\n", ProgramDesc)
+	_, _ = fmt.Fprintln(w, strings.Repeat("-", versionSeparatorLen))
+	_, _ = fmt.Fprintln(w, "Original: Copyright (c) 2015-2025 Dr. Ralf S. Engelschall")
+	_, _ = fmt.Fprintln(w, "Go port:  MIT License")
 }

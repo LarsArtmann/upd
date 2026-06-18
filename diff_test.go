@@ -17,16 +17,18 @@ func TestDiffCharsEqual(t *testing.T) {
 	}
 }
 
-func reconstructDiff(chunks []diffChunk) (oldStr, newStr string) {
-	for _, c := range chunks {
-		switch c.op {
+func reconstructDiff(chunks []diffChunk) (string, string) {
+	var oldStr, newStr string
+
+	for _, chunk := range chunks {
+		switch chunk.op {
 		case opEqual:
-			oldStr += c.text
-			newStr += c.text
+			oldStr += chunk.text
+			newStr += chunk.text
 		case opDelete:
-			oldStr += c.text
+			oldStr += chunk.text
 		case opInsert:
-			newStr += c.text
+			newStr += chunk.text
 		}
 	}
 
