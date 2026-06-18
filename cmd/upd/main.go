@@ -24,12 +24,12 @@ func run(args []string) error {
 			return nil
 		}
 
-		return err
+		return fmt.Errorf("parse flags: %w", err)
 	}
 
 	pkg, err := upd.ReadPackageFile(cfg.File)
 	if err != nil {
-		return err
+		return fmt.Errorf("read package file: %w", err)
 	}
 
 	// Honor embedded "upd" field in package.json

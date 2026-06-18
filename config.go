@@ -58,21 +58,21 @@ func (c *Config) UserAgent() string {
 
 func ParseFlags(args []string) (*Config, error) {
 	cfg := DefaultConfig()
-	fs := flag.NewFlagSet(ProgramName, flag.ContinueOnError)
-	fs.SetOutput(os.Stderr)
-	fs.Usage = func() { PrintUsage(fs.Output()) }
+	flagSet := flag.NewFlagSet(ProgramName, flag.ContinueOnError)
+	flagSet.SetOutput(os.Stderr)
+	flagSet.Usage = func() { PrintUsage(flagSet.Output()) }
 
 	var help, version bool
-	defineBoolFlag(fs, &help, "h", "help", "show usage help")
-	defineBoolFlag(fs, &version, "V", "version", "show program version information")
-	defineBoolFlag(fs, &cfg.Quiet, "q", "quiet", "quiet operation (do not output upgrade information)")
-	defineBoolFlag(fs, &cfg.Nop, "n", "nop", "no operation (do not modify package configuration file)")
-	defineBoolFlag(fs, &cfg.NoColor, "C", "noColor", "do not use any colors in output")
-	defineBoolFlag(fs, &cfg.Greatest, "g", "greatest", "use greatest version (instead of latest stable one)")
-	defineBoolFlag(fs, &cfg.All, "a", "all", "show all packages (instead of just updated ones)")
-	defineStringFlag(fs, &cfg.File, "f", "file", "package.json", "package configuration to use")
+	defineBoolFlag(flagSet, &help, "h", "help", "show usage help")
+	defineBoolFlag(flagSet, &version, "V", "version", "show program version information")
+	defineBoolFlag(flagSet, &cfg.Quiet, "q", "quiet", "quiet operation (do not output upgrade information)")
+	defineBoolFlag(flagSet, &cfg.Nop, "n", "nop", "no operation (do not modify package configuration file)")
+	defineBoolFlag(flagSet, &cfg.NoColor, "C", "noColor", "do not use any colors in output")
+	defineBoolFlag(flagSet, &cfg.Greatest, "g", "greatest", "use greatest version (instead of latest stable one)")
+	defineBoolFlag(flagSet, &cfg.All, "a", "all", "show all packages (instead of just updated ones)")
+	defineStringFlag(flagSet, &cfg.File, "f", "file", "package.json", "package configuration to use")
 	defineIntFlag(
-		fs,
+		flagSet,
 		&cfg.Concurrency,
 		"c",
 		"concurrency",
@@ -80,9 +80,9 @@ func ParseFlags(args []string) (*Config, error) {
 		"number of concurrent network connections to NPM registry",
 	)
 
-	err := fs.Parse(args)
-	if err != nil {
-		return nil, err
+	parseErr := flagSet.Parse(args)
+	if parseErr != nil {
+		return nil, fmt.Errorf("parse flags: %w", parseErr)
 	}
 
 	if help {
@@ -97,28 +97,28 @@ func ParseFlags(args []string) (*Config, error) {
 		return nil, ErrVersion
 	}
 
-	cfg.Patterns = fs.Args()
+	cfg.Patterns = flagSet.Args()
 
 	return cfg, nil
 }
 
 // defineBoolFlag registers a flag under both its short and long form so a single
 // declaration covers both spellings (mirrors flag.FlagSet.BoolVar's per-name semantics).
-func defineBoolFlag(fs *flag.FlagSet, p *bool, short, long, usage string) {
-	fs.BoolVar(p, short, false, usage)
-	fs.BoolVar(p, long, false, usage)
+func defineBoolFlag(flagSet *flag.FlagSet, p *bool, short, long, usage string) {
+	flagSet.BoolVar(p, short, false, usage)
+	flagSet.BoolVar(p, long, false, usage)
 }
 
 // defineStringFlag registers a string flag under both its short and long form.
-func defineStringFlag(fs *flag.FlagSet, p *string, short, long, def, usage string) {
-	fs.StringVar(p, short, def, usage)
-	fs.StringVar(p, long, def, usage)
+func defineStringFlag(flagSet *flag.FlagSet, p *string, short, long, def, usage string) {
+	flagSet.StringVar(p, short, def, usage)
+	flagSet.StringVar(p, long, def, usage)
 }
 
 // defineIntFlag registers an int flag under both its short and long form.
-func defineIntFlag(fs *flag.FlagSet, p *int, short, long string, def int, usage string) {
-	fs.IntVar(p, short, def, usage)
-	fs.IntVar(p, long, def, usage)
+func defineIntFlag(flagSet *flag.FlagSet, p *int, short, long string, def int, usage string) {
+	flagSet.IntVar(p, short, def, usage)
+	flagSet.IntVar(p, long, def, usage)
 }
 
 func PrintUsage(w io.Writer) {

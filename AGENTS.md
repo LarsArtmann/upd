@@ -1,91 +1,79 @@
 # UPD — Agent Context
 
-Concise, enduring context for AI sessions working on `upd`.
+Enduring context for AI sessions working on `upd`.
+User-facing description lives in `README.md`; domain glossary in `docs/DOMAIN_LANGUAGE.md`.
 
 ## What This Is
 
-`upd` is a Go CLI that upgrades JavaScript package dependencies in an NPM `package.json` while **strictly preserving the original JSON formatting and whitespace**. It intentionally skips version constraint formulas (`^`, `~`, ranges) and only bumps the concrete version embedded in the constraint string.
+Go CLI that bumps dependency versions in an NPM `package.json` while **byte-preserving all original JSON formatting** (whitespace, key order, quotes). Only the concrete version inside a constraint string changes; everything else is untouched.
 
-Originally written in JavaScript by Dr. Ralf S. Engelschall; ported to Go by Lars Artmann. The Go port keeps the same CLI behavior while using Go's performance, type safety, and single-binary distribution.
+## Build / Test / Lint
 
-## Build, Test, Lint
-
-Use Nix flakes (preferred in this repo):
+This repo standardizes on **Nix flakes** — no Makefile, no justfile.
 
 ```bash
-nix run .#build   # go build ./cmd/upd -> bin/upd
-nix run .#test    # go test ./... -v -count=1
-nix run .#lint    # go vet ./... && go build ./...
-nix run .#run -- <args>   # go run ./cmd/upd <args>
+nix run .#build          # build to bin/upd
+nix run .#test           # go test ./... -v -count=1
+nix run .#lint           # go vet ./... && go build ./...
+nix run .#run -- <args>  # go run ./cmd/upd <args>
 ```
 
-Plain Go equivalents:
-
-```bash
-go build ./cmd/upd
-go test ./...
-go vet ./...
-```
-
-CI runs `go build`, `go vet`, and `go test ./... -v -count=1` on pushes/PRs to `master`.
-
-## Architecture
-
-Single Go module (`github.com/LarsArtmann/upd`) with a small library package and a thin `cmd/upd` main.
-
-```
-cmd/upd/main.go     # CLI entry point: parse flags, read package.json,
-                    # build manifest, fetch registry, apply updates, render, write.
-config.go           # Config, flag parsing, usage/version text.
-engine.go           # Engine orchestrates registry fetches and applies updates.
-npm.go              # RegistryClient fetches packuments from registry.npmjs.org.
-packagejson.go      # PackageFile reads/updates package.json preserving formatting.
-manifest.go         # Manifest + Spec model; pattern matching against dependency names.
-render.go           # Terminal table rendering with ANSI colors/diff highlighting.
-progress.go         # Progress reporter used during registry fetches.
-diff.go             # Character diff for highlighting version changes.
-errors.go           # Sentinel errors.
-```
-
-## Domain Concepts
-
-- **Packument**: NPM registry JSON document for a single package (contains `dist-tags`, `versions`, etc.).
-- **Manifest**: In-memory map of dependency names to `[]*Spec`, built from `package.json` sections and filtered by glob patterns.
-- **Spec**: One dependency occurrence in one section. Tracks section, name, old/new constraint strings (`SOld`/`SNew`), old/new parsed versions (`VOld`/`VNew`), and `State`.
-- **State**: Lifecycle of a dependency entry — `todo`, `check`, `skipped`, `kept`, `updated`, `error`, `ignored`.
-- **Pattern**: Glob pattern matched against dependency names. Prefix with `!` to exclude.
-
-See `docs/DOMAIN_LANGUAGE.md` for the formal glossary (currently a placeholder; update when terminology stabilizes).
+Plain Go equivalents: `go build ./cmd/upd`, `go test ./...`, `go vet ./...`.
+CI (`.github/workflows/ci.yml`) runs build + vet + test on push/PR to `master`.
 
 ## Conventions
 
-- **Package name**: `upd` (root package contains all library code). `cmd/upd` is the executable.
-- **Formatting preservation is critical**: `PackageFile.UpdateDependency` replaces only the raw JSON bytes of the changed value; it does not re-encode the whole file.
-- **Registry URLs**: hardcoded to `https://registry.npmjs.org`. Package names are lowercased before fetching.
-- **Versions**: resolved via `dist-tags.latest` (default) or greatest semver version (with `-g`/`--greatest`).
-- **Dependency sections** are checked in this order: `optionalDependencies`, `peerDependencies`, `devDependencies`, `dependencies`.
-- **Embedded config**: `package.json` may contain an `upd` field (string or array of strings) that is prepended to CLI patterns.
-- **Errors**: sentinel errors live in `errors.go` and are wrapped with context at the call site.
+- **Nix-first**: all task automation lives in `flake.nix`. Do not add a Makefile or justfile.
+- **Strict linting**: `.golangci.yml` enables 100+ linters (errcheck, wrapcheck, varnamelen, exhaustruct, depguard, ...). Expect loud diagnostics on untouched files — match surrounding style rather than chasing every pre-existing warning. `depguard` restricts non-stdlib imports.
+- **Single root package**: all library code is package `upd` at the repo root; `cmd/upd` is the only executable.
+- **git-town**: `git-town.toml` configures the branch workflow.
 
-## Dependencies
+## Execution Pipeline
 
-Only three direct dependencies, all intentional:
+`cmd/upd/main.go:run()` drives a linear flow; the files below each own one stage:
 
-- `github.com/Masterminds/semver/v3` — semver parsing and comparison.
-- `github.com/gobwas/glob` — glob pattern matching for dependency names.
-- `github.com/tidwall/gjson` — fast JSON path reads and validation; also used to locate byte offsets for surgical replacements.
+1. **Parse flags** → `Config` (`config.go`). Short and long forms are both registered (`-h`/`--help`, `-c`/`--concurrency`, ...).
+2. **Read `package.json`** → `PackageFile` keeps the raw bytes (`packagejson.go`).
+3. **Merge patterns**: if `package.json` has an `upd` field (string or array), those args are **prepended** to CLI patterns.
+4. **Build manifest** → `Manifest` (`name → []*Spec`) across four sections in fixed order: `optionalDependencies`, `peerDependencies`, `devDependencies`, `dependencies` (`manifest.go`).
+5. **Classify** each spec into a `State` via the version regex + glob pattern matching.
+6. **Fetch** packuments concurrently (semaphore bounded by `-c`, default 8) from `registry.npmjs.org` (`engine.go`, `npm.go`). Names are lowercased before fetch.
+7. **Apply updates**: resolve target version, compare semver, mutate `PackageFile` bytes in place.
+8. **Render** terminal table (`render.go`) and **write back** only if updates occurred and `-n` is not set.
+
+## Domain Concepts
+
+- **Packument**: NPM registry JSON for one package (`dist-tags`, `versions`, ...). Held as raw bytes in `npm.go`.
+- **Manifest**: `map[string][]*Spec` — every occurrence of a dependency across all sections.
+- **Spec**: one dependency in one section. Fields: `Section`, `Name`, `SOld`/`SNew` (full constraint string), `VOld`/`VNew` (parsed version), `State`.
+- **State** (`manifest.go`): `todo → check → {skipped | kept | updated | error}`, plus `ignored` for names that don't match any pattern.
+- **Pattern**: glob over dependency names; `!` prefix excludes.
+
+## Upgradable vs Skipped Versions
+
+The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
+
+- **Matches → `StateCheck`**: strings starting with a digit, optionally preceded by `^`/`~`. e.g. `1.2.3`, `^1.2.3`, `~2.3.4`, `1.x`, `1.0.0-beta.1`. The prefix is preserved on update: `^1.2.3` → `^2.0.0`.
+- **No match → `StateSkipped`**: comparator ranges (`>=1.0.0`, `<2.0.0`), tags (`latest`), git/file URLs — anything containing `<>|=`.
+- The regex is permissive (`1.x` matches), but semver comparison happens later in `engine.go`; invalid semver bypasses the "is it actually newer?" guard.
 
 ## Gotchas
 
-- `PackageFile.UpdateDependency` mutates `p.raw` in place by byte offset. If multiple specs for the same dependency exist in different sections, earlier replacements shift later offsets. The code currently updates each section independently; be very careful if changing this.
-- Constraints like `^1.2.3` are parsed to extract `1.2.3`, then the new version replaces only the version portion: `^1.2.3` → `^2.0.0`. The prefix is preserved.
-- If the new resolved version is not semver-greater than the old one, the spec is marked `kept` rather than `updated`.
-- `FetchAll` uses a semaphore bounded by `Config.Concurrency` (default 8).
-- CLI short flags use single-letter forms (`-h`, `-V`, `-q`, `-n`, `-C`, `-f`, `-g`, `-a`, `-c`). Long forms are also accepted.
-- `ProgramVersion` is set via `-ldflags` at build time; default value is `"dev"`.
+- **Byte-splice safety**: `PackageFile.UpdateDependency` re-runs `gjson.GetBytes(p.raw, section)` on _every_ call, so reported offsets are always current. Successive updates stay correct — but never cache gjson results across mutations.
+- **`kept` vs `updated`**: if the resolved version is not semver-greater than the current (`engine.go`), the spec becomes `kept`, not `updated`.
+- **Version resolution**: default = `dist-tags.latest`; `-g`/`--greatest` = highest semver across `versions`.
+- **Write gate**: the file is rewritten only when `updates > 0 && !cfg.Nop`.
+- **Quiet path**: `-q`/quiet suppresses the progress bar and takes a separate code branch in `main.go` (fetch without a reporter). The two branches duplicate fetch+apply logic — consolidate carefully if refactoring.
+- **`ProgramVersion`** defaults to `"dev"`; set via `-ldflags -X` at build time.
 
-## Testing Patterns
+## Dependencies (intentional — only 3 direct)
 
-- Tests live in `*_test.go` files in the root package (the same package as the code under test).
-- Tests use plain `testing` and small project-specific helpers in `testhelpers_test.go` and `config_test.go`.
-- Network-dependent paths are avoided in unit tests; test packuments and package files are built from literals or testdata when possible.
+- `github.com/Masterminds/semver/v3` — semver parse + compare.
+- `github.com/gobwas/glob` — dependency-name pattern matching.
+- `github.com/tidwall/gjson` — JSON path reads + byte offsets for surgical edits.
+
+## Testing
+
+- Tests are in package `upd` (white-box) alongside source. Helpers in `testhelpers_test.go` / `config_test.go`.
+- No network in unit tests — packuments and package files are built from literals.
+- Run the full suite before declaring done: `nix run .#test`.

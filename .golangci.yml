@@ -198,18 +198,22 @@ linters:
         - a
         - b
         - c
+        - ch
         - d
         - e
         - f
         - h
         - l
+        - mu
         - p
         - q
         - r
         - s
+        - sv
         - u
         - v
         - w
+        - wg
         - x
         - y
         - z

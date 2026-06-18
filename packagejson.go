@@ -122,5 +122,10 @@ func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
 const packageFilePermissions = 0o600
 
 func (p *PackageFile) Write(path string) error {
-	return os.WriteFile(path, p.raw, packageFilePermissions)
+	writeErr := os.WriteFile(path, p.raw, packageFilePermissions)
+	if writeErr != nil {
+		return fmt.Errorf("write package configuration file %q: %w", path, writeErr)
+	}
+
+	return nil
 }

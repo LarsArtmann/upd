@@ -52,11 +52,11 @@ func buildTestManifest(t *testing.T, json string) (*PackageFile, Manifest) {
 	return pkg, manifest
 }
 
-func setupEngineTest(t *testing.T, name, latest string, versions ...string) (*Engine, *PackageFile, Manifest) {
+func setupEngineTest(t *testing.T, latest string, versions ...string) (*Engine, *PackageFile, Manifest) {
 	t.Helper()
 
 	registry := mockRegistry(map[string]map[string]any{
-		name: packageVersion(latest, versions...),
+		testPackageName: packageVersion(latest, versions...),
 	})
 	t.Cleanup(registry.Close)
 
@@ -66,7 +66,10 @@ func setupEngineTest(t *testing.T, name, latest string, versions ...string) (*En
 	return engine, pkg, manifest
 }
 
-const singleDependencyPackageJSON = `{"dependencies": {"react": "^18.0.0"}}`
+const (
+	testPackageName             = "react"
+	singleDependencyPackageJSON = `{"dependencies": {"react": "^18.0.0"}}`
+)
 
 func TestEngineFetchAllSuccess(t *testing.T) {
 	registry := mockRegistry(map[string]map[string]any{
@@ -142,7 +145,7 @@ func TestEngineApplyUpdates(t *testing.T) {
 }
 
 func TestEngineApplyUpdatesKept(t *testing.T) {
-	engine, pkg, manifest := setupEngineTest(t, "react", "18.0.0", "18.0.0")
+	engine, pkg, manifest := setupEngineTest(t, "18.0.0", "18.0.0")
 
 	results := engine.FetchAll(context.Background(), manifest.ToCheck())
 	updates, _ := engine.ApplyUpdates(manifest, results, pkg)
@@ -157,7 +160,7 @@ func TestEngineApplyUpdatesKept(t *testing.T) {
 }
 
 func TestEngineApplyUpdatesNop(t *testing.T) {
-	engine, pkg, manifest := setupEngineTest(t, "react", "19.0.0", "19.0.0")
+	engine, pkg, manifest := setupEngineTest(t, "19.0.0", "19.0.0")
 	engine.cfg.Nop = true
 
 	json := `{"dependencies": {"react": "^18.0.0"}}`
@@ -197,7 +200,7 @@ func TestEngineApplyUpdatesError(t *testing.T) {
 }
 
 func TestEngineApplyUpdatesWritesPackageJSON(t *testing.T) {
-	engine, pkg, manifest := setupEngineTest(t, `{"dependencies": {"react": "^18.0.0"}}`, "react", "19.0.0", "19.0.0")
+	engine, pkg, manifest := setupEngineTest(t, "19.0.0", "19.0.0")
 
 	results := engine.FetchAll(context.Background(), manifest.ToCheck())
 	engine.ApplyUpdates(manifest, results, pkg)
@@ -210,7 +213,6 @@ func TestEngineApplyUpdatesWritesPackageJSON(t *testing.T) {
 func TestEngineGreatestMode(t *testing.T) {
 	engine, pkg, manifest := setupEngineTest(
 		t,
-		`{"dependencies": {"react": "^18.0.0"}}`,
 		"react", "18.0.0",
 		"18.0.0", "19.0.0-beta.1", "19.0.0",
 	)

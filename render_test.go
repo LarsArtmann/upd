@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func markUpdated(manifest Manifest, dep string) {
-	for _, spec := range manifest[dep] {
+func markReactUpdated(manifest Manifest) {
+	for _, spec := range manifest["react"] {
 		spec.State = StateUpdated
 		spec.SNew = "^19.0.0"
 		spec.VNew = "19.0.0"
@@ -29,7 +29,7 @@ func TestRenderTableUpdated(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
 	manifest := BuildManifest(pkg, nil)
-	markUpdated(manifest, "react")
+	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, true, false)
 
@@ -53,7 +53,7 @@ func TestRenderTableAllMode(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0", "lodash": "4.17.21"}}`
 	pkg := &PackageFile{raw: []byte(json)}
 	manifest := BuildManifest(pkg, nil)
-	markUpdated(manifest, "react")
+	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, true, true)
 
@@ -79,7 +79,7 @@ func TestRenderNoColorStripsANSI(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
 	manifest := BuildManifest(pkg, nil)
-	markUpdated(manifest, "react")
+	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, true, false)
 
@@ -90,7 +90,7 @@ func TestRenderWithColorContainsANSI(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
 	manifest := BuildManifest(pkg, nil)
-	markUpdated(manifest, "react")
+	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, false, false)
 
