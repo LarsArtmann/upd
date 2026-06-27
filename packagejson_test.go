@@ -1,6 +1,9 @@
 package upd
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -99,4 +102,159 @@ func TestGetUpdArgs(t *testing.T) {
 			t.Errorf("expected no args, got %v", args)
 		}
 	})
+}
+
+// testFilePermissions is the mode used for package.json fixtures in the
+// round-trip tests below. It is a named constant so the mnd linter does not
+// flag it as a magic number, and it deliberately differs from 0o600 so the
+// permission-preservation test proves upd does not downgrade an existing file.
+const testFilePermissions os.FileMode = 0o644
+
+func writePackageFixture(t *testing.T, path, content string) {
+	t.Helper()
+
+	err := os.WriteFile(path, []byte(content), testFilePermissions)
+	if err != nil {
+		t.Fatalf("write test fixture %q: %v", path, err)
+	}
+}
+
+func TestReadPackageFileComputesFingerprint(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "package.json")
+	data := `{"dependencies":{"react":"^18.0.0"}}`
+	writePackageFixture(t, path, data)
+
+	pkg, err := ReadPackageFile(path)
+	if err != nil {
+		t.Fatalf("ReadPackageFile: %v", err)
+	}
+
+	if pkg.fingerprint.IsZero() {
+		t.Fatal("fingerprint was not computed at read time")
+	}
+
+	if !pkg.fingerprint.Matches([]byte(data)) {
+		t.Fatal("fingerprint does not match the original file content")
+	}
+}
+
+func TestWriteRoundTripPreservesContentAndFormatting(t *testing.T) {
+	original := `{
+  "name": "test",
+  "dependencies": {
+    "react": "^18.0.0",
+    "lodash": "4.17.21"
+  }
+}`
+	path := filepath.Join(t.TempDir(), "package.json")
+	writePackageFixture(t, path, original)
+
+	pkg, err := ReadPackageFile(path)
+	if err != nil {
+		t.Fatalf("ReadPackageFile: %v", err)
+	}
+
+	err = pkg.UpdateDependency("dependencies", "react", "^19.0.0")
+	if err != nil {
+		t.Fatalf("UpdateDependency: %v", err)
+	}
+
+	err = pkg.Write(path)
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	written, err := os.ReadFile(path) //nolint:gosec // test fixture path
+	if err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+
+	result := string(written)
+	assertContains(t, result, `"^19.0.0"`, "new version persisted")
+	assertNotContains(t, result, `"^18.0.0"`, "old version removed")
+	assertContains(t, result, `"4.17.21"`, "untouched dependency preserved")
+	assertContains(t, result, "  \"name\"", "original indentation preserved")
+}
+
+func TestWritePreservesPermissions(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "package.json")
+	writePackageFixture(t, path, `{"dependencies":{"react":"^18.0.0"}}`)
+
+	pkg, err := ReadPackageFile(path)
+	if err != nil {
+		t.Fatalf("ReadPackageFile: %v", err)
+	}
+
+	err = pkg.UpdateDependency("dependencies", "react", "^19.0.0")
+	if err != nil {
+		t.Fatalf("UpdateDependency: %v", err)
+	}
+
+	err = pkg.Write(path)
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat: %v", err)
+	}
+
+	if mode := info.Mode().Perm(); mode != testFilePermissions {
+		t.Errorf("permissions = %o, want %o", mode, testFilePermissions)
+	}
+}
+
+func TestWriteRejectsConcurrentModification(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "package.json")
+	writePackageFixture(t, path, `{"dependencies":{"react":"^18.0.0"}}`)
+
+	pkg, err := ReadPackageFile(path)
+	if err != nil {
+		t.Fatalf("ReadPackageFile: %v", err)
+	}
+
+	// Simulate another process (npm install, IDE formatter) editing the file
+	// after upd read it but before upd writes it back.
+	writePackageFixture(t, path, `{"dependencies":{"react":"^20.0.0"}}`)
+
+	err = pkg.Write(path)
+	if !errors.Is(err, ErrConcurrentModification) {
+		t.Fatalf("expected ErrConcurrentModification, got %v", err)
+	}
+
+	// The on-disk file must be left exactly as the concurrent editor left it;
+	// upd must not overwrite it with its now-stale in-memory bytes.
+	written, err := os.ReadFile(path) //nolint:gosec // test fixture path
+	if err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+
+	assertContains(t, string(written), `"^20.0.0"`, "concurrent editor's content preserved")
+	assertNotContains(t, string(written), `"^18.0.0"`, "upd did not clobber with stale data")
+}
+
+func TestWriteCleansUpBackup(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "package.json")
+	writePackageFixture(t, path, `{"dependencies":{"react":"^18.0.0"}}`)
+
+	pkg, err := ReadPackageFile(path)
+	if err != nil {
+		t.Fatalf("ReadPackageFile: %v", err)
+	}
+
+	err = pkg.UpdateDependency("dependencies", "react", "^19.0.0")
+	if err != nil {
+		t.Fatalf("UpdateDependency: %v", err)
+	}
+
+	err = pkg.Write(path)
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	_, statErr := os.Stat(path + ".bak")
+	if statErr == nil {
+		t.Error("expected .bak to be cleaned up after successful write, but it still exists")
+	}
 }

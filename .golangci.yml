@@ -1,7 +1,7 @@
 version: "2"
 run:
   timeout: 5m
-  go: 1.26.3
+  go: 1.26.4
   build-tags:
     - goexperiment.arenas
     - goexperiment.goroutineleakprofile
@@ -131,23 +131,24 @@ linters:
       max-complexity: 12
     depguard:
       rules:
-        main:
+        cmd:
+          allow:
+            - $gostd
+            - github.com/LarsArtmann/upd
           files:
-            - "$all"
-            - "!$test"
-            - "!**/cmd/**"
+            - "**/cmd/**"
+        main:
           allow:
             - $gostd
             - github.com/LarsArtmann/upd
             - github.com/Masterminds/semver/v3
             - github.com/gobwas/glob
             - github.com/tidwall/gjson
-        cmd:
+            - github.com/larsartmann/go-atomic-write
           files:
-            - "**/cmd/**"
-          allow:
-            - $gostd
-            - github.com/LarsArtmann/upd
+            - $all
+            - "!$test"
+            - "!**/cmd/**"
     exhaustruct:
       exclude:
         - os/exec.Cmd
@@ -168,15 +169,17 @@ linters:
         - anon
         - stdlib
         - generic
+    makezero:
+      always: true
+    paralleltest:
+      ignore-missing: true
+      ignore-missing-subtests: true
     revive:
       rules:
         - disabled: true
           name: exported
         - disabled: true
           name: package-comments
-    paralleltest:
-      ignore-missing: true
-      ignore-missing-subtests: true
     testifylint:
       disable:
         - go-require
@@ -193,7 +196,7 @@ linters:
         - j
         - k
         - m
-        - n
+        - "n"
         - g
         - a
         - b
@@ -215,7 +218,7 @@ linters:
         - w
         - wg
         - x
-        - y
+        - "y"
         - z
       ignore-type-assert-ok: true
   exclusions:

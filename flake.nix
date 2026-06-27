@@ -20,7 +20,6 @@
         { pkgs, ... }:
         let
           version = "1.0.0";
-          buildFlags = "-ldflags=-s -w -trimpath";
         in
         {
           formatter = pkgs.nixpkgs-fmt;
@@ -30,7 +29,7 @@
               pname = "upd";
               inherit version;
               src = ./.;
-              vendorHash = "sha256-S6Hqrr/EU4Eapyh5A8rc0xzF4OOm9Nuk7p7Xp/P9U6E=";
+              vendorHash = "sha256-fm8IkHayPxANy+Uu9+eysYHaxQn9ysKZhv0LMARFfDo=";
               subPackages = [ "cmd/upd" ];
               ldflags = [
                 "-s"
@@ -63,7 +62,7 @@
                 name = "build";
                 runtimeInputs = [ pkgs.go ];
                 text = ''
-                  go build ${buildFlags} -o bin/upd ./cmd/upd
+                  go build -trimpath -ldflags='-s -w -X github.com/LarsArtmann/upd.ProgramVersion=${version}' -o bin/upd ./cmd/upd
                 '';
               };
             };

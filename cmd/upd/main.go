@@ -76,7 +76,11 @@ func finalizeRun(
 	if updates > 0 && !cfg.Nop {
 		err := pkg.Write(cfg.File)
 		if err != nil {
-			return fmt.Errorf("failed to write package configuration file %q: %w", cfg.File, err)
+			if errors.Is(err, upd.ErrConcurrentModification) {
+				return fmt.Errorf("%w; your file was not changed — re-run upd", err)
+			}
+
+			return fmt.Errorf("write package file: %w", err)
 		}
 	}
 

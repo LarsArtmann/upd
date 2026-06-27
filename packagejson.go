@@ -2,15 +2,18 @@ package upd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	atomicwrite "github.com/larsartmann/go-atomic-write"
 	"github.com/tidwall/gjson"
 )
 
 type PackageFile struct {
-	raw []byte
+	raw         []byte
+	fingerprint atomicwrite.Fingerprint
 }
 
 func ReadPackageFile(path string) (*PackageFile, error) {
@@ -28,7 +31,7 @@ func ReadPackageFile(path string) (*PackageFile, error) {
 		return nil, fmt.Errorf("failed to parse package configuration file %q: %w", path, ErrInvalidJSON)
 	}
 
-	return &PackageFile{raw: data}, nil
+	return &PackageFile{raw: data, fingerprint: atomicwrite.FingerprintFromBytes(data)}, nil
 }
 
 func (p *PackageFile) Raw() []byte {
@@ -119,13 +122,17 @@ func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
 	return nil
 }
 
-const packageFilePermissions = 0o600
-
 func (p *PackageFile) Write(path string) error {
-	writeErr := os.WriteFile(path, p.raw, packageFilePermissions)
-	if writeErr != nil {
-		return fmt.Errorf("write package configuration file %q: %w", path, writeErr)
+	err := atomicwrite.Write(path, p.raw, p.fingerprint)
+	if err != nil {
+		if errors.Is(err, atomicwrite.ErrConcurrentModification) {
+			return fmt.Errorf("%w: %q", ErrConcurrentModification, path)
+		}
+
+		return fmt.Errorf("write package configuration file %q: %w", path, err)
 	}
+
+	_ = os.Remove(path + ".bak")
 
 	return nil
 }

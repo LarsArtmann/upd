@@ -33,13 +33,13 @@ CI (`.github/workflows/ci.yml`) runs build + vet + test on push/PR to `master`.
 `cmd/upd/main.go:run()` drives a linear flow; the files below each own one stage:
 
 1. **Parse flags** → `Config` (`config.go`). Short and long forms are both registered (`-h`/`--help`, `-c`/`--concurrency`, ...).
-2. **Read `package.json`** → `PackageFile` keeps the raw bytes (`packagejson.go`).
+2. **Read `package.json`** → `PackageFile` keeps the raw bytes and an xxhash64 fingerprint of them (`packagejson.go`). The fingerprint guards the later write against concurrent modifications.
 3. **Merge patterns**: if `package.json` has an `upd` field (string or array), those args are **prepended** to CLI patterns.
 4. **Build manifest** → `Manifest` (`name → []*Spec`) across four sections in fixed order: `optionalDependencies`, `peerDependencies`, `devDependencies`, `dependencies` (`manifest.go`).
 5. **Classify** each spec into a `State` via the version regex + glob pattern matching.
 6. **Fetch** packuments concurrently (semaphore bounded by `-c`, default 8) from `registry.npmjs.org` (`engine.go`, `npm.go`). Names are lowercased before fetch.
 7. **Apply updates**: resolve target version, compare semver, mutate `PackageFile` bytes in place.
-8. **Render** terminal table (`render.go`) and **write back** only if updates occurred and `-n` is not set.
+8. **Render** terminal table (`render.go`) and **write back** only if updates occurred and `-n` is not set. The write is atomic (temp file + rename via `go-atomic-write`) and verifies the on-disk fingerprint first; a concurrent edit aborts the write with `ErrConcurrentModification` and leaves the file untouched.
 
 ## Domain Concepts
 
@@ -63,14 +63,17 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **`kept` vs `updated`**: if the resolved version is not semver-greater than the current (`engine.go`), the spec becomes `kept`, not `updated`.
 - **Version resolution**: default = `dist-tags.latest`; `-g`/`--greatest` = highest semver across `versions`.
 - **Write gate**: the file is rewritten only when `updates > 0 && !cfg.Nop`.
+- **Atomic write**: `PackageFile.Write` goes through `github.com/larsartmann/go-atomic-write`, which stages a temp file, verifies the file's on-disk fingerprint still matches the one captured at read time, then renames. This protects against TOCTOU loss when another process (npm install, IDE formatter) edits `package.json` during upd's network-fetch window. On mismatch it returns `ErrConcurrentModification` (translated to `upd.ErrConcurrentModification`) and does not touch the file.
+- **`.bak` cleanup**: the atomic-write library creates a transient `<file>.bak` during its rename, but `PackageFile.Write` removes it after a successful commit. A `.bak` may persist only if the write fails partway — safe to delete.
 - **Quiet path**: `-q`/quiet suppresses the progress bar and takes a separate code branch in `main.go` (fetch without a reporter). The two branches duplicate fetch+apply logic — consolidate carefully if refactoring.
 - **`ProgramVersion`** defaults to `"dev"`; set via `-ldflags -X` at build time.
 
-## Dependencies (intentional — only 3 direct)
+## Dependencies (intentional — only 4 direct)
 
 - `github.com/Masterminds/semver/v3` — semver parse + compare.
 - `github.com/gobwas/glob` — dependency-name pattern matching.
 - `github.com/tidwall/gjson` — JSON path reads + byte offsets for surgical edits.
+- `github.com/larsartmann/go-atomic-write` — TOCTOU-safe atomic file write (fingerprint verify + rename).
 
 ## Testing
 
