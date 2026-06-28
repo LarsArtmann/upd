@@ -132,7 +132,5 @@ func (p *PackageFile) Write(path string) error {
 		return fmt.Errorf("write package configuration file %q: %w", path, err)
 	}
 
-	_ = os.Remove(path + ".bak")
-
 	return nil
 }

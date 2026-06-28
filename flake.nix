@@ -29,7 +29,7 @@
               pname = "upd";
               inherit version;
               src = ./.;
-              vendorHash = "sha256-fm8IkHayPxANy+Uu9+eysYHaxQn9ysKZhv0LMARFfDo=";
+              vendorHash = "sha256-+Ro+rA8Fpa2J45FaaD9qQFUl/EIRpYhNSV6X9lVLzQc=";
               subPackages = [ "cmd/upd" ];
               ldflags = [
                 "-s"

@@ -234,7 +234,7 @@ func TestWriteRejectsConcurrentModification(t *testing.T) {
 	assertNotContains(t, string(written), `"^18.0.0"`, "upd did not clobber with stale data")
 }
 
-func TestWriteCleansUpBackup(t *testing.T) {
+func TestWriteLeavesNoLeftoverFiles(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "package.json")
 	writePackageFixture(t, path, `{"dependencies":{"react":"^18.0.0"}}`)
 
@@ -253,8 +253,13 @@ func TestWriteCleansUpBackup(t *testing.T) {
 		t.Fatalf("Write: %v", err)
 	}
 
-	_, statErr := os.Stat(path + ".bak")
-	if statErr == nil {
-		t.Error("expected .bak to be cleaned up after successful write, but it still exists")
+	// The library no longer creates .bak files; verify nothing is left behind.
+	matches, globErr := filepath.Glob(path + ".*")
+	if globErr != nil {
+		t.Fatalf("glob: %v", globErr)
+	}
+
+	if len(matches) > 0 {
+		t.Errorf("expected no leftover files beside %q, found: %v", path, matches)
 	}
 }
