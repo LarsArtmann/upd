@@ -815,10 +815,10 @@
           <div class="hero-badge">Status Snapshot</div>
           <h1>UPD Project Status</h1>
           <p class="hero-subtitle">
-            Post-atomic-write upgrade checkpoint. The Go port is stable at v1.0.0,
-            now writes package.json through a TOCTOU-safe, fsync-durable path.
-            Working tree is clean; tests pass; three pre-existing linter warnings
-            remain; one CI misconfiguration silently breaks version injection.
+            Post-atomic-write upgrade checkpoint. The Go port is stable at v1.0.0, now writes
+            package.json through a TOCTOU-safe, fsync-durable path. Working tree is clean; tests
+            pass; three pre-existing linter warnings remain; one CI misconfiguration silently breaks
+            version injection.
           </p>
         </div>
 
@@ -860,19 +860,18 @@
           <div class="card card-solution">
             <h4>Recent Win</h4>
             <p>
-              Upgraded <code>github.com/larsartmann/go-atomic-write</code> to v0.2.0,
-              giving the CLI a true single-rename atomic write with file and directory
-              fsync. The old two-rename <code>.bak</code> workaround has been removed;
-              no artifacts are left behind.
+              Upgraded <code>github.com/larsartmann/go-atomic-write</code> to v0.2.0, giving the CLI
+              a true single-rename atomic write with file and directory fsync. The old two-rename
+              <code>.bak</code> workaround has been removed; no artifacts are left behind.
             </p>
           </div>
           <div class="card card-problem">
             <h4>Immediate Risk</h4>
             <p>
               GitHub Actions CI injects the version via
-              <code>github.com/LarsArtmann/upd/internal.ProgramVersion</code>, but the
-              actual variable is at <code>github.com/LarsArtmann/upd.ProgramVersion</code>.
-              Every CI build reports <code>dev</code> instead of <code>ci</code>.
+              <code>github.com/LarsArtmann/upd/internal.ProgramVersion</code>, but the actual
+              variable is at <code>github.com/LarsArtmann/upd.ProgramVersion</code>. Every CI build
+              reports <code>dev</code> instead of <code>ci</code>.
             </p>
           </div>
         </div>
@@ -890,21 +889,29 @@
             <div class="check">+</div>
             <div class="text">
               <strong>NPM registry integration</strong>
-              <span>Concurrent packument fetches, configurable semaphore, lower-cased package names.</span>
+              <span
+                >Concurrent packument fetches, configurable semaphore, lower-cased package
+                names.</span
+              >
             </div>
           </div>
           <div class="strength">
             <div class="check">+</div>
             <div class="text">
               <strong>Formatting-preserving package.json edits</strong>
-              <span>Byte-level gjson surgery keeps whitespace, key order, and quote style intact.</span>
+              <span
+                >Byte-level gjson surgery keeps whitespace, key order, and quote style intact.</span
+              >
             </div>
           </div>
           <div class="strength">
             <div class="check">+</div>
             <div class="text">
               <strong>Semantic version resolution</strong>
-              <span>Latest stable via <code>dist-tags.latest</code>; greatest via <code>-g/--greatest</code>.</span>
+              <span
+                >Latest stable via <code>dist-tags.latest</code>; greatest via
+                <code>-g/--greatest</code>.</span
+              >
             </div>
           </div>
           <div class="strength">
@@ -939,7 +946,10 @@
             <div class="check">+</div>
             <div class="text">
               <strong>Atomic, durable file writes</strong>
-              <span>v0.2.0 of go-atomic-write provides fsync + single-rename atomicity + TOCTOU fingerprint verification.</span>
+              <span
+                >v0.2.0 of go-atomic-write provides fsync + single-rename atomicity + TOCTOU
+                fingerprint verification.</span
+              >
             </div>
           </div>
           <div class="strength">
@@ -972,9 +982,11 @@
           <h3>CI version-injection path is wrong</h3>
           <div class="where">.github/workflows/ci.yml:25</div>
           <p>
-            The workflow sets <code>-ldflags="-X github.com/LarsArtmann/upd/internal.ProgramVersion=ci"</code>,
-            but <code>ProgramVersion</code> is declared in package <code>upd</code> at the repo root
-            (<code>config.go:24</code>). The correct path is <code>github.com/LarsArtmann/upd.ProgramVersion</code>.
+            The workflow sets
+            <code>-ldflags="-X github.com/LarsArtmann/upd/internal.ProgramVersion=ci"</code>, but
+            <code>ProgramVersion</code> is declared in package <code>upd</code> at the repo root
+            (<code>config.go:24</code>). The correct path is
+            <code>github.com/LarsArtmann/upd.ProgramVersion</code>.
           </p>
           <div class="callout callout-solution">
             <strong>Fix</strong>
@@ -987,8 +999,9 @@
           <h3>README lags behind project tooling</h3>
           <div class="where">README.md</div>
           <p>
-            README only documents plain <code>go build</code>/<code>go test</code>. It does not mention
-            the Nix flake, atomic-write behavior, or the <code>upd</code> embedded-args field.
+            README only documents plain <code>go build</code>/<code>go test</code>. It does not
+            mention the Nix flake, atomic-write behavior, or the <code>upd</code> embedded-args
+            field.
           </p>
         </div>
 
@@ -1017,8 +1030,8 @@
           <h3>DOMAIN_LANGUAGE.md is still a placeholder</h3>
           <div class="where">docs/DOMAIN_LANGUAGE.md</div>
           <p>
-            The DDD glossary contains only template text. Terms like Packument, Manifest, Spec,
-            and State from AGENTS.md should be formally defined here.
+            The DDD glossary contains only template text. Terms like Packument, Manifest, Spec, and
+            State from AGENTS.md should be formally defined here.
           </p>
         </div>
 
@@ -1078,14 +1091,13 @@
           <span class="severity severity-critical">Blocking</span>
           <h3>CI injects version into a non-existent symbol</h3>
           <div class="where">.github/workflows/ci.yml:25</div>
-          <p>
-            The CI build command is:
-          </p>
+          <p>The CI build command is:</p>
           <pre><code><span class="tok-keyword">go build</span> -ldflags=<span class="tok-string">"-s -w -X github.com/LarsArtmann/upd/internal.ProgramVersion=ci"</span> -trimpath ./cmd/upd</code></pre>
           <p>
-            There is no <code>internal</code> package and no <code>internal.ProgramVersion</code> symbol.
-            The real variable is <code>github.com/LarsArtmann/upd.ProgramVersion</code>. Go silently
-            ignores the <code>-X</code> assignment to a missing symbol, so CI binaries report
+            There is no <code>internal</code> package and no
+            <code>internal.ProgramVersion</code> symbol. The real variable is
+            <code>github.com/LarsArtmann/upd.ProgramVersion</code>. Go silently ignores the
+            <code>-X</code> assignment to a missing symbol, so CI binaries report
             <code>upd/dev</code> instead of <code>upd/ci</code>.
           </p>
           <div class="callout callout-solution">
@@ -1146,13 +1158,17 @@
           <div class="card card-warning">
             <h4>Changelog hygiene</h4>
             <p>
-              Populate <code>[Unreleased]</code> as work lands so releases don't require archaeology.
+              Populate <code>[Unreleased]</code> as work lands so releases don't require
+              archaeology.
             </p>
           </div>
         </div>
 
         <h2 id="next"><span class="num">06</span>Top 25 Things To Get Done Next</h2>
-        <p>Sorted by a rough Pareto ranking: safety → correctness → developer experience → distribution.</p>
+        <p>
+          Sorted by a rough Pareto ranking: safety → correctness → developer experience →
+          distribution.
+        </p>
         <div class="table-wrap">
           <table>
             <thead>
@@ -1348,19 +1364,20 @@
         <div class="card card-problem">
           <h4>Was the <code>internal.ProgramVersion</code> path in CI intentional or stale?</h4>
           <p>
-            The CI workflow references <code>github.com/LarsArtmann/upd/internal.ProgramVersion</code>,
-            but the actual variable lives at <code>github.com/LarsArtmann/upd.ProgramVersion</code> in
-            <code>config.go</code>. I cannot determine from the repository history whether this was a
-            planned move into an <code>internal/</code> package that was abandoned, or simply a stale
-            copy-paste from another project. The fix is trivial once the intent is known: either create
-            the intended <code>internal/version</code> package and update both flake.nix and config.go,
-            or correct the CI path to match the current variable location.
+            The CI workflow references
+            <code>github.com/LarsArtmann/upd/internal.ProgramVersion</code>, but the actual variable
+            lives at <code>github.com/LarsArtmann/upd.ProgramVersion</code> in
+            <code>config.go</code>. I cannot determine from the repository history whether this was
+            a planned move into an <code>internal/</code> package that was abandoned, or simply a
+            stale copy-paste from another project. The fix is trivial once the intent is known:
+            either create the intended <code>internal/version</code> package and update both
+            flake.nix and config.go, or correct the CI path to match the current variable location.
           </p>
         </div>
 
         <footer class="footer">
-          Generated 2026-06-28 04:14 CEST &middot; Verified against git commit 71b2392 &middot;
-          go version go1.26.4 linux/amd64
+          Generated 2026-06-28 04:14 CEST &middot; Verified against git commit 71b2392 &middot; go
+          version go1.26.4 linux/amd64
         </footer>
       </main>
     </div>
