@@ -1,6 +1,8 @@
 package upd
 
 import (
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"io"
 	"strings"
@@ -23,10 +25,11 @@ const (
 type Renderer struct {
 	w       io.Writer
 	noColor bool
+	verbose bool
 }
 
-func NewRenderer(w io.Writer, noColor bool) *Renderer {
-	return &Renderer{w: w, noColor: noColor}
+func NewRenderer(w io.Writer, noColor, verbose bool) *Renderer {
+	return &Renderer{w: w, noColor: noColor, verbose: verbose}
 }
 
 func (r *Renderer) color(code, text string) string {
@@ -97,7 +100,12 @@ func (r *Renderer) renderErrorDetails(manifest Manifest) {
 	nameWidth := errorNameColumnWidth
 
 	for _, e := range entries {
-		_, _ = fmt.Fprintf(r.w, "  %s  %s\n", r.grey(padCell(e.name, nameWidth)), e.err.Error())
+		msg := e.err.Error()
+		if r.verbose {
+			msg = fmt.Sprintf("%+v", e.err)
+		}
+
+		_, _ = fmt.Fprintf(r.w, "  %s  %s\n", r.grey(padCell(e.name, nameWidth)), msg)
 	}
 }
 
@@ -280,4 +288,87 @@ func visibleLength(text string) int {
 	}
 
 	return len(string(out))
+}
+
+// --- JSON output ---
+
+type jsonPackage struct {
+	Name    string `json:"name"`
+	Section string `json:"section"`
+	Old     string `json:"old"`
+	New     string `json:"new"`
+	State   string `json:"state"`
+}
+
+type jsonError struct {
+	Name  string `json:"name"`
+	Error string `json:"error"`
+}
+
+type jsonSummary struct {
+	Updated int `json:"updated"`
+	Kept    int `json:"kept"`
+	Errors  int `json:"errors"`
+	Total   int `json:"total"`
+}
+
+type jsonOutput struct {
+	Summary  jsonSummary   `json:"summary"`
+	Packages []jsonPackage `json:"packages"`
+	Errors   []jsonError   `json:"errors,omitempty"`
+}
+
+// RenderJSON writes machine-readable JSON to w. Intended for CI pipelines and
+// editor integrations where the table output is difficult to parse.
+func RenderJSON(w io.Writer, manifest Manifest, updates int) error {
+	summary := jsonSummary{Updated: updates, Kept: 0, Errors: 0, Total: 0}
+	packages := make([]jsonPackage, 0, len(manifest))
+
+	var jsonErrors []jsonError
+
+	for _, name := range manifest.SortedNames() {
+		for _, spec := range manifest[name] {
+			packages = append(packages, jsonPackage{
+				Name:    name,
+				Section: spec.Section,
+				Old:     spec.SOld,
+				New:     spec.SNew,
+				State:   string(spec.State),
+			})
+			summary.Total++
+
+			if spec.State == StateKept {
+				summary.Kept++
+			}
+
+			if spec.State == StateError && spec.Err != nil {
+				jsonErrors = append(jsonErrors, jsonError{
+					Name:  name,
+					Error: spec.Err.Error(),
+				})
+			}
+		}
+	}
+
+	summary.Errors = len(jsonErrors)
+
+	output := jsonOutput{
+		Summary:  summary,
+		Packages: packages,
+		Errors:   jsonErrors,
+	}
+
+	enc := jsontext.NewEncoder(w, jsontext.WithIndent("  "))
+
+	err := json.MarshalEncode(enc, output)
+	if err != nil {
+		return fmt.Errorf("encode JSON output: %w", err)
+	}
+
+	_, err = io.WriteString(w, "\n")
+	if err != nil {
+		return fmt.Errorf("write JSON newline: %w", err)
+	}
+
+	return nil
 }

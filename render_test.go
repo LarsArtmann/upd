@@ -2,6 +2,7 @@ package upd
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -19,7 +20,7 @@ func renderManifest(t *testing.T, manifest Manifest, updated, errored int, noCol
 
 	var buf bytes.Buffer
 
-	r := NewRenderer(&buf, noColor)
+	r := NewRenderer(&buf, noColor, false)
 	r.RenderTable(manifest, updated, errored, showAll)
 
 	return buf.String()
@@ -172,4 +173,61 @@ func TestCenterPad(t *testing.T) {
 	if !strings.Contains(got, "hi") {
 		t.Errorf("centerPad lost content: %q", got)
 	}
+}
+
+// verboseTestError implements fmt.Formatter so %+v includes extra detail
+// that the flat Error() method omits.
+type verboseTestError struct {
+	msg   string
+	extra string
+}
+
+func (e *verboseTestError) Error() string { return e.msg }
+
+func (e *verboseTestError) Format(f fmt.State, verb rune) {
+	if verb == 'v' && f.Flag('+') {
+		_, _ = fmt.Fprintf(f, "%s [%s]", e.msg, e.extra)
+
+		return
+	}
+
+	_, _ = fmt.Fprint(f, e.msg)
+}
+
+func TestRenderVerboseShowsFullErrorChain(t *testing.T) {
+	json := `{"dependencies": {"broken": "^1.0.0"}}`
+	pkg := &PackageFile{raw: []byte(json)}
+	manifest, _ := BuildManifest(pkg, nil, false)
+
+	wrappedErr := &verboseTestError{msg: "connection refused", extra: "stack: goroutine 42"}
+	manifest["broken"][0].State = StateError
+	manifest["broken"][0].Err = wrappedErr
+
+	var buf bytes.Buffer
+
+	r := NewRenderer(&buf, true, true)
+	r.RenderTable(manifest, 0, 1, false)
+
+	output := buf.String()
+	assertContains(t, output, "connection refused", "error message")
+	assertContains(t, output, "stack: goroutine 42", "verbose extra detail")
+}
+
+func TestRenderNonVerboseOmitsErrorChainDetail(t *testing.T) {
+	json := `{"dependencies": {"broken": "^1.0.0"}}`
+	pkg := &PackageFile{raw: []byte(json)}
+	manifest, _ := BuildManifest(pkg, nil, false)
+
+	wrappedErr := &verboseTestError{msg: "connection refused", extra: "stack: goroutine 42"}
+	manifest["broken"][0].State = StateError
+	manifest["broken"][0].Err = wrappedErr
+
+	var buf bytes.Buffer
+
+	r := NewRenderer(&buf, true, false)
+	r.RenderTable(manifest, 0, 1, false)
+
+	output := buf.String()
+	assertContains(t, output, "connection refused", "error message")
+	assertNotContains(t, output, "stack: goroutine 42", "verbose extra detail should be omitted")
 }

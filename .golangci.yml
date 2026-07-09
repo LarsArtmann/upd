@@ -231,6 +231,12 @@ linters:
           - funlen
           - cyclop
           - goconst
+          - gosec
+          - wsl_v5
+          - nlreturn
+          - noinlineerr
+          - prealloc
+          - mnd
       - path: _test\.go
         text: unused
         linters:

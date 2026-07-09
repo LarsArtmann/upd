@@ -55,6 +55,8 @@
               gopls
               gotools
               go-tools # staticcheck
+              golangci-lint
+              govulncheck
               vhs
               ttyd
               ffmpeg
@@ -72,6 +74,7 @@
                   go build -trimpath -ldflags='-s -w -X github.com/LarsArtmann/upd.ProgramVersion=${version}' -o bin/upd ./cmd/upd
                 '';
               };
+              meta.description = "Build upd to bin/upd";
             };
 
             test = {
@@ -84,19 +87,22 @@
                   go test ./... -v -count=1
                 '';
               };
+              meta.description = "Run all tests with verbose output";
             };
 
             lint = {
               type = "app";
               program = pkgs.writeShellApplication {
                 name = "lint";
-                runtimeInputs = with pkgs; [ go gopls ];
+                runtimeInputs = with pkgs; [ go golangci-lint ];
                 text = ''
                   export GOEXPERIMENT=${goExperiment}
                   go vet ./... && echo "vet OK"
                   go build ./... && echo "build OK"
+                  golangci-lint run ./... && echo "lint OK"
                 '';
               };
+              meta.description = "Run go vet, build check, and golangci-lint";
             };
 
             run = {
@@ -109,6 +115,7 @@
                   go run ./cmd/upd "$@"
                 '';
               };
+              meta.description = "Run upd from source with arguments";
             };
 
             demo = {
@@ -146,6 +153,7 @@
                   fi
                 '';
               };
+              meta.description = "Render VHS demo GIFs locally or publish to vhs.charm.sh";
             };
           };
         };

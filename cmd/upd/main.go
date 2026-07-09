@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/LarsArtmann/upd"
 )
@@ -41,6 +43,11 @@ func run(args []string) error {
 		return fmt.Errorf("parse flags: %w", err)
 	}
 
+	// Auto-detect color suppression: NO_COLOR env var or non-TTY stdout
+	if !cfg.NoColor {
+		cfg.NoColor = upd.ShouldDisableColor(os.Stdout)
+	}
+
 	pkg, err := upd.ReadPackageFile(cfg.File)
 	if err != nil {
 		return fmt.Errorf("read package file: %w", err)
@@ -57,27 +64,34 @@ func run(args []string) error {
 	}
 
 	manifest, warnings := upd.BuildManifest(pkg, cfg.Patterns, cfg.PinLatest)
-	printWarnings(os.Stderr, warnings)
 
-	toCheck := manifest.ToCheck()
-
-	engine := upd.NewEngine(cfg)
-
-	if !cfg.Quiet && len(toCheck) > 0 {
-		reporter := upd.NewProgressReporter(os.Stderr, len(toCheck), cfg.NoColor)
-		reporter.Start()
-		engine = engine.WithReporter(reporter)
-		results := engine.FetchAll(context.Background(), toCheck)
-
-		reporter.Finish()
-
-		updates, errCount := engine.ApplyUpdates(manifest, results, pkg)
-
-		return finalizeRun(cfg, manifest, pkg, updates, errCount)
+	// In quiet mode, suppress warnings too; in JSON mode, emit warnings as JSON
+	// metadata on stderr so stdout stays pure JSON
+	if !cfg.Quiet {
+		printWarnings(os.Stderr, warnings)
 	}
 
-	// Quiet mode or nothing to check: no progress bar
-	results := engine.FetchAll(context.Background(), toCheck)
+	toCheck := manifest.ToCheck()
+	engine := upd.NewEngine(cfg)
+
+	// Progress bar only in interactive mode with work to do
+	showProgress := !cfg.Quiet && len(toCheck) > 0
+
+	reporter := upd.NewProgressReporter(os.Stderr, len(toCheck), cfg.NoColor)
+	if showProgress {
+		reporter.Start()
+		engine = engine.WithReporter(reporter)
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	results := engine.FetchAll(ctx, toCheck)
+
+	if showProgress {
+		reporter.Finish()
+	}
+
 	updates, errCount := engine.ApplyUpdates(manifest, results, pkg)
 
 	return finalizeRun(cfg, manifest, pkg, updates, errCount)
@@ -90,8 +104,15 @@ func finalizeRun(
 	updates, errCount int,
 ) error {
 	if !cfg.Quiet {
-		renderer := upd.NewRenderer(os.Stdout, cfg.NoColor)
-		renderer.RenderTable(manifest, updates, errCount, cfg.All)
+		if cfg.JSON {
+			err := upd.RenderJSON(os.Stdout, manifest, updates)
+			if err != nil {
+				return fmt.Errorf("render JSON output: %w", err)
+			}
+		} else {
+			renderer := upd.NewRenderer(os.Stdout, cfg.NoColor, cfg.Verbose)
+			renderer.RenderTable(manifest, updates, errCount, cfg.All)
+		}
 	}
 
 	if updates > 0 && !cfg.Nop {

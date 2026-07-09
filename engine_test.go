@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func mockRegistry(versions map[string]map[string]any) *httptest.Server {
@@ -40,6 +41,8 @@ func newTestEngine(t *testing.T, server *httptest.Server, cfg *Config) *Engine {
 
 	engine := NewEngine(cfg)
 	engine.registry.baseURL = server.URL
+	engine.registry.maxRetries = 0
+	engine.registry.sleep = func(_ context.Context, _ time.Duration) bool { return true }
 
 	return engine
 }

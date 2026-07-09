@@ -6,6 +6,9 @@
 //
 //	cfg := upd.DefaultConfig()
 //	cfg.File = "package.json"
+//	cfg.Registry = "https://registry.npmjs.org"
+//	cfg.Timeout = 20 * time.Second
+//	cfg.Retries = 3
 //	cfg.Nop = true // dry-run
 //
 //	pkg, err := upd.ReadPackageFile(cfg.File)

@@ -240,7 +240,7 @@ func TestWriteRoundTripPreservesContentAndFormatting(t *testing.T) {
 		t.Fatalf("Write: %v", err)
 	}
 
-	written, err := os.ReadFile(path) //nolint:gosec // test fixture path
+	written, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read back: %v", err)
 	}
@@ -301,7 +301,7 @@ func TestWriteRejectsConcurrentModification(t *testing.T) {
 
 	// The on-disk file must be left exactly as the concurrent editor left it;
 	// upd must not overwrite it with its now-stale in-memory bytes.
-	written, err := os.ReadFile(path) //nolint:gosec // test fixture path
+	written, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read back: %v", err)
 	}

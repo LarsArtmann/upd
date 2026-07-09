@@ -1,8 +1,11 @@
 package upd
 
 import (
+	"bytes"
 	"errors"
+	"os"
 	"testing"
+	"time"
 )
 
 func assertConcurrency(t *testing.T, cfg *Config, want int) {
@@ -67,6 +70,26 @@ func TestParseFlagsDefaults(t *testing.T) {
 	assertFlagFalse(t, "Nop", cfg.Nop)
 	assertFlagFalse(t, "NoColor", cfg.NoColor)
 	assertFlagFalse(t, "PinLatest", cfg.PinLatest)
+
+	if cfg.Registry != defaultRegistryURL {
+		t.Errorf("Registry = %q, want %q", cfg.Registry, defaultRegistryURL)
+	}
+
+	if cfg.Retries != defaultRetries {
+		t.Errorf("Retries = %d, want %d", cfg.Retries, defaultRetries)
+	}
+
+	if cfg.Timeout != defaultTimeout {
+		t.Errorf("Timeout = %v, want %v", cfg.Timeout, defaultTimeout)
+	}
+
+	if cfg.JSON {
+		t.Error("JSON should default to false")
+	}
+
+	if cfg.Verbose {
+		t.Error("Verbose should default to false")
+	}
 }
 
 func TestParseFlagsShortFlags(t *testing.T) {
@@ -97,6 +120,70 @@ func TestParseFlagsLongFlags(t *testing.T) {
 	assertFlagTrue(t, "PinLatest", cfg.PinLatest)
 	assertConcurrency(t, cfg, 4)
 	assertFile(t, cfg, "other.json")
+}
+
+func TestParseFlagsDryRunAlias(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"--dry-run"})
+
+	assertFlagTrue(t, "Nop via --dry-run", cfg.Nop)
+}
+
+func TestParseFlagsShortDryRun(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"-n"})
+
+	assertFlagTrue(t, "Nop via -n", cfg.Nop)
+}
+
+func TestParseFlagsRegistryFlag(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"--registry", "https://my-registry.example.com"})
+
+	if cfg.Registry != "https://my-registry.example.com" {
+		t.Errorf("Registry = %q, want custom URL", cfg.Registry)
+	}
+}
+
+func TestParseFlagsShortRegistryFlag(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"-r", "https://npm.fork.io"})
+
+	if cfg.Registry != "https://npm.fork.io" {
+		t.Errorf("Registry = %q, want https://npm.fork.io", cfg.Registry)
+	}
+}
+
+func TestParseFlagsTimeoutFlag(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"--timeout", "45s"})
+
+	if cfg.Timeout != 45*time.Second {
+		t.Errorf("Timeout = %v, want 45s", cfg.Timeout)
+	}
+}
+
+func TestParseFlagsShortTimeoutFlag(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"-t", "10s"})
+
+	if cfg.Timeout != 10*time.Second {
+		t.Errorf("Timeout = %v, want 10s", cfg.Timeout)
+	}
+}
+
+func TestParseFlagsRetriesFlag(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"--retries", "5"})
+
+	if cfg.Retries != 5 {
+		t.Errorf("Retries = %d, want 5", cfg.Retries)
+	}
+}
+
+func TestParseFlagsJSONFlag(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"--json"})
+
+	assertFlagTrue(t, "JSON", cfg.JSON)
+}
+
+func TestParseFlagsVerboseFlag(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"--verbose"})
+
+	assertFlagTrue(t, "Verbose", cfg.Verbose)
 }
 
 func TestParseFlagsMultiplePatterns(t *testing.T) {
@@ -139,5 +226,62 @@ func TestUserAgent(t *testing.T) {
 	ua := cfg.UserAgent()
 	if ua != "upd/dev" {
 		t.Errorf("UserAgent = %q, want upd/dev", ua)
+	}
+}
+
+// withoutNoColorEnv ensures NO_COLOR is unset for the duration of the test,
+// restoring the original value on cleanup.
+func withoutNoColorEnv(t *testing.T) {
+	t.Helper()
+
+	// Unset NO_COLOR, then use t.Setenv with a placeholder to register
+	// automatic restoration. t.Setenv saves the "unset" state and will
+	// unset again on cleanup. We immediately re-unset for the test body.
+	if err := os.Unsetenv("NO_COLOR"); err != nil {
+		t.Fatalf("unset NO_COLOR: %v", err)
+	}
+
+	t.Setenv("NO_COLOR", "")
+
+	if err := os.Unsetenv("NO_COLOR"); err != nil {
+		t.Fatalf("unset NO_COLOR after Setenv: %v", err)
+	}
+}
+
+func TestShouldDisableColorWithNoColorEnv(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+
+	var buf bytes.Buffer
+
+	if !ShouldDisableColor(&buf) {
+		t.Error("expected true when NO_COLOR is set")
+	}
+}
+
+func TestShouldDisableColorNonFileWriterWithoutNoColor(t *testing.T) {
+	withoutNoColorEnv(t)
+
+	var buf bytes.Buffer
+
+	if ShouldDisableColor(&buf) {
+		t.Error("expected false for non-file writer without NO_COLOR")
+	}
+}
+
+func TestShouldDisableColorPipedFileDetectedAsNonTTY(t *testing.T) {
+	withoutNoColorEnv(t)
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create pipe: %v", err)
+	}
+
+	t.Cleanup(func() {
+		_ = r.Close()
+		_ = w.Close()
+	})
+
+	if !ShouldDisableColor(w) {
+		t.Error("expected true for piped *os.File (non-character-device)")
 	}
 }

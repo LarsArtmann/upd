@@ -3,6 +3,8 @@ package upd
 import (
 	"fmt"
 	"io"
+	"os"
+	"strconv"
 	"strings"
 	"sync/atomic"
 )
@@ -11,7 +13,7 @@ const (
 	progressComplete   = "█"
 	progressIncomplete = "╌"
 	progressWidth      = 24
-	terminalResetWidth = 80
+	defaultTermWidth   = 80
 	percentMultiplier  = 100
 )
 
@@ -34,7 +36,24 @@ func (p *ProgressReporter) Tick(msg string, _ int) {
 }
 
 func (p *ProgressReporter) Finish() {
-	_, _ = fmt.Fprintf(p.w, "\r%s\r", strings.Repeat(" ", terminalResetWidth))
+	width := clearWidth()
+	_, _ = fmt.Fprintf(p.w, "\r%s\r", strings.Repeat(" ", width))
+}
+
+// clearWidth returns the number of spaces to use when clearing the progress bar
+// line. It checks the COLUMNS environment variable and falls back to 80.
+func clearWidth() int {
+	cols := os.Getenv("COLUMNS")
+	if cols == "" {
+		return defaultTermWidth
+	}
+
+	width, err := strconv.Atoi(cols)
+	if err == nil && width > 0 {
+		return width
+	}
+
+	return defaultTermWidth
 }
 
 func (p *ProgressReporter) render(msg string) {

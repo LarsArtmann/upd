@@ -33,7 +33,7 @@ type Engine struct {
 func NewEngine(cfg *Config) *Engine {
 	return &Engine{
 		cfg:      cfg,
-		registry: NewRegistryClient(cfg.UserAgent()),
+		registry: NewRegistryClient(cfg),
 		reporter: noopReporter{},
 	}
 }

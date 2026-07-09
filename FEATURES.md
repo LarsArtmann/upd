@@ -17,79 +17,83 @@
 
 | Feature                   | Status                | Notes                                                                                                                                                                                     |
 | ------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Flag parsing (short+long) | 🟢 `FULLY_FUNCTIONAL` | All flags registered in both forms (`-h`/`--help`, `-c`/`--concurrency`, ...). `config.go:61-105`. 6 tests in `config_test.go`.                                                           |
-| `-h` / `--help`           | 🟢 `FULLY_FUNCTIONAL` | Prints usage with all flags + descriptions. `config.go:127-158`.                                                                                                                          |
-| `-V` / `--version`        | 🟢 `FULLY_FUNCTIONAL` | Prints name, version, URL, copyright. `config.go:160-166`. Version injected via ldflags.                                                                                                  |
-| `-q` / `--quiet`          | 🟢 `FULLY_FUNCTIONAL` | Suppresses progress bar and table output. `config.go:70`. Tested in engine tests.                                                                                                         |
-| `-n` / `--nop` (dry run)  | 🟢 `FULLY_FUNCTIONAL` | Previews changes without writing. `config.go:71`. Tested: `TestEngineApplyUpdatesNop`.                                                                                                    |
-| `-C` / `--noColor`        | 🟢 `FULLY_FUNCTIONAL` | Disables ANSI colors. `config.go:72`. Tested in `render_test.go` (ANSI strip/presence).                                                                                                   |
-| `-f` / `--file`           | 🟢 `FULLY_FUNCTIONAL` | Custom package.json path. Default: `package.json`. `config.go:76`.                                                                                                                        |
-| `-g` / `--greatest`       | 🟢 `FULLY_FUNCTIONAL` | Uses highest semver across all versions instead of `dist-tags.latest`. `npm.go:97-113`. Tested: `TestEngineGreatestMode`.                                                                 |
-| `-a` / `--all`            | 🟢 `FULLY_FUNCTIONAL` | Shows all packages in table, not just updated ones. `config.go:74`. Tested: `TestRenderAllMode`.                                                                                          |
-| `-c` / `--concurrency`    | 🟢 `FULLY_FUNCTIONAL` | Configures semaphore-bounded parallel fetch (default 8). `config.go:77-84`.                                                                                                               |
-| `-P` / `--pin-latest`     | 🟢 `FULLY_FUNCTIONAL` | Pins bare `"latest"` tags to exact resolved semver. `manifest.go:71-74`, `engine.go:162-163`. Tested: `TestBuildManifestPinLatest`, `TestEnginePinLatest`, `TestEnginePinLatestDisabled`. |
-| `--dry-run` alias         | ⚪ `PLANNED`          | Conventional alias for `-n`. Not implemented.                                                                                                                                             |
-| `--registry <url>`        | ⚪ `PLANNED`          | Custom/private NPM registry URL. Hardcoded to `registry.npmjs.org` (`npm.go:17`).                                                                                                         |
-| `--timeout <seconds>`     | ⚪ `PLANNED`          | Per-fetch timeout flag. Hardcoded 20s (`npm.go:18`).                                                                                                                                      |
-| `--json` output           | ⚪ `PLANNED`          | Machine-readable JSON output for CI/scripting. Not implemented.                                                                                                                           |
+| Flag parsing (short+long) | 🟢 `FULLY_FUNCTIONAL` | All flags registered in both forms (`-h`/`--help`, `-c`/`--concurrency`, ...). `config.go`. 15 tests in `config_test.go`.                                                                 |
+| `-h` / `--help`           | 🟢 `FULLY_FUNCTIONAL` | Prints usage with all flags, descriptions, and exit codes. `config.go:PrintUsage`.                                                                                                        |
+| `-V` / `--version`        | 🟢 `FULLY_FUNCTIONAL` | Prints name, version, URL, copyright. Version injected via ldflags.                                                                                                                       |
+| `-q` / `--quiet`          | 🟢 `FULLY_FUNCTIONAL` | Suppresses progress bar, table output, AND warnings. `config.go`.                                                                                                                         |
+| `-n` / `--nop` (dry run)  | 🟢 `FULLY_FUNCTIONAL` | Previews changes without writing. Tested: `TestEngineApplyUpdatesNop`, `TestFullPipelineDryRunDoesNotWrite`.                                                                              |
+| `--dry-run` alias         | 🟢 `FULLY_FUNCTIONAL` | Alias for `--nop`. Tested: `TestParseFlagsDryRunAlias`.                                                                                                                                   |
+| `-C` / `--noColor`        | 🟢 `FULLY_FUNCTIONAL` | Disables ANSI colors. Auto-detected via `NO_COLOR` env var and non-TTY check.                                                                                                             |
+| `-f` / `--file`           | 🟢 `FULLY_FUNCTIONAL` | Custom package.json path. Default: `package.json`.                                                                                                                                        |
+| `-r` / `--registry`       | 🟢 `FULLY_FUNCTIONAL` | Custom/private NPM registry URL. `npm.go:NewRegistryClient`. Tested: `TestParseFlagsRegistryFlag`.                                                                                        |
+| `-g` / `--greatest`       | 🟢 `FULLY_FUNCTIONAL` | Uses highest semver across all versions instead of `dist-tags.latest`.                                                                                                                    |
+| `-a` / `--all`            | 🟢 `FULLY_FUNCTIONAL` | Shows all packages in table, not just updated ones.                                                                                                                                       |
+| `-c` / `--concurrency`    | 🟢 `FULLY_FUNCTIONAL` | Configures semaphore-bounded parallel fetch (default 8).                                                                                                                                  |
+| `-P` / `--pin-latest`     | 🟢 `FULLY_FUNCTIONAL` | Pins bare `"latest"` tags to exact resolved semver.                                                                                                                                       |
+| `-t` / `--timeout`        | 🟢 `FULLY_FUNCTIONAL` | Per-request HTTP timeout (default: 20s). Tested: `TestParseFlagsTimeoutFlag`.                                                                                                             |
+| `--retries`               | 🟢 `FULLY_FUNCTIONAL` | Max retries for transient 429/5xx failures (default: 3). Exponential backoff + Retry-After header support. Tested: `TestFetchPackumentRetriesOn503`, `TestFetchPackumentDoesNotRetry404`. |
+| `--json` output           | 🟢 `FULLY_FUNCTIONAL` | Machine-readable JSON output for CI/scripting. `render.go:RenderJSON`. Tested: `TestRenderJSONBasicOutput`, `TestRenderJSONIncludesErrors`, `TestRenderJSONNoErrorsOmitsField`.           |
+| `--verbose`               | 🟢 `FULLY_FUNCTIONAL` | Shows full error chains (`%+v`) in the error detail block.                                                                                                                                |
+| Auto color detection      | 🟢 `FULLY_FUNCTIONAL` | `NO_COLOR` env var and non-TTY stdout auto-disable colors. `config.go:ShouldDisableColor`.                                                                                                |
 
 ## Dependency Resolution
 
-| Feature                       | Status                    | Notes                                                                                                                                                       |
-| ----------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dist-tags.latest` resolution | 🟢 `FULLY_FUNCTIONAL`     | Default mode. `npm.go:78-87`. Tested in engine integration tests.                                                                                           |
-| Greatest semver resolution    | 🟢 `FULLY_FUNCTIONAL`     | `-g` mode. Iterates all versions, picks highest via `semver.GreaterThan`. `npm.go:97-113`.                                                                  |
-| Semver downgrade guard        | 🟢 `FULLY_FUNCTIONAL`     | Won't downgrade: `versionIsGreater` check. `engine.go:209-217`. Tested: specs become `kept` not `updated`.                                                  |
-| All four dependency sections  | 🟢 `FULLY_FUNCTIONAL`     | `dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies`. `manifest.go:24-31`.                                                         |
-| Glob pattern filtering        | 🟢 `FULLY_FUNCTIONAL`     | Positive + negative (`!` prefix) patterns. `manifest.go:143-203`. Tested: 10+ glob cases in `manifest_test.go`.                                             |
-| `latest` tag pinning          | 🟢 `FULLY_FUNCTIONAL`     | Case-insensitive, anchored regex `(?i)^\s*latest\s*$`. `manifest.go:35`. See `-P` flag.                                                                     |
-| Scoped package support        | 🟡 `PARTIALLY_FUNCTIONAL` | `url.PathEscape` used for URL encoding (`npm.go:42`), but never tested against live scoped packages (`@scope/name`). May not match NPM's expected encoding. |
+| Feature                       | Status                | Notes                                                                                                                                          |
+| ----------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dist-tags.latest` resolution | 🟢 `FULLY_FUNCTIONAL` | Default mode. `npm.go`. Tested in engine + integration tests.                                                                                  |
+| Greatest semver resolution    | 🟢 `FULLY_FUNCTIONAL` | `-g` mode. Iterates all versions, picks highest via `semver.GreaterThan`.                                                                      |
+| Semver downgrade guard        | 🟢 `FULLY_FUNCTIONAL` | Won't downgrade: `versionIsGreater` check. Specs become `kept` not `updated`.                                                                  |
+| All four dependency sections  | 🟢 `FULLY_FUNCTIONAL` | `dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies`.                                                                 |
+| Glob pattern filtering        | 🟢 `FULLY_FUNCTIONAL` | Positive + negative (`!` prefix) patterns. 10+ glob cases in `manifest_test.go`.                                                               |
+| `latest` tag pinning          | 🟢 `FULLY_FUNCTIONAL` | Case-insensitive, anchored regex `(?i)^\s*latest\s*$`.                                                                                         |
+| Scoped package support        | 🟢 `FULLY_FUNCTIONAL` | `url.PathEscape` used for URL encoding. Tested: `TestScopedPackageURLEncoding` verifies `@types/node` fetches correctly against mock registry. |
 
 ## File Handling
 
-| Feature                       | Status                | Notes                                                                                                                                    |
-| ----------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Byte-preserving JSON edits    | 🟢 `FULLY_FUNCTIONAL` | `jsontext.Decoder` streaming with `InputOffset()` for surgical byte splicing. `packagejson.go:113-204`. Tested: `TestUpdateDependency*`. |
-| Atomic writes (TOCTOU-safe)   | 🟢 `FULLY_FUNCTIONAL` | Temp file → fsync → flock → fingerprint verify → atomic rename → dir fsync. Via `go-atomic-write` v0.2.0. `packagejson.go:206-217`.      |
-| Concurrent modification abort | 🟢 `FULLY_FUNCTIONAL` | Returns `ErrConcurrentModification` if fingerprint mismatch. `packagejson.go:209-210`.                                                   |
-| Embedded `upd` field          | 🟢 `FULLY_FUNCTIONAL` | Reads string or array `upd` field, prepends to CLI args. `packagejson.go:65-89`. Tested: `TestGetUpdArgs*`.                              |
-| Write gate (no-op when dry)   | 🟢 `FULLY_FUNCTIONAL` | File written only when `updates > 0 && !cfg.Nop`. `cmd/upd/main.go:95`.                                                                  |
-| JSON validation on read       | 🟢 `FULLY_FUNCTIONAL` | `jsontext.Value.IsValid()` check on read. `packagejson.go:31`.                                                                           |
-| `.npmrc` parsing              | ⚪ `PLANNED`          | No `.npmrc` support. Registry URL is hardcoded.                                                                                          |
+| Feature                       | Status                | Notes                                                                                                                                            |
+| ----------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Byte-preserving JSON edits    | 🟢 `FULLY_FUNCTIONAL` | `jsontext.Decoder` streaming with `InputOffset()` for surgical byte splicing. Tested: `TestUpdateDependency*`, `TestFullPipelineReadFetchWrite`. |
+| Atomic writes (TOCTOU-safe)   | 🟢 `FULLY_FUNCTIONAL` | Temp file → fsync → flock → fingerprint verify → atomic rename → dir fsync. Via `go-atomic-write` v0.2.0.                                        |
+| Concurrent modification abort | 🟢 `FULLY_FUNCTIONAL` | Returns `ErrConcurrentModification` if fingerprint mismatch.                                                                                     |
+| Embedded `upd` field          | 🟢 `FULLY_FUNCTIONAL` | Reads string or array `upd` field, prepends to CLI args.                                                                                         |
+| Write gate (no-op when dry)   | 🟢 `FULLY_FUNCTIONAL` | File written only when `updates > 0 && !cfg.Nop`.                                                                                                |
+| JSON validation on read       | 🟢 `FULLY_FUNCTIONAL` | `jsontext.Value.IsValid()` check on read.                                                                                                        |
+| `.npmrc` parsing              | ⚪ `PLANNED`          | No `.npmrc` support. Registry URL configurable via `--registry` flag.                                                                            |
 
 ## Error Handling
 
-| Feature                       | Status                | Notes                                                                                                                                                                                                           |
-| ----------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sentinel error taxonomy       | 🟢 `FULLY_FUNCTIONAL` | 13 sentinels in `errors.go`. All wrapped with `fmt.Errorf("...: %w", err)`.                                                                                                                                     |
-| `Spec.Err` — per-spec error   | 🟢 `FULLY_FUNCTIONAL` | Errored specs carry concrete error reason. `manifest.go:46`. Populated in `engine.go:141,151,158,166`. Tested: `TestApplyUpdatesPopulatesSpecErr`.                                                              |
-| Registry error classification | 🟢 `FULLY_FUNCTIONAL` | 404/410 → `ErrPackageNotFound` (user typo); 5xx → `ErrRegistryUnavailable` (system fault). `npm.go:70-76`. Tested: `TestRegistryClassifiesNotFoundAsRejection`, `TestRegistryClassifiesServerErrorAsTransient`. |
-| Exit code differentiation     | 🟢 `FULLY_FUNCTIONAL` | `ErrRegistryUnavailable` → 75 (EX_TEMPFAIL); `ErrPartialFailure` → 1; all others → 1. `cmd/upd/main.go:20-32`. 6 exit-code tests in `cmd/upd/main_test.go`.                                                     |
-| Error detail block in table   | 🟢 `FULLY_FUNCTIONAL` | `Errors (n):` block below table with per-package error reasons. `render.go:75`. Tested: `TestRenderTableErrorDetailSurfacesReason`.                                                                             |
-| Warnings pipeline             | 🟢 `FULLY_FUNCTIONAL` | `BuildManifest` returns `[]string` warnings for malformed sections/patterns. Printed as yellow `WARNING:` lines. `cmd/upd/main.go:111-115`. Tested: `TestPrintWarnings*`.                                       |
-| Partial failure exit code     | 🟢 `FULLY_FUNCTIONAL` | Non-zero exit (1) when any package fails to resolve. Default behavior, no flag needed. File still written for successful updates. `cmd/upd/main.go:108-109`. Tested: `TestExitCodePartialFailureReturns1`.      |
+| Feature                       | Status                | Notes                                                                                                                                                             |
+| ----------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sentinel error taxonomy       | 🟢 `FULLY_FUNCTIONAL` | 13 sentinels in `errors.go`. All wrapped with `fmt.Errorf("...: %w", err)`.                                                                                       |
+| `Spec.Err` — per-spec error   | 🟢 `FULLY_FUNCTIONAL` | Errored specs carry concrete error reason. Tested: `TestApplyUpdatesPopulatesSpecErr`.                                                                            |
+| Registry error classification | 🟢 `FULLY_FUNCTIONAL` | 404/410 → `ErrPackageNotFound` (user typo); 5xx → `ErrRegistryUnavailable` (system fault). `npm.go:classifyRegistryError`.                                        |
+| Exit code differentiation     | 🟢 `FULLY_FUNCTIONAL` | `ErrRegistryUnavailable` → 75 (EX_TEMPFAIL); `ErrPartialFailure` → 1; all others → 1. Documented in `--help` output. 6 exit-code tests in `cmd/upd/main_test.go`. |
+| Error detail block in table   | 🟢 `FULLY_FUNCTIONAL` | `Errors (n):` block below table with per-package error reasons. `--verbose` shows `%+v` formatting.                                                               |
+| Warnings pipeline             | 🟢 `FULLY_FUNCTIONAL` | `BuildManifest` returns `[]string` warnings for malformed sections/patterns. Suppressed in quiet mode.                                                            |
+| Partial failure exit code     | 🟢 `FULLY_FUNCTIONAL` | Non-zero exit (1) when any package fails to resolve. File still written for successful updates.                                                                   |
+| HTTP retry logic              | 🟢 `FULLY_FUNCTIONAL` | 429/5xx retried with exponential backoff (1s base, 30s cap). `Retry-After` header honored. `npm.go:FetchPackument`. Tested: 6 tests in `npm_test.go`.             |
 
 ## Output & Rendering
 
-| Feature                         | Status                    | Notes                                                                                                                 |
-| ------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Unicode box-drawing table       | 🟢 `FULLY_FUNCTIONAL`     | `render.go:56-102`. Fixed column widths (37/14/14/9).                                                                 |
-| Character-level diff highlight  | 🟢 `FULLY_FUNCTIONAL`     | LCS-based diff, red/green ANSI. `diff.go`, `render.go:183-204`. 6 tests in `diff_test.go`.                            |
-| "All up-to-date" box            | 🟢 `FULLY_FUNCTIONAL`     | Green centered message when no updates. `render.go:64-70`. Tested: `TestRenderAllUpToDate`.                           |
-| Progress bar                    | 🟡 `PARTIALLY_FUNCTIONAL` | Unicode bar on stderr during fetch. Hardcoded 80-char clear width — no terminal width detection. `progress.go:14,37`. |
-| Auto color detection (NO_COLOR) | ⚪ `PLANNED`              | No `NO_COLOR` env var or TTY detection. Colors must be manually disabled with `-C`.                                   |
-| `NO_COLOR` env var support      | ⚪ `PLANNED`              | Not implemented.                                                                                                      |
+| Feature                         | Status                | Notes                                                                                                            |
+| ------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Unicode box-drawing table       | 🟢 `FULLY_FUNCTIONAL` | `render.go`. Fixed column widths (37/14/14/9).                                                                   |
+| Character-level diff highlight  | 🟢 `FULLY_FUNCTIONAL` | LCS-based diff, red/green ANSI. `diff.go`. 6 tests in `diff_test.go`, 5 benchmarks in `benchmark_test.go`.       |
+| "All up-to-date" box            | 🟢 `FULLY_FUNCTIONAL` | Green centered message when no updates.                                                                          |
+| Progress bar                    | 🟢 `FULLY_FUNCTIONAL` | Unicode bar on stderr during fetch. Terminal width detected via `COLUMNS` env var (fallback: 80). `progress.go`. |
+| Auto color detection (NO_COLOR) | 🟢 `FULLY_FUNCTIONAL` | `NO_COLOR` env var and non-TTY stdout automatically disable colors. `config.go:ShouldDisableColor`.              |
+| JSON output mode                | 🟢 `FULLY_FUNCTIONAL` | `--json` emits structured JSON: summary, packages, errors. `render.go:RenderJSON`.                               |
 
 ## Infrastructure
 
-| Feature                         | Status                    | Notes                                                                                                                                                                            |
-| ------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nix flake (build/test/lint/run) | 🟢 `FULLY_FUNCTIONAL`     | `flake.nix` with `buildGoModule`, devShell, apps. All export `GOEXPERIMENT=jsonv2`.                                                                                              |
-| VHS demo rendering              | 🟡 `PARTIALLY_FUNCTIONAL` | `demo/demo.tape` + `nix run .#demo` app exists. GIF was rendered once (`demo/demo.gif` exists). Published to `vhs.charm.sh`. Tape not extensively validated across environments. |
-| GitHub Actions CI               | 🟢 `FULLY_FUNCTIONAL`     | `.github/workflows/ci.yml`: build + vet + race test on push/PR to master.                                                                                                        |
-| golangci-lint in CI             | ⚪ `PLANNED`              | CI runs only `go vet`. `.golangci.yml` exists with 100+ linters but is not enforced in CI.                                                                                       |
-| Retry logic (429/5xx)           | ⚪ `PLANNED`              | No retries on transient registry failures.                                                                                                                                       |
-| Context deadline for fetch      | ⚪ `PLANNED`              | Individual requests have 20s timeout; no overall fetch-phase deadline.                                                                                                           |
-| govulncheck / gosec             | ⚪ `PLANNED`              | No security scanning.                                                                                                                                                            |
-| Shell completions               | ⚪ `PLANNED`              | No bash/zsh/fish completion generation.                                                                                                                                          |
-| Dockerfile                      | ⚪ `PLANNED`              | No Docker image. Single static binary makes it low priority.                                                                                                                     |
+| Feature                         | Status                    | Notes                                                                                                                                                     |
+| ------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nix flake (build/test/lint/run) | 🟢 `FULLY_FUNCTIONAL`     | `flake.nix` with `buildGoModule`, devShell, apps. All export `GOEXPERIMENT=jsonv2`. Lint app now includes `golangci-lint`. Meta descriptions on all apps. |
+| VHS demo rendering              | 🟡 `PARTIALLY_FUNCTIONAL` | `demo/demo.tape` + `nix run .#demo` app exists. GIF was rendered once. Published to `vhs.charm.sh`. Tape not extensively validated.                       |
+| GitHub Actions CI               | 🟢 `FULLY_FUNCTIONAL`     | `.github/workflows/ci.yml`: 3 jobs — build+vet+race-test, golangci-lint, govulncheck. Runs on push/PR to master.                                          |
+| golangci-lint in CI             | 🟢 `FULLY_FUNCTIONAL`     | Separate CI job via `golangci-lint-action`. `.golangci.yml` with 100+ linters enforced. 0 issues currently.                                               |
+| Retry logic (429/5xx)           | 🟢 `FULLY_FUNCTIONAL`     | Exponential backoff + `Retry-After` header support. Configurable via `--retries`.                                                                         |
+| Context deadline for fetch      | 🟢 `FULLY_FUNCTIONAL`     | Signal-aware context (SIGINT/SIGTERM) cancels fetch phase. Per-request timeout via `--timeout`.                                                           |
+| govulncheck                     | 🟡 `PARTIALLY_FUNCTIONAL` | Runs in CI. 1 finding: `crypto/tls` stdlib vuln (GO-2026-5856) — fixed in Go 1.26.5; requires toolchain upgrade. No code-level fixes needed.              |
+| Shell completions               | ⚪ `PLANNED`              | No bash/zsh/fish completion generation.                                                                                                                   |
+| Dockerfile                      | ⚪ `PLANNED`              | No Docker image. Single static binary makes it low priority.                                                                                              |
