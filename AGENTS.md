@@ -41,17 +41,18 @@ VHS demos (`demo/*.tape`) are rendered with `vhs` and published to the [VHS clou
 1. **Parse flags** → `Config` (`config.go`). Short and long forms are both registered (`-h`/`--help`, `-c`/`--concurrency`, `-P`/`--pin-latest`, ...).
 2. **Read `package.json`** → `PackageFile` keeps the raw bytes and an xxhash64 fingerprint of them (`packagejson.go`). The fingerprint guards the later write against concurrent modifications.
 3. **Merge patterns**: if `package.json` has an `upd` field (string or array), those args are **prepended** to CLI patterns.
-4. **Build manifest** → `Manifest` (`name → []*Spec`) across four sections in fixed order: `optionalDependencies`, `peerDependencies`, `devDependencies`, `dependencies` (`manifest.go`). Takes `pinLatest bool` as third arg — when true, bare `"latest"` strings (case-insensitive, anchored regex `latestRe`) are classified as `StateCheck` with `IsLatest=true`.
+4. **Build manifest** → `(Manifest, []string)` — the manifest is `name → []*Spec` across four sections in fixed order: `optionalDependencies`, `peerDependencies`, `devDependencies`, `dependencies` (`manifest.go`). The second return value is a slice of warning strings (malformed sections, invalid glob patterns). Takes `pinLatest bool` as third arg — when true, bare `"latest"` strings (case-insensitive, anchored regex `latestRe`) are classified as `StateCheck` with `IsLatest=true`. `GetUpdArgs()` and `GetDependencySection()` now return `error` as a second value — parse failures are not silently swallowed.
 5. **Classify** each spec into a `State` via the version regex (`versionRe`) + `latestRe` + glob pattern matching.
 6. **Fetch** packuments concurrently (semaphore bounded by `-c`, default 8) from `registry.npmjs.org` (`engine.go`, `npm.go`). Names are lowercased before fetch.
-7. **Apply updates**: resolve target version, compare semver, mutate `PackageFile` bytes in place. When `IsLatest=true`, `SNew` is set directly to the resolved version and `shouldUpdate` short-circuits to always update.
-8. **Render** terminal table (`render.go`) and **write back** only if updates occurred and `-n` is not set. The write is atomic (temp file + rename via `go-atomic-write`) and verifies the on-disk fingerprint first; a concurrent edit aborts the write with `ErrConcurrentModification` and leaves the file untouched.
+7. **Apply updates**: resolve target version, compare semver, mutate `PackageFile` bytes in place. When `IsLatest=true`, `SNew` is set directly to the resolved version and `shouldUpdate` short-circuits to always update. Errored specs carry their concrete error in `Spec.Err`.
+8. **Render** terminal table (`render.go`) — includes an error detail block (`Errors (n):`) below the table when any spec has `Spec.Err` set. **Write back** only if updates occurred and `-n` is not set. The write is atomic (temp file + rename via `go-atomic-write`) and verifies the on-disk fingerprint first; a concurrent edit aborts the write with `ErrConcurrentModification` and leaves the file untouched.
+9. **Exit code** (`cmd/upd/main.go:exitCode()`): `ErrRegistryUnavailable` → exit 75 (EX_TEMPFAIL, retryable); all other errors → exit 1. Warnings (malformed sections, invalid patterns) print to stderr as `WARNING:` lines but do not affect exit code.
 
 ## Domain Concepts
 
 - **Packument**: NPM registry JSON for one package (`dist-tags`, `versions`, ...). Held as raw bytes in `npm.go`.
 - **Manifest**: `map[string][]*Spec` — every occurrence of a dependency across all sections.
-- **Spec**: one dependency in one section. Fields: `Section`, `Name`, `SOld`/`SNew` (full constraint string), `VOld`/`VNew` (parsed version), `State`, `IsLatest` (true when `--pinLatest` detected a bare `latest` tag).
+- **Spec**: one dependency in one section. Fields: `Section`, `Name`, `SOld`/`SNew` (full constraint string), `VOld`/`VNew` (parsed version), `State`, `IsLatest` (true when `--pinLatest` detected a bare `latest` tag), `Err` (concrete error when `State == StateError`).
 - **State** (`manifest.go`): `todo → check → {skipped | kept | updated | error}`, plus `ignored` for names that don't match any pattern.
 - **Pattern**: glob over dependency names; `!` prefix excludes.
 
@@ -74,6 +75,8 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **Atomic write**: `PackageFile.Write` goes through `github.com/larsartmann/go-atomic-write` (v0.2.0+), which stages a temp file with a random suffix, fsyncs it, verifies the on-disk fingerprint still matches the one captured at read time, then performs a single atomic rename and fsyncs the parent directory. This protects against TOCTOU loss when another process (npm install, IDE formatter) edits `package.json` during upd's network-fetch window. On mismatch it returns `ErrConcurrentModification` (translated to `upd.ErrConcurrentModification`) and does not touch the file. No `.bak` artifacts are left behind.
 - **Quiet path**: `-q`/quiet suppresses the progress bar and takes a separate code branch in `main.go` (fetch without a reporter). The two branches duplicate fetch+apply logic — consolidate carefully if refactoring.
 - **`ProgramVersion`** defaults to `"dev"`; set via `-ldflags -X` at build time.
+- **Error classification** (`npm.go`): `classifyRegistryError` splits HTTP failures into `ErrPackageNotFound` (404/410 — user typo, exit 1) vs `ErrRegistryUnavailable` (5xx/timeout — system fault, exit 75). This lets CI scripts distinguish retryable from permanent failures.
+- **Warnings pipeline** (`cmd/upd/main.go`): `BuildManifest` returns `[]string` warnings for malformed sections and invalid glob patterns. These print as yellow `WARNING:` lines on stderr but don't stop execution. A malformed `upd` field in `package.json` is fatal (stops the run); malformed sections/patterns are non-fatal.
 
 ## Dependencies (intentional — only 3 direct)
 

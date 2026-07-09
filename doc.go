@@ -11,7 +11,10 @@
 //	pkg, err := upd.ReadPackageFile(cfg.File)
 //	if err != nil { return err }
 //
-//	manifest := upd.BuildManifest(pkg, pkg.GetUpdArgs(), false)
+//	args, err := pkg.GetUpdArgs()
+//	if err != nil { return err }
+//
+//	manifest, warnings := upd.BuildManifest(pkg, args, false)
 //	engine := upd.NewEngine(cfg)
 //	results := engine.FetchAll(ctx, manifest.ToCheck())
 //	updates, errs := engine.ApplyUpdates(manifest, results, pkg)
