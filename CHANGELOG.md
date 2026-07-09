@@ -16,9 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - Copyright year updated to 2026
-- Swapped VERSION OLD / VERSION NEW columns were reversed in noColor
-  (`-C`) mode — the diff-highlight noColor shortcut now returns the
-  correct string
+- Fixed swapped VERSION OLD / VERSION NEW columns in noColor (`-C`) mode
+  — the diff-highlight fallback now returns the correct string for each column
 
 ## [1.0.0] - 2026-06-18
 

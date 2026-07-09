@@ -105,7 +105,7 @@ nix run .#build    # or: GOEXPERIMENT=jsonv2 go build -o upd ./cmd/upd
 ## Usage
 
 ```
-upd [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <n>] [-P] [<pattern> ...]
+upd [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [-P] [<pattern> ...]
 ```
 
 | Flag | Long form       | Description                                             |
