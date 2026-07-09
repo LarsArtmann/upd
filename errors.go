@@ -15,4 +15,5 @@ var (
 	ErrSectionNotObject       = errors.New("section is not a JSON object")
 	ErrDependencyNotFound     = errors.New("dependency not found in package configuration file")
 	ErrConcurrentModification = errors.New("package configuration file was modified concurrently since read")
+	ErrPartialFailure         = errors.New("one or more dependencies could not be resolved")
 )

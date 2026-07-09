@@ -52,6 +52,18 @@ func TestExitCodeConcurrentModificationReturns1(t *testing.T) {
 	}
 }
 
+func TestExitCodePartialFailureReturns1(t *testing.T) {
+	t.Parallel()
+
+	wrapped := fmt.Errorf("2 package(s) failed: %w", upd.ErrPartialFailure)
+
+	got := exitCode(wrapped)
+
+	if got != 1 {
+		t.Fatalf("exitCode(wrapped ErrPartialFailure) = %d, want 1", got)
+	}
+}
+
 func TestExitCodeGenericErrorReturns1(t *testing.T) {
 	t.Parallel()
 

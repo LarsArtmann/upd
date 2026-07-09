@@ -105,6 +105,10 @@ func finalizeRun(
 		}
 	}
 
+	if errCount > 0 {
+		return fmt.Errorf("%d package(s) failed: %w", errCount, upd.ErrPartialFailure)
+	}
+
 	return nil
 }
 

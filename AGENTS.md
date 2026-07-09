@@ -46,7 +46,7 @@ VHS demos (`demo/*.tape`) are rendered with `vhs` and published to the [VHS clou
 6. **Fetch** packuments concurrently (semaphore bounded by `-c`, default 8) from `registry.npmjs.org` (`engine.go`, `npm.go`). Names are lowercased before fetch.
 7. **Apply updates**: resolve target version, compare semver, mutate `PackageFile` bytes in place. When `IsLatest=true`, `SNew` is set directly to the resolved version and `shouldUpdate` short-circuits to always update. Errored specs carry their concrete error in `Spec.Err`.
 8. **Render** terminal table (`render.go`) — includes an error detail block (`Errors (n):`) below the table when any spec has `Spec.Err` set. **Write back** only if updates occurred and `-n` is not set. The write is atomic (temp file + rename via `go-atomic-write`) and verifies the on-disk fingerprint first; a concurrent edit aborts the write with `ErrConcurrentModification` and leaves the file untouched.
-9. **Exit code** (`cmd/upd/main.go:exitCode()`): `ErrRegistryUnavailable` → exit 75 (EX_TEMPFAIL, retryable); all other errors → exit 1. Warnings (malformed sections, invalid patterns) print to stderr as `WARNING:` lines but do not affect exit code.
+9. **Exit code** (`cmd/upd/main.go:exitCode()`): `ErrRegistryUnavailable` → exit 75 (EX_TEMPFAIL, retryable); `ErrPartialFailure` (one or more packages errored) → exit 1; all other errors → exit 1; success → exit 0. Warnings (malformed sections, invalid patterns) print to stderr as `WARNING:` lines but do not affect exit code.
 
 ## Domain Concepts
 
@@ -77,6 +77,7 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **`ProgramVersion`** defaults to `"dev"`; set via `-ldflags -X` at build time.
 - **Error classification** (`npm.go`): `classifyRegistryError` splits HTTP failures into `ErrPackageNotFound` (404/410 — user typo, exit 1) vs `ErrRegistryUnavailable` (5xx/timeout — system fault, exit 75). This lets CI scripts distinguish retryable from permanent failures.
 - **Warnings pipeline** (`cmd/upd/main.go`): `BuildManifest` returns `[]string` warnings for malformed sections and invalid glob patterns. These print as yellow `WARNING:` lines on stderr but don't stop execution. A malformed `upd` field in `package.json` is fatal (stops the run); malformed sections/patterns are non-fatal.
+- **Partial failure** (`cmd/upd/main.go`): when `errCount > 0` (one or more packages failed to resolve), `finalizeRun` returns `ErrPartialFailure` after successfully writing the file for packages that did update. Exit code is 1. Successful updates are NOT lost — the file is written before the error is returned.
 
 ## Dependencies (intentional — only 3 direct)
 

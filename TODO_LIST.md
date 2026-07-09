@@ -45,6 +45,7 @@
 | D20 | README usage line fixed (`-c <concurrency>`)                             | Done                                                                   |
 | D21 | README install commands fixed (`GOEXPERIMENT=jsonv2`)                    | Done                                                                   |
 | D22 | docs/DOMAIN_LANGUAGE.md rewritten with actual terms                      | Done                                                                   |
+| D23 | Per-package errors affect exit code (`ErrPartialFailure` → exit 1)       | `errors.go`, `cmd/upd/main.go:finalizeRun` — default behavior, no flag |
 
 ---
 
@@ -60,48 +61,48 @@
 
 ## NOT DONE — Medium Priority
 
-| #   | Task                                                                      | Source               | Notes                                              |
-| --- | ------------------------------------------------------------------------- | -------------------- | -------------------------------------------------- |
-| 6   | Add `--registry <url>` flag for custom/private NPM registry               | e11, #5, #41         | Registry hardcoded to `registry.npmjs.org`         |
-| 7   | Add context deadline for entire fetch phase                               | e9, #3, #7, #10      | Only per-request 20s timeout; no overall deadline  |
-| 8   | Auto-detect non-TTY and disable colors (`NO_COLOR` env var, isatty check) | e13, #4, #50, f8     | Only manual `-C` flag                              |
-| 9   | Add `--dry-run` as alias for `-n`/`--nop`                                 | #17, #43, f27        | Conventional name; trivial to add                  |
-| 10  | Add `--timeout <seconds>` flag                                            | #15, #24, #42        | Hardcoded 20s                                      |
-| 11  | Add `--json` output mode for CI/scripting                                 | #12, #22, #45, f29   | Not implemented                                    |
-| 12  | Add `--fail-on-error` flag (exit non-zero when per-package errors occur)  | err10                | Partial success still exits 0                      |
-| 13  | Verify scoped package URL encoding (`@scope/name`) against live registry  | e12, #14, #16, #44   | `url.PathEscape` used but unverified               |
-| 14  | Run `govulncheck` and fix findings                                        | #10, f23             | Never run                                          |
-| 15  | Run `gosec` and fix findings                                              | #11                  | Never run                                          |
-| 16  | Document exit codes in `--help` output + README                           | err16, err17         | Exit 75 undocumented in CLI help                   |
-| 17  | Add "Troubleshooting" section to README                                   | err24                | Common errors (404, registry down, malformed JSON) |
-| 18  | Decide quiet-mode + warnings interaction                                  | err11                | Should `-q` suppress `WARNING:` lines?             |
-| 19  | Add `.npmrc` parsing for custom registry config                           | e11, #22             | No `.npmrc` support                                |
-| 20  | Add bench tests for diff, glob, manifest building                         | e5, #6, #9, f11, f17 | No `Benchmark*` functions exist                    |
+| #      | Task                                                                      | Source               | Notes                                              |
+| ------ | ------------------------------------------------------------------------- | -------------------- | -------------------------------------------------- |
+| 6      | Add `--registry <url>` flag for custom/private NPM registry               | e11, #5, #41         | Registry hardcoded to `registry.npmjs.org`         |
+| 7      | Add context deadline for entire fetch phase                               | e9, #3, #7, #10      | Only per-request 20s timeout; no overall deadline  |
+| 8      | Auto-detect non-TTY and disable colors (`NO_COLOR` env var, isatty check) | e13, #4, #50, f8     | Only manual `-C` flag                              |
+| 9      | Add `--dry-run` as alias for `-n`/`--nop`                                 | #17, #43, f27        | Conventional name; trivial to add                  |
+| 10     | Add `--timeout <seconds>` flag                                            | #15, #24, #42        | Hardcoded 20s                                      |
+| 11     | Add `--json` output mode for CI/scripting                                 | #12, #22, #45, f29   | Not implemented                                    |
+| ~~12~~ | ~~Add `--fail-on-error` flag~~ — **RESOLVED by D23** (default behavior)   | err10                | Made non-zero exit the default; no flag needed     |
+| 13     | Verify scoped package URL encoding (`@scope/name`) against live registry  | e12, #14, #16, #44   | `url.PathEscape` used but unverified               |
+| 14     | Run `govulncheck` and fix findings                                        | #10, f23             | Never run                                          |
+| 15     | Run `gosec` and fix findings                                              | #11                  | Never run                                          |
+| 16     | Document exit codes in `--help` output + README                           | err16, err17         | Exit 75 undocumented in CLI help                   |
+| 17     | Add "Troubleshooting" section to README                                   | err24                | Common errors (404, registry down, malformed JSON) |
+| 18     | Decide quiet-mode + warnings interaction                                  | err11                | Should `-q` suppress `WARNING:` lines?             |
+| 19     | Add `.npmrc` parsing for custom registry config                           | e11, #22             | No `.npmrc` support                                |
+| 20     | Add bench tests for diff, glob, manifest building                         | e5, #6, #9, f11, f17 | No `Benchmark*` functions exist                    |
 
 ## NOT DONE — Low Priority
 
-| #   | Task                                                                                     | Source        | Notes                                              |
-| --- | ---------------------------------------------------------------------------------------- | ------------- | -------------------------------------------------- |
-| 21  | Detect terminal width for progress bar (instead of hardcoded 80)                         | e7, #4        | `terminalResetWidth = 80` hardcoded                |
-| 22  | Tune HTTP transport (MaxIdleConns, IdleConnTimeout)                                      | #5, #16       | Default transport used                             |
-| 23  | Add release automation (GoReleaser or tag-based pipeline)                                | #9, #13       | No release workflow                                |
-| 24  | Add Renovate/Dependabot config                                                           | #24, f38      | No dependency automation                           |
-| 25  | Add `nix flake check` to CI                                                              | #37           | Not in CI                                          |
-| 26  | Add coverage threshold to CI (fail if <80%)                                              | #23           | Not in CI                                          |
-| 27  | Add shell completions (bash/zsh/fish)                                                    | #20, #47, f28 | Not implemented                                    |
-| 28  | Add man page (`man/upd.1`)                                                               | #48, f41      | Not implemented                                    |
-| 29  | Add property-based tests for `versionRe` and `latestRe` regex edge cases                 | f18           | Not implemented                                    |
-| 30  | Add Go doc examples with `// Output:` to `doc.go`                                        | f13           | Example exists but not compile-tested              |
-| 31  | Consider `errors.Join` for multi-error aggregation                                       | err20         | Currently N separate warnings                      |
-| 32  | Surface `ErrRegistryUnavailable` in non-fatal path (per-package errors → exit 75)        | err13         | Currently only fatal path gets 75                  |
-| 33  | Add `--verbose` flag for full error chains                                               | err12         | `%+v` formatting of `spec.Err`                     |
-| 34  | Consider additional exit codes (65=EX_DATAERR, 66=EX_NOINPUT)                            | err14, err15  | Only 0, 1, 75 used                                 |
-| 35  | Add `meta.description` to all nix apps                                                   | f15           | `nix flake check` warns about missing descriptions |
-| 36  | Add focused demo tapes (`pin-latest.tape`, `greatest.tape`, `patterns.tape`)             | f11           | Only one tape exists                               |
-| 37  | Add integration test (build-tagged) hitting real NPM registry                            | f12           | All tests use mocks                                |
-| 38  | Add issue/PR templates to `.github/`                                                     | f45           | Not implemented                                    |
-| 39  | Review all error messages for user-facing quality (What/Reassure/Why/Fix/Escape pattern) | err37, f37    | Not audited                                        |
-| 40  | Add `slog` structured logging                                                            | e15, err28    | No logging stack                                   |
+| #   | Task                                                                                     | Source        | Notes                                                                                                               |
+| --- | ---------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 21  | Detect terminal width for progress bar (instead of hardcoded 80)                         | e7, #4        | `terminalResetWidth = 80` hardcoded                                                                                 |
+| 22  | Tune HTTP transport (MaxIdleConns, IdleConnTimeout)                                      | #5, #16       | Default transport used                                                                                              |
+| 23  | Add release automation (GoReleaser or tag-based pipeline)                                | #9, #13       | No release workflow                                                                                                 |
+| 24  | Add Renovate/Dependabot config                                                           | #24, f38      | No dependency automation                                                                                            |
+| 25  | Add `nix flake check` to CI                                                              | #37           | Not in CI                                                                                                           |
+| 26  | Add coverage threshold to CI (fail if <80%)                                              | #23           | Not in CI                                                                                                           |
+| 27  | Add shell completions (bash/zsh/fish)                                                    | #20, #47, f28 | Not implemented                                                                                                     |
+| 28  | Add man page (`man/upd.1`)                                                               | #48, f41      | Not implemented                                                                                                     |
+| 29  | Add property-based tests for `versionRe` and `latestRe` regex edge cases                 | f18           | Not implemented                                                                                                     |
+| 30  | Add Go doc examples with `// Output:` to `doc.go`                                        | f13           | Example exists but not compile-tested                                                                               |
+| 31  | Consider `errors.Join` for multi-error aggregation                                       | err20         | Currently N separate warnings                                                                                       |
+| 32  | Surface `ErrRegistryUnavailable` in non-fatal path (per-package errors → exit 75)        | err13         | **REJECTED:** partial failure mixes 404 + 503; exit 1 is correct (D23). Exit 75 reserved for total registry failure |
+| 33  | Add `--verbose` flag for full error chains                                               | err12         | `%+v` formatting of `spec.Err`                                                                                      |
+| 34  | Consider additional exit codes (65=EX_DATAERR, 66=EX_NOINPUT)                            | err14, err15  | Only 0, 1, 75 used                                                                                                  |
+| 35  | Add `meta.description` to all nix apps                                                   | f15           | `nix flake check` warns about missing descriptions                                                                  |
+| 36  | Add focused demo tapes (`pin-latest.tape`, `greatest.tape`, `patterns.tape`)             | f11           | Only one tape exists                                                                                                |
+| 37  | Add integration test (build-tagged) hitting real NPM registry                            | f12           | All tests use mocks                                                                                                 |
+| 38  | Add issue/PR templates to `.github/`                                                     | f45           | Not implemented                                                                                                     |
+| 39  | Review all error messages for user-facing quality (What/Reassure/Why/Fix/Escape pattern) | err37, f37    | Not audited                                                                                                         |
+| 40  | Add `slog` structured logging                                                            | e15, err28    | No logging stack                                                                                                    |
 
 ## REJECTED (with reasoning)
 
