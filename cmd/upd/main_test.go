@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -56,7 +55,7 @@ func TestExitCodeConcurrentModificationReturns1(t *testing.T) {
 func TestExitCodeGenericErrorReturns1(t *testing.T) {
 	t.Parallel()
 
-	got := exitCode(upd.ErrInvalidJSON) //nolint:err113 // test-only: any non-registry sentinel proves exit 1
+	got := exitCode(upd.ErrInvalidJSON)
 
 	if got != 1 {
 		t.Fatalf("exitCode(generic error) = %d, want 1", got)

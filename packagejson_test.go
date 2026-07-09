@@ -116,6 +116,70 @@ func TestGetUpdArgs(t *testing.T) {
 	})
 }
 
+func TestGetDependencySection(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid section returns deps", func(t *testing.T) {
+		t.Parallel()
+
+		pkg := &PackageFile{raw: []byte(`{"dependencies": {"react": "^18.0.0", "vue": "^3.0.0"}}`)}
+
+		deps, err := pkg.GetDependencySection("dependencies")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if deps["react"] != "^18.0.0" {
+			t.Errorf("react = %q, want ^18.0.0", deps["react"])
+		}
+
+		if deps["vue"] != "^3.0.0" {
+			t.Errorf("vue = %q, want ^3.0.0", deps["vue"])
+		}
+	})
+
+	t.Run("missing section returns empty without error", func(t *testing.T) {
+		t.Parallel()
+
+		pkg := &PackageFile{raw: []byte(`{"name": "my-project"}`)}
+
+		deps, err := pkg.GetDependencySection("dependencies")
+		if err != nil {
+			t.Fatalf("unexpected error for missing section: %v", err)
+		}
+
+		if len(deps) != 0 {
+			t.Errorf("expected empty map, got %v", deps)
+		}
+	})
+
+	t.Run("non-object section returns ErrInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+
+		pkg := &PackageFile{raw: []byte(`{"dependencies": 42}`)}
+
+		_, err := pkg.GetDependencySection("dependencies")
+		if err == nil {
+			t.Fatal("expected error for non-object section, got nil")
+		}
+
+		if !errors.Is(err, ErrInvalidJSON) {
+			t.Errorf("expected error wrapping ErrInvalidJSON, got: %v", err)
+		}
+	})
+
+	t.Run("non-string values return parse error", func(t *testing.T) {
+		t.Parallel()
+
+		pkg := &PackageFile{raw: []byte(`{"dependencies": {"react": 123}}`)}
+
+		_, err := pkg.GetDependencySection("dependencies")
+		if err == nil {
+			t.Fatal("expected error for non-string dependency value, got nil")
+		}
+	})
+}
+
 // testFilePermissions is the mode used for package.json fixtures in the
 // round-trip tests below. It is a named constant so the mnd linter does not
 // flag it as a magic number, and it deliberately differs from 0o600 so the
