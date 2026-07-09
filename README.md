@@ -53,8 +53,8 @@ number inside each constraint string changes. Nothing else is touched.
 ## Quick Start
 
 ```bash
-# Install
-go install github.com/LarsArtmann/upd/cmd/upd@latest
+# Install (requires Go 1.26+ with GOEXPERIMENT=jsonv2)
+GOEXPERIMENT=jsonv2 go install github.com/LarsArtmann/upd/cmd/upd@latest
 
 # Dry run — show what would change without writing
 upd -n
@@ -62,6 +62,10 @@ upd -n
 # Apply updates
 upd
 ```
+
+> **Why `GOEXPERIMENT=jsonv2`?** `upd` uses Go's `encoding/json/v2` for
+> byte-precise JSON editing. This flag will become unnecessary once the
+> Go team stabilizes the `json/v2` package in a future release.
 
 Example output (`upd -n -C`):
 
@@ -81,8 +85,10 @@ Example output (`upd -n -C`):
 ### Go
 
 ```bash
-go install github.com/LarsArtmann/upd/cmd/upd@latest
+GOEXPERIMENT=jsonv2 go install github.com/LarsArtmann/upd/cmd/upd@latest
 ```
+
+Requires Go 1.26+ with the `json/v2` experiment enabled.
 
 ### Nix
 

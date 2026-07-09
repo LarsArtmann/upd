@@ -28,7 +28,7 @@ func renderManifest(t *testing.T, manifest Manifest, updated, errored int, noCol
 func TestRenderTableUpdated(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, true, false)
@@ -42,7 +42,7 @@ func TestRenderTableUpdated(t *testing.T) {
 func TestRenderTableAllUpToDate(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 
 	output := renderManifest(t, manifest, 0, 0, true, false)
 
@@ -52,7 +52,7 @@ func TestRenderTableAllUpToDate(t *testing.T) {
 func TestRenderTableAllMode(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0", "lodash": "4.17.21"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, true, true)
@@ -64,7 +64,7 @@ func TestRenderTableAllMode(t *testing.T) {
 func TestRenderTableErrorState(t *testing.T) {
 	json := `{"dependencies": {"broken": "^1.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 
 	for _, spec := range manifest["broken"] {
 		spec.State = StateError
@@ -75,10 +75,27 @@ func TestRenderTableErrorState(t *testing.T) {
 	assertContains(t, output, "error", "state label")
 }
 
+func TestRenderTableErrorDetailSurfacesReason(t *testing.T) {
+	json := `{"dependencies": {"broken": "^1.0.0"}}`
+	pkg := &PackageFile{raw: []byte(json)}
+	manifest, _ := BuildManifest(pkg, nil, false)
+
+	for _, spec := range manifest["broken"] {
+		spec.State = StateError
+		spec.Err = ErrPackageNotFound
+	}
+
+	output := renderManifest(t, manifest, 0, 1, true, false)
+
+	assertContains(t, output, "Errors (1)", "error detail header")
+	assertContains(t, output, "broken", "package name in detail")
+	assertContains(t, output, ErrPackageNotFound.Error(), "error reason message")
+}
+
 func TestRenderNoColorStripsANSI(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, true, false)
@@ -89,7 +106,7 @@ func TestRenderNoColorStripsANSI(t *testing.T) {
 func TestRenderWithColorContainsANSI(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, false, false)
@@ -100,7 +117,7 @@ func TestRenderWithColorContainsANSI(t *testing.T) {
 func TestRenderTableNoColorColumnOrder(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, true, false)

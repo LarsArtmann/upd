@@ -16,6 +16,8 @@ const (
 	boxBorderChar = "─"
 	terminalWidth = 79
 	halfDivisor   = 2
+
+	errorNameColumnWidth = 20
 )
 
 type Renderer struct {
@@ -59,6 +61,7 @@ func (r *Renderer) RenderTable(manifest Manifest, updates, errors int, showAll b
 	}
 
 	r.renderUpgradeTable(manifest, showAll)
+	r.renderErrorDetails(manifest)
 }
 
 func (r *Renderer) renderAllUpToDate() {
@@ -67,6 +70,35 @@ func (r *Renderer) renderAllUpToDate() {
 	_, _ = fmt.Fprintf(r.w, "┌%s┐\n", border)
 	_, _ = fmt.Fprintf(r.w, "│%s│\n", centerPad(box, terminalWidth))
 	_, _ = fmt.Fprintf(r.w, "└%s┘\n", border)
+}
+
+func (r *Renderer) renderErrorDetails(manifest Manifest) {
+	type entry struct {
+		name string
+		err  error
+	}
+
+	var entries []entry
+
+	for _, name := range manifest.SortedNames() {
+		for _, spec := range manifest[name] {
+			if spec.State == StateError && spec.Err != nil {
+				entries = append(entries, entry{name: name, err: spec.Err})
+			}
+		}
+	}
+
+	if len(entries) == 0 {
+		return
+	}
+
+	_, _ = fmt.Fprintf(r.w, "\n%s\n", r.bold(r.red(fmt.Sprintf("Errors (%d):", len(entries)))))
+
+	nameWidth := errorNameColumnWidth
+
+	for _, e := range entries {
+		_, _ = fmt.Fprintf(r.w, "  %s  %s\n", r.grey(padCell(e.name, nameWidth)), e.err.Error())
+	}
 }
 
 func (r *Renderer) renderUpgradeTable(manifest Manifest, showAll bool) {

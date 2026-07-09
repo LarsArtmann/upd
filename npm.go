@@ -43,7 +43,7 @@ func (c *RegistryClient) FetchPackument(ctx context.Context, name string) (*Pack
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
-		return nil, 0, fmt.Errorf("package information retrieval failed: %w", err)
+		return nil, 0, fmt.Errorf("build registry request for %q: %w", name, err)
 	}
 
 	req.Header.Set("User-Agent", c.userAgent)
@@ -51,12 +51,12 @@ func (c *RegistryClient) FetchPackument(ctx context.Context, name string) (*Pack
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return nil, 0, fmt.Errorf("package information retrieval failed: %w", err)
+		return nil, 0, fmt.Errorf("send registry request for %q: %w", name, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, 0, fmt.Errorf("registry returned status %d for %q: %w", resp.StatusCode, name, ErrPackageNotFound)
+		return nil, 0, classifyRegistryError(resp.StatusCode, name)
 	}
 
 	data, err := io.ReadAll(resp.Body)
@@ -65,6 +65,14 @@ func (c *RegistryClient) FetchPackument(ctx context.Context, name string) (*Pack
 	}
 
 	return &Packument{raw: data}, len(data), nil
+}
+
+func classifyRegistryError(status int, name string) error {
+	if status == http.StatusNotFound || status == http.StatusGone {
+		return fmt.Errorf("registry returned status %d for %q: %w", status, name, ErrPackageNotFound)
+	}
+
+	return fmt.Errorf("registry returned status %d for %q: %w", status, name, ErrRegistryUnavailable)
 }
 
 func (p *Packument) LatestVersion() (string, error) {

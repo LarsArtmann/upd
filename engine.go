@@ -138,6 +138,7 @@ func (e *Engine) applyOne(
 	writeErr := pkg.UpdateDependency(spec.Section, spec.Name, spec.SNew)
 	if writeErr != nil {
 		spec.State = StateError
+		spec.Err = fmt.Errorf("write %q in %q: %w", spec.Name, spec.Section, writeErr)
 		errors++
 	}
 
@@ -145,8 +146,16 @@ func (e *Engine) applyOne(
 }
 
 func resolveSpecVersion(spec *Spec, result *FetchResult, cfg *Config) bool {
-	if result == nil || (result.err != nil && result.pkg == nil) {
+	if result == nil {
 		spec.State = StateError
+		spec.Err = fmt.Errorf("%q: %w", spec.Name, ErrPackageNotFound)
+
+		return false
+	}
+
+	if result.err != nil && result.pkg == nil {
+		spec.State = StateError
+		spec.Err = result.err
 
 		return false
 	}
@@ -154,6 +163,7 @@ func resolveSpecVersion(spec *Spec, result *FetchResult, cfg *Config) bool {
 	vNew, err := pickVersion(result.pkg, cfg)
 	if err != nil {
 		spec.State = StateError
+		spec.Err = fmt.Errorf("resolve version for %q: %w", spec.Name, err)
 
 		return false
 	}

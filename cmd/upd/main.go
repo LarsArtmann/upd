@@ -13,8 +13,22 @@ func main() {
 	err := run(os.Args[1:])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "\x1b[31mERROR:\x1b[0m %v\n", err)
-		os.Exit(1)
+		os.Exit(exitCode(err))
 	}
+}
+
+const exitTransient = 75
+
+func exitCode(err error) int {
+	if err == nil {
+		return 0
+	}
+
+	if errors.Is(err, upd.ErrRegistryUnavailable) {
+		return exitTransient
+	}
+
+	return 1
 }
 
 func run(args []string) error {
@@ -33,11 +47,18 @@ func run(args []string) error {
 	}
 
 	// Honor embedded "upd" field in package.json
-	if embedded := pkg.GetUpdArgs(); len(embedded) > 0 {
+	embedded, err := pkg.GetUpdArgs()
+	if err != nil {
+		return fmt.Errorf("read embedded upd args: %w", err)
+	}
+
+	if len(embedded) > 0 {
 		cfg.Patterns = append(embedded, cfg.Patterns...)
 	}
 
-	manifest := upd.BuildManifest(pkg, cfg.Patterns, cfg.PinLatest)
+	manifest, warnings := upd.BuildManifest(pkg, cfg.Patterns, cfg.PinLatest)
+	printWarnings(os.Stderr, warnings)
+
 	toCheck := manifest.ToCheck()
 
 	engine := upd.NewEngine(cfg)
@@ -85,4 +106,10 @@ func finalizeRun(
 	}
 
 	return nil
+}
+
+func printWarnings(w *os.File, warnings []string) {
+	for _, msg := range warnings {
+		_, _ = fmt.Fprintf(w, "\x1b[33mWARNING:\x1b[0m %s\n", msg)
+	}
 }

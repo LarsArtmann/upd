@@ -1,6 +1,7 @@
 package upd
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -64,7 +65,9 @@ func TestMatchesPatterns(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := matchesPatterns(tt.name, tt.patterns)
+			compiled, _ := compilePatterns(tt.patterns)
+
+			got := matchesPatterns(tt.name, compiled)
 			if got != tt.expect {
 				t.Errorf("matchesPatterns(%q, %v) = %v, want %v", tt.name, tt.patterns, got, tt.expect)
 			}
@@ -85,7 +88,7 @@ func TestBuildManifest(t *testing.T) {
 	}`
 
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 
 	if len(manifest) != 4 {
 		t.Fatalf("expected 4 packages, got %d", len(manifest))
@@ -133,7 +136,7 @@ func TestBuildManifestWithPatterns(t *testing.T) {
 	}`
 
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, []string{"react*", "!react-dom"}, false)
+	manifest, _ := BuildManifest(pkg, []string{"react*", "!react-dom"}, false)
 
 	cases := []struct {
 		pkg   string
@@ -159,7 +162,7 @@ func TestManifestToCheck(t *testing.T) {
 	}`
 
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 	toCheck := manifest.ToCheck()
 
 	if len(toCheck) != 1 {
@@ -183,7 +186,7 @@ func TestBuildManifestPinLatest(t *testing.T) {
 
 	t.Run("without pinLatest", func(t *testing.T) {
 		pkg := &PackageFile{raw: []byte(json)}
-		manifest := BuildManifest(pkg, nil, false)
+		manifest, _ := BuildManifest(pkg, nil, false)
 
 		if manifest["semver"][0].State != StateSkipped {
 			t.Errorf("semver state = %s, want skipped", manifest["semver"][0].State)
@@ -196,7 +199,7 @@ func TestBuildManifestPinLatest(t *testing.T) {
 
 	t.Run("with pinLatest", func(t *testing.T) {
 		pkg := &PackageFile{raw: []byte(json)}
-		manifest := BuildManifest(pkg, nil, true)
+		manifest, _ := BuildManifest(pkg, nil, true)
 
 		for _, name := range []string{"semver", "semver-cap"} {
 			spec := manifest[name][0]
@@ -221,4 +224,52 @@ func TestBuildManifestPinLatest(t *testing.T) {
 			t.Errorf("local state = %s, want skipped", manifest["local"][0].State)
 		}
 	})
+}
+
+func TestBuildManifestWarnsOnMalformedSection(t *testing.T) {
+	json := `{
+		"dependencies": {
+			"react": "^18.0.0"
+		},
+		"devDependencies": 42
+	}`
+
+	pkg := &PackageFile{raw: []byte(json)}
+	manifest, warnings := BuildManifest(pkg, nil, false)
+
+	if len(manifest) == 0 {
+		t.Fatal("expected manifest to still contain parseable sections")
+	}
+
+	if manifest["react"][0].State != StateCheck {
+		t.Errorf("react from valid section should be checked, got %s", manifest["react"][0].State)
+	}
+
+	found := false
+
+	for _, w := range warnings {
+		if strings.Contains(w, "devDependencies") {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Errorf("expected warning about malformed devDependencies, got: %v", warnings)
+	}
+}
+
+func TestCompilePatternsWarnsOnInvalidGlob(t *testing.T) {
+	_, warnings := compilePatterns([]string{"react*", "[invalid"})
+
+	found := false
+
+	for _, w := range warnings {
+		if strings.Contains(w, "[invalid") {
+			found = true
+		}
+	}
+
+	if !found {
+		t.Errorf("expected warning about invalid pattern, got: %v", warnings)
+	}
 }

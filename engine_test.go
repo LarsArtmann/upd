@@ -3,6 +3,7 @@ package upd
 import (
 	"context"
 	"encoding/json/v2"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -47,7 +48,7 @@ func buildTestManifest(t *testing.T, json string) (*PackageFile, Manifest) {
 	t.Helper()
 
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 
 	return pkg, manifest
 }
@@ -234,7 +235,7 @@ func TestEnginePinLatest(t *testing.T) {
 
 	pkgJSON := `{"dependencies": {"semver": "latest"}}`
 	pkg := &PackageFile{raw: []byte(pkgJSON)}
-	manifest := BuildManifest(pkg, nil, true)
+	manifest, _ := BuildManifest(pkg, nil, true)
 
 	cfg := DefaultConfig()
 	engine := newTestEngine(t, registry, cfg)
@@ -280,7 +281,7 @@ func TestEnginePinLatestDisabled(t *testing.T) {
 
 	pkgJSON := `{"dependencies": {"semver": "latest"}}`
 	pkg := &PackageFile{raw: []byte(pkgJSON)}
-	manifest := BuildManifest(pkg, nil, false)
+	manifest, _ := BuildManifest(pkg, nil, false)
 
 	cfg := DefaultConfig()
 	engine := newTestEngine(t, registry, cfg)
@@ -294,5 +295,67 @@ func TestEnginePinLatestDisabled(t *testing.T) {
 
 	if manifest["semver"][0].State != StateSkipped {
 		t.Errorf("state = %s, want skipped", manifest["semver"][0].State)
+	}
+}
+
+func TestRegistryClassifiesNotFoundAsRejection(t *testing.T) {
+	registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer registry.Close()
+
+	engine := newTestEngine(t, registry, DefaultConfig())
+	_, _, err := engine.registry.FetchPackument(context.Background(), "ghost")
+
+	if !errors.Is(err, ErrPackageNotFound) {
+		t.Errorf("404 should wrap ErrPackageNotFound, got: %v", err)
+	}
+
+	if errors.Is(err, ErrRegistryUnavailable) {
+		t.Errorf("404 must NOT wrap ErrRegistryUnavailable, got: %v", err)
+	}
+}
+
+func TestRegistryClassifiesServerErrorAsTransient(t *testing.T) {
+	for _, status := range []int{http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(status)
+			}))
+			defer registry.Close()
+
+			engine := newTestEngine(t, registry, DefaultConfig())
+			_, _, err := engine.registry.FetchPackument(context.Background(), "react")
+
+			if !errors.Is(err, ErrRegistryUnavailable) {
+				t.Errorf("status %d should wrap ErrRegistryUnavailable, got: %v", status, err)
+			}
+		})
+	}
+}
+
+func TestApplyUpdatesPopulatesSpecErr(t *testing.T) {
+	registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer registry.Close()
+
+	pkg, manifest := buildTestManifest(t, `{"dependencies": {"ghost": "^1.0.0"}}`)
+	engine := newTestEngine(t, registry, DefaultConfig())
+
+	results := engine.FetchAll(context.Background(), manifest.ToCheck())
+	_, errCount := engine.ApplyUpdates(manifest, results, pkg)
+
+	if errCount == 0 {
+		t.Fatal("expected errors for 404, got 0")
+	}
+
+	spec := manifest["ghost"][0]
+	if spec.Err == nil {
+		t.Fatal("expected spec.Err to be populated, got nil")
+	}
+
+	if !errors.Is(spec.Err, ErrPackageNotFound) {
+		t.Errorf("spec.Err should wrap ErrPackageNotFound, got: %v", spec.Err)
 	}
 }

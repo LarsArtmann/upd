@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-09
 **Status:** Recommendation produced
-**Verdict (TL;DR):** Do **not** adopt any of the three right now. The cost/benefit ratio is poor for a 3-dependency single-pass CLI. Revisit only if `upd` grows a retry loop, structured logging, or an HTTP API. Full reasoning below.
+**Verdict (TL;DR):** Do **not** adopt any of the three right now. None of them solve a problem `upd` actually has today (no retry loop, no HTTP API, no observability stack). Revisit only if `upd` grows one of those. Full reasoning below.
 
 ---
 
@@ -70,7 +70,7 @@ The **only** exit-code change that would be genuinely user-visible and useful: a
 
 | #   | Argument                                                                                                                                                                                                                                                                                               | Weight                  |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
-| C1  | **Violates the stated "only 3 direct dependencies" design principle** (AGENTS.md). The depguard allowlist would need editing in two rules. The go.mod `require` block grows. For a tool whose entire value prop is minimalism, this is a philosophical cost.                                           | **High**                |
+| C1  | **Depguard allowlist must be edited** (two rules: `main` and `cmd`) for each new import. Not a blocker — just a mechanical step — but it means the dependency choice is a deliberate one, not a freebie.                                                                                               | Low                     |
 | C2  | **The library is v0.x, 0 stars, 2 months old, single-author.** No battle-testing, no community, no third-party usage reports. Adopting it in a tool meant to be stable and trustworthy is premature.                                                                                                   | **High**                |
 | C3  | **Go 1.26 requirement (`errors.AsType`).** `upd` is on `go 1.26.4` so this is _currently_ satisfied, but it pins the floor higher than the 3 existing deps require, reducing portability for contributors on older toolchains.                                                                         | Low — already satisfied |
 | C4  | **Invasive migration for thin value.** To get _any_ classification benefit, all 11 sentinels must either implement `ErrorFamily()` or be registered via `RegisterClassification`. That's 11 code changes + an `init()` block, for a tool whose entire error surface is ~6 wrapping sites in `main.go`. | **High**                |
@@ -100,7 +100,7 @@ The **only** exit-code change that would be genuinely user-visible and useful: a
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | C1  | **`upd` is a CLI, not a long-running service.** Stack traces and trace IDs are for Sentry / distributed tracing / log aggregation. A CLI that runs in 2 seconds and exits has no consumer for this enrichment.    | **High** |
 | C2  | **The builder-chain style (`oops.In("...").Tags("...").With("...", v).Wrapf(err, "...")`) is heavier than `fmt.Errorf("...: %w", err)`.** For 6 call sites in a focused tool, this adds ceremony without clarity. | **High** |
-| C3  | **Same depguard / dependency-count cost as go-error-family** (C1 above).                                                                                                                                          | **High** |
+| C3  | **Same depguard allowlist edit as go-error-family** (C1 above).                                                                                                                                                   | Low      |
 | C4  | **`wrapcheck` linter is enabled** — it already enforces wrapping at every boundary. Replacing `fmt.Errorf` with `oops.Wrapf` satisfies the linter equally but adds a dependency to do the same job.               | Medium   |
 | C5  | **`errorlint` linter is enabled** — it checks `%w` usage. oops's `Wrapf` uses a custom format that sidesteps this check, potentially masking issues the linter would catch.                                       | Low      |
 
@@ -137,7 +137,7 @@ The **only** exit-code change that would be genuinely user-visible and useful: a
 | Criterion                               | go-error-family                  | oops                    | bridge                     | Stay on stdlib       |
 | --------------------------------------- | -------------------------------- | ----------------------- | -------------------------- | -------------------- |
 | Fits `upd`'s use case (single-pass CLI) | Partial                          | Poor                    | Poor                       | **Perfect**          |
-| Respects "3 deps only" principle        | No                               | No                      | No (adds 2)                | **Yes**              |
+| Respects "right tool for the job"       | No                               | No                      | No (adds 2)                | **Yes**              |
 | Maturity / risk                         | Low (v0.x, new)                  | High (v1, 969★)         | Lowest (v0.x experimental) | **Highest (stdlib)** |
 | Concrete benefit today                  | Exit code 75                     | Stack traces            | None standalone            | **None needed**      |
 | Migration cost                          | 11 sentinels + init() + depguard | 6 call sites + depguard | Both migrations + depguard | **Zero**             |
@@ -149,7 +149,7 @@ The **only** exit-code change that would be genuinely user-visible and useful: a
 
 ### Primary: Stay on the stdlib
 
-`upd`'s error handling is already idiomatic Go: sentinel errors, `%w` wrapping, `errors.Is`. The tool is too small and too focused to benefit from a classification protocol or an enrichment framework. The dependency-minimalism principle documented in AGENTS.md ("only 3 direct dependencies") exists for good reason — protect it.
+`upd`'s error handling is already idiomatic Go: sentinel errors, `%w` wrapping, `errors.Is`. The tool is too small and too focused to benefit from a classification protocol or an enrichment framework — none of the three libraries solve a problem the tool currently has.
 
 ### If the one real benefit (exit code 75) is still desired
 

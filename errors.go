@@ -6,6 +6,7 @@ var (
 	ErrFileNotFound           = errors.New("package configuration file not found")
 	ErrInvalidJSON            = errors.New("invalid JSON in package configuration file")
 	ErrPackageNotFound        = errors.New("package not found in NPM registry")
+	ErrRegistryUnavailable    = errors.New("NPM registry is unavailable")
 	ErrVersionParse           = errors.New("failed to parse semantic version")
 	ErrNoLatestDistTag        = errors.New("no \"latest\" dist-tag found")
 	ErrNoValidVersions        = errors.New("no valid versions found")

@@ -43,19 +43,31 @@ type Spec struct {
 	SNew     string
 	VNew     string
 	State    State
+	Err      error
 	IsLatest bool
 }
 
 type Manifest map[string][]*Spec
 
-func BuildManifest(pkg *PackageFile, patterns []string, pinLatest bool) Manifest {
+func BuildManifest(pkg *PackageFile, patterns []string, pinLatest bool) (Manifest, []string) {
 	manifest := make(Manifest)
 
+	var warnings []string
+
+	compiledPatterns, patternWarnings := compilePatterns(patterns)
+	warnings = append(warnings, patternWarnings...)
+
 	for _, section := range dependencySectionNames() {
-		deps := pkg.GetDependencySection(section)
+		deps, err := pkg.GetDependencySection(section)
+		if err != nil {
+			warnings = append(warnings, fmt.Sprintf("section %q: %v", section, err))
+
+			continue
+		}
+
 		for name, sOld := range deps {
 			state := StateIgnored
-			if matchesPatterns(name, patterns) {
+			if matchesPatterns(name, compiledPatterns) {
 				state = StateTodo
 			}
 
@@ -85,13 +97,14 @@ func BuildManifest(pkg *PackageFile, patterns []string, pinLatest bool) Manifest
 				SNew:     sOld,
 				VNew:     vOld,
 				State:    state,
+				Err:      nil,
 				IsLatest: isLatest,
 			}
 			manifest[name] = append(manifest[name], spec)
 		}
 	}
 
-	return manifest
+	return manifest, warnings
 }
 
 func (m Manifest) ToCheck() []string {
@@ -122,17 +135,21 @@ func (m Manifest) SortedNames() []string {
 	return names
 }
 
-func matchesPatterns(name string, patterns []string) bool {
-	if len(patterns) == 0 {
+type compiledPatterns struct {
+	positive []glob.Glob
+	negative []glob.Glob
+}
+
+func matchesPatterns(name string, patterns compiledPatterns) bool {
+	if len(patterns.positive) == 0 && len(patterns.negative) == 0 {
 		return true
 	}
 
-	positive, negative := splitPatterns(patterns)
-	hasPositive := len(positive) > 0
+	hasPositive := len(patterns.positive) > 0
 
 	matched := !hasPositive
 
-	for _, p := range positive {
+	for _, p := range patterns.positive {
 		if p.Match(name) {
 			matched = true
 
@@ -144,7 +161,7 @@ func matchesPatterns(name string, patterns []string) bool {
 		return false
 	}
 
-	for _, p := range negative {
+	for _, p := range patterns.negative {
 		if p.Match(name) {
 			return false
 		}
@@ -153,10 +170,10 @@ func matchesPatterns(name string, patterns []string) bool {
 	return true
 }
 
-func splitPatterns(patterns []string) ([]glob.Glob, []glob.Glob) {
+func compilePatterns(patterns []string) (compiledPatterns, []string) {
 	var (
-		positive []glob.Glob
-		negative []glob.Glob
+		compiled compiledPatterns
+		warnings []string
 	)
 
 	for _, raw := range patterns {
@@ -167,19 +184,21 @@ func splitPatterns(patterns []string) ([]glob.Glob, []glob.Glob) {
 			globExpr = raw[1:]
 		}
 
-		compiled, err := glob.Compile(globExpr)
+		matcher, err := glob.Compile(globExpr)
 		if err != nil {
+			warnings = append(warnings, fmt.Sprintf("invalid glob pattern %q: %v", raw, err))
+
 			continue
 		}
 
 		if isNegative {
-			negative = append(negative, compiled)
+			compiled.negative = append(compiled.negative, matcher)
 		} else {
-			positive = append(positive, compiled)
+			compiled.positive = append(compiled.positive, matcher)
 		}
 	}
 
-	return positive, negative
+	return compiled, warnings
 }
 
 func (s *Spec) String() string {

@@ -39,41 +39,45 @@ func (p *PackageFile) Raw() []byte {
 	return p.raw
 }
 
-func (p *PackageFile) GetDependencySection(section string) map[string]string {
+func (p *PackageFile) GetDependencySection(section string) (map[string]string, error) {
 	var topLevel map[string]jsontext.Value
 
 	err := json.Unmarshal(p.raw, &topLevel)
 	if err != nil {
-		return make(map[string]string)
+		return nil, fmt.Errorf("parse top-level JSON for section %q: %w", section, err)
 	}
 
 	sectionRaw, ok := topLevel[section]
-	if !ok || sectionRaw.Kind() != jsontext.KindBeginObject {
-		return make(map[string]string)
+	if !ok {
+		return make(map[string]string), nil
+	}
+
+	if sectionRaw.Kind() != jsontext.KindBeginObject {
+		return nil, fmt.Errorf("section %q is %s, expected object: %w", section, sectionRaw.Kind(), ErrInvalidJSON)
 	}
 
 	var deps map[string]string
 
 	err = json.Unmarshal(sectionRaw, &deps)
 	if err != nil {
-		return make(map[string]string)
+		return nil, fmt.Errorf("parse section %q: expected object of name→version strings: %w", section, err)
 	}
 
-	return deps
+	return deps, nil
 }
 
-func (p *PackageFile) GetUpdArgs() []string {
+func (p *PackageFile) GetUpdArgs() ([]string, error) {
 	var v struct {
 		Upd jsontext.Value `json:"upd"`
 	}
 
 	err := json.Unmarshal(p.raw, &v)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("parse upd field: %w", err)
 	}
 
 	if !v.Upd.IsValid() {
-		return nil
+		return nil, nil
 	}
 
 	kind := v.Upd.Kind()
@@ -82,21 +86,21 @@ func (p *PackageFile) GetUpdArgs() []string {
 	}
 
 	if kind == jsontext.KindString {
-		return parseUpdString(v.Upd)
+		return parseUpdString(v.Upd), nil
 	}
 
-	return nil
+	return nil, nil
 }
 
-func parseUpdArray(raw jsontext.Value) []string {
+func parseUpdArray(raw jsontext.Value) ([]string, error) {
 	var args []string
 
 	err := json.Unmarshal(raw, &args)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("parse upd array: %w", err)
 	}
 
-	return args
+	return args, nil
 }
 
 func parseUpdString(raw jsontext.Value) []string {
