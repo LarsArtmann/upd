@@ -37,7 +37,7 @@ func run(args []string) error {
 		cfg.Patterns = append(embedded, cfg.Patterns...)
 	}
 
-	manifest := upd.BuildManifest(pkg, cfg.Patterns)
+	manifest := upd.BuildManifest(pkg, cfg.Patterns, cfg.PinLatest)
 	toCheck := manifest.ToCheck()
 
 	engine := upd.NewEngine(cfg)

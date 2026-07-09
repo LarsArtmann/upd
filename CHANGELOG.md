@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `--pinLatest` / `-P` flag to pin dependencies using the bare `latest` dist-tag
+  to their exact resolved semver version (e.g. `"latest"` → `"7.7.4"`)
+- `encoding/json/v2` + `encoding/json/jsontext` migration, replacing `tidwall/gjson`
+- VHS animated demos rendered to `vhs.charm.sh` cloud
+
+### Changed
+
+- Copyright year updated to 2026
+
 ## [1.0.0] - 2026-06-18
 
 First stable release of the Go port.

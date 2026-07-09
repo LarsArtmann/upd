@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GOEXPERIMENT: jsonv2
     steps:
       - uses: actions/checkout@v4
 
@@ -20,10 +22,10 @@ jobs:
         run: go mod download
 
       - name: Build
-        run: go build -ldflags="-s -w -X github.com/LarsArtmann/upd/internal.ProgramVersion=ci" -trimpath ./cmd/upd
+        run: go build -ldflags="-s -w -X github.com/LarsArtmann/upd.ProgramVersion=ci" -trimpath ./cmd/upd
 
       - name: Vet
         run: go vet ./...
 
       - name: Test
-        run: go test ./... -v -count=1
+        run: go test -race ./... -v -count=1

@@ -1,14 +1,15 @@
 package upd
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	atomicwrite "github.com/larsartmann/go-atomic-write"
-	"github.com/tidwall/gjson"
 )
 
 type PackageFile struct {
@@ -27,7 +28,7 @@ func ReadPackageFile(path string) (*PackageFile, error) {
 		return nil, fmt.Errorf("failed to read package configuration file %q: %w", path, err)
 	}
 
-	if !gjson.ValidBytes(data) {
+	if !jsontext.Value(data).IsValid() {
 		return nil, fmt.Errorf("failed to parse package configuration file %q: %w", path, ErrInvalidJSON)
 	}
 
@@ -39,81 +40,143 @@ func (p *PackageFile) Raw() []byte {
 }
 
 func (p *PackageFile) GetDependencySection(section string) map[string]string {
-	deps := make(map[string]string)
+	var topLevel map[string]jsontext.Value
 
-	result := gjson.GetBytes(p.raw, section)
-	if !result.IsObject() {
-		return deps
+	err := json.Unmarshal(p.raw, &topLevel)
+	if err != nil {
+		return make(map[string]string)
 	}
 
-	result.ForEach(func(key, value gjson.Result) bool {
-		if value.Type == gjson.String {
-			deps[key.String()] = value.String()
-		}
+	sectionRaw, ok := topLevel[section]
+	if !ok || sectionRaw.Kind() != jsontext.KindBeginObject {
+		return make(map[string]string)
+	}
 
-		return true
-	})
+	var deps map[string]string
+	if err := json.Unmarshal(sectionRaw, &deps); err != nil {
+		return make(map[string]string)
+	}
 
 	return deps
 }
 
 func (p *PackageFile) GetUpdArgs() []string {
-	result := gjson.GetBytes(p.raw, "upd")
-	if !result.Exists() {
+	var v struct {
+		Upd jsontext.Value `json:"upd"`
+	}
+
+	err := json.Unmarshal(p.raw, &v)
+	if err != nil {
 		return nil
 	}
 
-	if result.IsArray() {
+	if !v.Upd.IsValid() {
+		return nil
+	}
+
+	switch v.Upd.Kind() {
+	case jsontext.KindBeginArray:
 		var args []string
 
-		result.ForEach(func(_, v gjson.Result) bool {
-			if v.Type == gjson.String {
-				args = append(args, v.String())
-			}
-
-			return true
-		})
+		err := json.Unmarshal(v.Upd, &args)
+		if err != nil {
+			return nil
+		}
 
 		return args
-	}
+	case jsontext.KindString:
+		var s string
 
-	if result.Type == gjson.String {
-		return strings.Fields(result.String())
-	}
+		err := json.Unmarshal(v.Upd, &s)
+		if err != nil {
+			return nil
+		}
 
-	return nil
+		return strings.Fields(s)
+	default:
+		return nil
+	}
 }
 
 func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
-	sectionResult := gjson.GetBytes(p.raw, section)
-	if !sectionResult.Exists() {
+	dec := jsontext.NewDecoder(bytes.NewReader(p.raw))
+
+	tok, err := dec.ReadToken()
+	if err != nil {
+		return fmt.Errorf("parse root: %w", err)
+	}
+
+	if tok.Kind() != jsontext.KindBeginObject {
+		return fmt.Errorf("expected root object: %w", ErrInvalidJSON)
+	}
+
+	sectionFound := false
+
+	for dec.PeekKind() != jsontext.KindEndObject {
+		keyTok, err := dec.ReadToken()
+		if err != nil {
+			return fmt.Errorf("read key: %w", err)
+		}
+
+		if keyTok.String() == section {
+			sectionFound = true
+
+			break
+		}
+
+		if err := dec.SkipValue(); err != nil {
+			return fmt.Errorf("skip value: %w", err)
+		}
+	}
+
+	if !sectionFound {
 		return fmt.Errorf("%w: %q", ErrSectionNotFound, section)
+	}
+
+	objTok, err := dec.ReadToken()
+	if err != nil {
+		return fmt.Errorf("read section start: %w", err)
+	}
+
+	if objTok.Kind() != jsontext.KindBeginObject {
+		return fmt.Errorf("section %q is not an object", section)
 	}
 
 	found := false
 
-	sectionResult.ForEach(func(key, value gjson.Result) bool {
-		if key.String() != name {
-			return true
-		}
-
-		found = true
-
-		encoded, err := json.Marshal(newValue)
+	for dec.PeekKind() != jsontext.KindEndObject {
+		keyTok, err := dec.ReadToken()
 		if err != nil {
-			return false
+			return fmt.Errorf("read dependency key: %w", err)
 		}
 
-		start := value.Index
-		end := value.Index + len(value.Raw)
-		replacement := make([]byte, 0, len(p.raw)-end+start+len(encoded))
-		replacement = append(replacement, p.raw[:start]...)
-		replacement = append(replacement, encoded...)
-		replacement = append(replacement, p.raw[end:]...)
-		p.raw = replacement
+		keyStr := keyTok.String()
 
-		return false
-	})
+		val, err := dec.ReadValue()
+		if err != nil {
+			return fmt.Errorf("read dependency value: %w", err)
+		}
+
+		if keyStr == name {
+			encoded, err := json.Marshal(newValue)
+			if err != nil {
+				return fmt.Errorf("encode new value: %w", err)
+			}
+
+			endOffset := int(dec.InputOffset())
+			startOffset := endOffset - len(val)
+
+			newRaw := make([]byte, 0, len(p.raw)-(endOffset-startOffset)+len(encoded))
+			newRaw = append(newRaw, p.raw[:startOffset]...)
+			newRaw = append(newRaw, encoded...)
+			newRaw = append(newRaw, p.raw[endOffset:]...)
+			p.raw = newRaw
+
+			found = true
+
+			break
+		}
+	}
 
 	if !found {
 		return fmt.Errorf("%w: %q in %q", ErrDependencyNotFound, name, section)

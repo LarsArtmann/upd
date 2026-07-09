@@ -85,7 +85,7 @@ func TestBuildManifest(t *testing.T) {
 	}`
 
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	manifest := BuildManifest(pkg, nil, false)
 
 	if len(manifest) != 4 {
 		t.Fatalf("expected 4 packages, got %d", len(manifest))
@@ -133,7 +133,7 @@ func TestBuildManifestWithPatterns(t *testing.T) {
 	}`
 
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, []string{"react*", "!react-dom"})
+	manifest := BuildManifest(pkg, []string{"react*", "!react-dom"}, false)
 
 	cases := []struct {
 		pkg   string
@@ -159,7 +159,7 @@ func TestManifestToCheck(t *testing.T) {
 	}`
 
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	manifest := BuildManifest(pkg, nil, false)
 	toCheck := manifest.ToCheck()
 
 	if len(toCheck) != 1 {
@@ -169,4 +169,56 @@ func TestManifestToCheck(t *testing.T) {
 	if toCheck[0] != "react" {
 		t.Errorf("expected react, got %s", toCheck[0])
 	}
+}
+
+func TestBuildManifestPinLatest(t *testing.T) {
+	json := `{
+		"dependencies": {
+			"react": "^18.0.0",
+			"semver": "latest",
+			"semver-cap": "Latest",
+			"local": "file:../local"
+		}
+	}`
+
+	t.Run("without pinLatest", func(t *testing.T) {
+		pkg := &PackageFile{raw: []byte(json)}
+		manifest := BuildManifest(pkg, nil, false)
+
+		if manifest["semver"][0].State != StateSkipped {
+			t.Errorf("semver state = %s, want skipped", manifest["semver"][0].State)
+		}
+
+		if manifest["semver-cap"][0].State != StateSkipped {
+			t.Errorf("semver-cap state = %s, want skipped", manifest["semver-cap"][0].State)
+		}
+	})
+
+	t.Run("with pinLatest", func(t *testing.T) {
+		pkg := &PackageFile{raw: []byte(json)}
+		manifest := BuildManifest(pkg, nil, true)
+
+		for _, name := range []string{"semver", "semver-cap"} {
+			spec := manifest[name][0]
+			if spec.State != StateCheck {
+				t.Errorf("%s state = %s, want check", name, spec.State)
+			}
+
+			if !spec.IsLatest {
+				t.Errorf("%s IsLatest = false, want true", name)
+			}
+		}
+
+		if manifest["react"][0].State != StateCheck {
+			t.Errorf("react state = %s, want check", manifest["react"][0].State)
+		}
+
+		if manifest["react"][0].IsLatest {
+			t.Error("react IsLatest = true, want false")
+		}
+
+		if manifest["local"][0].State != StateSkipped {
+			t.Errorf("local state = %s, want skipped", manifest["local"][0].State)
+		}
+	})
 }

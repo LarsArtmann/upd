@@ -28,7 +28,7 @@ func renderManifest(t *testing.T, manifest Manifest, updated, errored int, noCol
 func TestRenderTableUpdated(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	manifest := BuildManifest(pkg, nil, false)
 	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, true, false)
@@ -42,7 +42,7 @@ func TestRenderTableUpdated(t *testing.T) {
 func TestRenderTableAllUpToDate(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	manifest := BuildManifest(pkg, nil, false)
 
 	output := renderManifest(t, manifest, 0, 0, true, false)
 
@@ -52,7 +52,7 @@ func TestRenderTableAllUpToDate(t *testing.T) {
 func TestRenderTableAllMode(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0", "lodash": "4.17.21"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	manifest := BuildManifest(pkg, nil, false)
 	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, true, true)
@@ -64,7 +64,7 @@ func TestRenderTableAllMode(t *testing.T) {
 func TestRenderTableErrorState(t *testing.T) {
 	json := `{"dependencies": {"broken": "^1.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	manifest := BuildManifest(pkg, nil, false)
 
 	for _, spec := range manifest["broken"] {
 		spec.State = StateError
@@ -78,7 +78,7 @@ func TestRenderTableErrorState(t *testing.T) {
 func TestRenderNoColorStripsANSI(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	manifest := BuildManifest(pkg, nil, false)
 	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, true, false)
@@ -89,7 +89,7 @@ func TestRenderNoColorStripsANSI(t *testing.T) {
 func TestRenderWithColorContainsANSI(t *testing.T) {
 	json := `{"dependencies": {"react": "^18.0.0"}}`
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	manifest := BuildManifest(pkg, nil, false)
 	markReactUpdated(manifest)
 
 	output := renderManifest(t, manifest, 1, 0, false, false)

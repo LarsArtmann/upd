@@ -2,6 +2,7 @@ package upd
 
 import (
 	"context"
+	"encoding/json/v2"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/tidwall/gjson"
 )
 
 const (
@@ -68,12 +68,22 @@ func (c *RegistryClient) FetchPackument(ctx context.Context, name string) (*Pack
 }
 
 func (p *Packument) LatestVersion() (string, error) {
-	r := gjson.GetBytes(p.raw, "dist-tags.latest")
-	if !r.Exists() {
+	var v struct {
+		DistTags struct {
+			Latest string `json:"latest"`
+		} `json:"dist-tags"`
+	}
+
+	err := json.Unmarshal(p.raw, &v)
+	if err != nil {
+		return "", fmt.Errorf("parse packument dist-tags: %w", err)
+	}
+
+	if v.DistTags.Latest == "" {
 		return "", ErrNoLatestDistTag
 	}
 
-	return r.String(), nil
+	return v.DistTags.Latest, nil
 }
 
 func (p *Packument) GreatestVersion() (string, error) {
@@ -103,18 +113,20 @@ func (p *Packument) GreatestVersion() (string, error) {
 }
 
 func (p *Packument) VersionKeys() []string {
-	result := gjson.GetBytes(p.raw, "versions")
-	if !result.IsObject() {
+	var v struct {
+		Versions map[string]struct{} `json:"versions"`
+	}
+
+	err := json.Unmarshal(p.raw, &v)
+	if err != nil {
 		return nil
 	}
 
-	var keys []string
+	keys := make([]string, 0, len(v.Versions))
+	for k := range v.Versions {
+		keys = append(keys, k)
+	}
 
-	result.ForEach(func(key, _ gjson.Result) bool {
-		keys = append(keys, key.String())
-
-		return true
-	})
 	sort.Strings(keys)
 
 	return keys

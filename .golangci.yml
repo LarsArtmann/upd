@@ -143,7 +143,6 @@ linters:
             - github.com/LarsArtmann/upd
             - github.com/Masterminds/semver/v3
             - github.com/gobwas/glob
-            - github.com/tidwall/gjson
             - github.com/larsartmann/go-atomic-write
           files:
             - $all

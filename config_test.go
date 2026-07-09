@@ -66,16 +66,18 @@ func TestParseFlagsDefaults(t *testing.T) {
 	assertFlagFalse(t, "Quiet", cfg.Quiet)
 	assertFlagFalse(t, "Nop", cfg.Nop)
 	assertFlagFalse(t, "NoColor", cfg.NoColor)
+	assertFlagFalse(t, "PinLatest", cfg.PinLatest)
 }
 
 func TestParseFlagsShortFlags(t *testing.T) {
-	cfg := mustParseFlags(t, []string{"-n", "-C", "-g", "-a", "-q", "-c", "16", "react*"})
+	cfg := mustParseFlags(t, []string{"-n", "-C", "-g", "-a", "-q", "-P", "-c", "16", "react*"})
 
 	assertFlagTrue(t, "Nop", cfg.Nop)
 	assertFlagTrue(t, "NoColor", cfg.NoColor)
 	assertFlagTrue(t, "Greatest", cfg.Greatest)
 	assertFlagTrue(t, "All", cfg.All)
 	assertFlagTrue(t, "Quiet", cfg.Quiet)
+	assertFlagTrue(t, "PinLatest", cfg.PinLatest)
 	assertConcurrency(t, cfg, 16)
 
 	if len(cfg.Patterns) != 1 || cfg.Patterns[0] != "react*" {
@@ -85,13 +87,14 @@ func TestParseFlagsShortFlags(t *testing.T) {
 
 func TestParseFlagsLongFlags(t *testing.T) {
 	cfg := mustParseFlags(t, []string{
-		"--nop", "--noColor", "--greatest", "--all", "--concurrency", "4", "--file", "other.json",
+		"--nop", "--noColor", "--greatest", "--all", "--pin-latest", "--concurrency", "4", "--file", "other.json",
 	})
 
 	assertFlagTrue(t, "Nop", cfg.Nop)
 	assertFlagTrue(t, "NoColor", cfg.NoColor)
 	assertFlagTrue(t, "Greatest", cfg.Greatest)
 	assertFlagTrue(t, "All", cfg.All)
+	assertFlagTrue(t, "PinLatest", cfg.PinLatest)
 	assertConcurrency(t, cfg, 4)
 	assertFile(t, cfg, "other.json")
 }

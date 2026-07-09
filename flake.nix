@@ -20,6 +20,7 @@
         { pkgs, ... }:
         let
           version = "1.0.0";
+          goExperiment = "jsonv2";
         in
         {
           formatter = pkgs.nixpkgs-fmt;
@@ -29,8 +30,9 @@
               pname = "upd";
               inherit version;
               src = ./.;
-              vendorHash = "sha256-+Ro+rA8Fpa2J45FaaD9qQFUl/EIRpYhNSV6X9lVLzQc=";
+              vendorHash = "sha256-HHBnbQrRKhy4EGNZfFyo8C7qHzhAASITutgYa4eHADU=";
               subPackages = [ "cmd/upd" ];
+              env.GOEXPERIMENT = goExperiment;
               ldflags = [
                 "-s"
                 "-w"
@@ -47,11 +49,15 @@
           };
 
           devShells.default = pkgs.mkShell {
+            GOEXPERIMENT = goExperiment;
             buildInputs = with pkgs; [
               go
               gopls
               gotools
               go-tools # staticcheck
+              vhs
+              ttyd
+              ffmpeg
             ];
           };
 
@@ -62,6 +68,7 @@
                 name = "build";
                 runtimeInputs = [ pkgs.go ];
                 text = ''
+                  export GOEXPERIMENT=${goExperiment}
                   go build -trimpath -ldflags='-s -w -X github.com/LarsArtmann/upd.ProgramVersion=${version}' -o bin/upd ./cmd/upd
                 '';
               };
@@ -73,6 +80,7 @@
                 name = "test";
                 runtimeInputs = [ pkgs.go ];
                 text = ''
+                  export GOEXPERIMENT=${goExperiment}
                   go test ./... -v -count=1
                 '';
               };
@@ -84,6 +92,7 @@
                 name = "lint";
                 runtimeInputs = with pkgs; [ go gopls ];
                 text = ''
+                  export GOEXPERIMENT=${goExperiment}
                   go vet ./... && echo "vet OK"
                   go build ./... && echo "build OK"
                 '';
@@ -96,7 +105,45 @@
                 name = "run";
                 runtimeInputs = [ pkgs.go ];
                 text = ''
+                  export GOEXPERIMENT=${goExperiment}
                   go run ./cmd/upd "$@"
+                '';
+              };
+            };
+
+            demo = {
+              type = "app";
+              program = pkgs.writeShellApplication {
+                name = "demo";
+                runtimeInputs = with pkgs; [ go vhs ttyd ffmpeg git ];
+                text = ''
+                  export GOEXPERIMENT=${goExperiment}
+                  build_dir="$(mktemp -d)"
+                  trap 'rm -rf "$build_dir"' EXIT
+
+                  repo_root="$(git rev-parse --show-toplevel)"
+                  go build -C "$repo_root" -trimpath \
+                    -ldflags='-s -w -X github.com/LarsArtmann/upd.ProgramVersion=${version}' \
+                    -o "$build_dir/upd" ./cmd/upd
+
+                  export PATH="$build_dir:$PATH"
+                  cd "$repo_root/demo"
+
+                  if [ "$#" -gt 0 ] && [ "$1" = "--publish" ]; then
+                    shift
+                    for tape in *.tape; do
+                      echo "Rendering and publishing $tape..."
+                      vhs --publish "$tape"
+                    done
+                  else
+                    for tape in *.tape; do
+                      echo "Rendering $tape (local only)..."
+                      vhs "$tape"
+                    done
+                    echo ""
+                    echo "Done. GIFs are in demo/."
+                    echo "To publish to vhs.charm.sh: nix run .#demo -- --publish"
+                  fi
                 '';
               };
             };

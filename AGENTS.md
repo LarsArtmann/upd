@@ -16,10 +16,16 @@ nix run .#build          # build to bin/upd
 nix run .#test           # go test ./... -v -count=1
 nix run .#lint           # go vet ./... && go build ./...
 nix run .#run -- <args>  # go run ./cmd/upd <args>
+nix run .#demo           # render VHS demo GIFs locally
+nix run .#demo -- --publish  # render + publish to vhs.charm.sh
 ```
 
-Plain Go equivalents: `go build ./cmd/upd`, `go test ./...`, `go vet ./...`.
-CI (`.github/workflows/ci.yml`) runs build + vet + test on push/PR to `master`.
+**`GOEXPERIMENT=jsonv2` is required** for all Go commands (set automatically in nix apps and devShell; must be `export`ed for plain Go commands).
+
+Plain Go equivalents: `GOEXPERIMENT=jsonv2 go build ./cmd/upd`, `GOEXPERIMENT=jsonv2 go test ./...`.
+CI (`.github/workflows/ci.yml`) runs build + vet + race test on push/PR to `master`.
+
+VHS demos (`demo/*.tape`) are rendered with `vhs` and published to the [VHS cloud](https://vhs.charm.sh). GIFs are git-ignored — re-render with `nix run .#demo` anytime without committing binary files.
 
 ## Conventions
 
@@ -32,20 +38,20 @@ CI (`.github/workflows/ci.yml`) runs build + vet + test on push/PR to `master`.
 
 `cmd/upd/main.go:run()` drives a linear flow; the files below each own one stage:
 
-1. **Parse flags** → `Config` (`config.go`). Short and long forms are both registered (`-h`/`--help`, `-c`/`--concurrency`, ...).
+1. **Parse flags** → `Config` (`config.go`). Short and long forms are both registered (`-h`/`--help`, `-c`/`--concurrency`, `-P`/`--pin-latest`, ...).
 2. **Read `package.json`** → `PackageFile` keeps the raw bytes and an xxhash64 fingerprint of them (`packagejson.go`). The fingerprint guards the later write against concurrent modifications.
 3. **Merge patterns**: if `package.json` has an `upd` field (string or array), those args are **prepended** to CLI patterns.
-4. **Build manifest** → `Manifest` (`name → []*Spec`) across four sections in fixed order: `optionalDependencies`, `peerDependencies`, `devDependencies`, `dependencies` (`manifest.go`).
-5. **Classify** each spec into a `State` via the version regex + glob pattern matching.
+4. **Build manifest** → `Manifest` (`name → []*Spec`) across four sections in fixed order: `optionalDependencies`, `peerDependencies`, `devDependencies`, `dependencies` (`manifest.go`). Takes `pinLatest bool` as third arg — when true, bare `"latest"` strings (case-insensitive, anchored regex `latestRe`) are classified as `StateCheck` with `IsLatest=true`.
+5. **Classify** each spec into a `State` via the version regex (`versionRe`) + `latestRe` + glob pattern matching.
 6. **Fetch** packuments concurrently (semaphore bounded by `-c`, default 8) from `registry.npmjs.org` (`engine.go`, `npm.go`). Names are lowercased before fetch.
-7. **Apply updates**: resolve target version, compare semver, mutate `PackageFile` bytes in place.
+7. **Apply updates**: resolve target version, compare semver, mutate `PackageFile` bytes in place. When `IsLatest=true`, `SNew` is set directly to the resolved version and `shouldUpdate` short-circuits to always update.
 8. **Render** terminal table (`render.go`) and **write back** only if updates occurred and `-n` is not set. The write is atomic (temp file + rename via `go-atomic-write`) and verifies the on-disk fingerprint first; a concurrent edit aborts the write with `ErrConcurrentModification` and leaves the file untouched.
 
 ## Domain Concepts
 
 - **Packument**: NPM registry JSON for one package (`dist-tags`, `versions`, ...). Held as raw bytes in `npm.go`.
 - **Manifest**: `map[string][]*Spec` — every occurrence of a dependency across all sections.
-- **Spec**: one dependency in one section. Fields: `Section`, `Name`, `SOld`/`SNew` (full constraint string), `VOld`/`VNew` (parsed version), `State`.
+- **Spec**: one dependency in one section. Fields: `Section`, `Name`, `SOld`/`SNew` (full constraint string), `VOld`/`VNew` (parsed version), `State`, `IsLatest` (true when `--pinLatest` detected a bare `latest` tag).
 - **State** (`manifest.go`): `todo → check → {skipped | kept | updated | error}`, plus `ignored` for names that don't match any pattern.
 - **Pattern**: glob over dependency names; `!` prefix excludes.
 
@@ -56,26 +62,29 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **Matches → `StateCheck`**: strings starting with a digit, optionally preceded by `^`/`~`. e.g. `1.2.3`, `^1.2.3`, `~2.3.4`, `1.x`, `1.0.0-beta.1`. The prefix is preserved on update: `^1.2.3` → `^2.0.0`.
 - **No match → `StateSkipped`**: comparator ranges (`>=1.0.0`, `<2.0.0`), tags (`latest`), git/file URLs — anything containing `<>|=`.
 - The regex is permissive (`1.x` matches), but semver comparison happens later in `engine.go`; invalid semver bypasses the "is it actually newer?" guard.
+- **`latestRe`** (`manifest.go`): `(?i)^\s*latest\s*$` — anchored, case-insensitive, matches bare `latest` strings only when `--pinLatest` is active. When `IsLatest=true`, `resolveSpecVersion` sets `SNew = VNew` directly (no regex replacement needed) and `shouldUpdate` short-circuits to always update.
 
 ## Gotchas
 
-- **Byte-splice safety**: `PackageFile.UpdateDependency` re-runs `gjson.GetBytes(p.raw, section)` on _every_ call, so reported offsets are always current. Successive updates stay correct — but never cache gjson results across mutations.
-- **`kept` vs `updated`**: if the resolved version is not semver-greater than the current (`engine.go`), the spec becomes `kept`, not `updated`.
+- **JSON handling**: The package uses Go's `encoding/json/v2` + `encoding/json/jsontext` (requires `GOEXPERIMENT=jsonv2`). `npm.go` uses struct-based unmarshaling for `dist-tags.latest` and `versions` keys. `packagejson.go` uses `jsontext.Decoder` streaming with `InputOffset()` + `ReadValue()` for byte-precise surgical edits in `UpdateDependency`. **Critical**: `jsontext.Token` values are voided by the next decoder call — always call `.String()` before any subsequent `ReadToken`/`ReadValue`/`SkipValue`.
+- **Byte-splice safety**: `PackageFile.UpdateDependency` creates a fresh `jsontext.Decoder` on _every_ call, so reported offsets are always current. Successive updates stay correct.
+- **`kept` vs `updated`**: if the resolved version is not semver-greater than the current (`engine.go`), the spec becomes `kept`, not `updated`. Exception: `IsLatest` specs always update.
 - **Version resolution**: default = `dist-tags.latest`; `-g`/`--greatest` = highest semver across `versions`.
 - **Write gate**: the file is rewritten only when `updates > 0 && !cfg.Nop`.
 - **Atomic write**: `PackageFile.Write` goes through `github.com/larsartmann/go-atomic-write` (v0.2.0+), which stages a temp file with a random suffix, fsyncs it, verifies the on-disk fingerprint still matches the one captured at read time, then performs a single atomic rename and fsyncs the parent directory. This protects against TOCTOU loss when another process (npm install, IDE formatter) edits `package.json` during upd's network-fetch window. On mismatch it returns `ErrConcurrentModification` (translated to `upd.ErrConcurrentModification`) and does not touch the file. No `.bak` artifacts are left behind.
 - **Quiet path**: `-q`/quiet suppresses the progress bar and takes a separate code branch in `main.go` (fetch without a reporter). The two branches duplicate fetch+apply logic — consolidate carefully if refactoring.
 - **`ProgramVersion`** defaults to `"dev"`; set via `-ldflags -X` at build time.
 
-## Dependencies (intentional — only 4 direct)
+## Dependencies (intentional — only 3 direct)
 
 - `github.com/Masterminds/semver/v3` — semver parse + compare.
 - `github.com/gobwas/glob` — dependency-name pattern matching.
-- `github.com/tidwall/gjson` — JSON path reads + byte offsets for surgical edits.
 - `github.com/larsartmann/go-atomic-write` — TOCTOU-safe atomic file write (fingerprint verify + rename).
+- `encoding/json/v2` + `encoding/json/jsontext` — standard library JSON (requires `GOEXPERIMENT=jsonv2`).
 
 ## Testing
 
 - Tests are in package `upd` (white-box) alongside source. Helpers in `testhelpers_test.go` / `config_test.go`.
 - No network in unit tests — packuments and package files are built from literals.
 - Run the full suite before declaring done: `nix run .#test`.
+- Race detector is included in CI: `GOEXPERIMENT=jsonv2 go test -race ./...`.

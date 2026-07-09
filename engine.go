@@ -159,7 +159,11 @@ func resolveSpecVersion(spec *Spec, result *FetchResult, cfg *Config) bool {
 	}
 
 	spec.VNew = vNew
-	spec.SNew = replaceVersion(spec.SOld, spec.VOld, vNew)
+	if spec.IsLatest {
+		spec.SNew = vNew
+	} else {
+		spec.SNew = replaceVersion(spec.SOld, spec.VOld, vNew)
+	}
 
 	return true
 }
@@ -177,6 +181,10 @@ func shouldUpdate(spec *Spec) bool {
 		spec.State = StateKept
 
 		return false
+	}
+
+	if spec.IsLatest {
+		return true
 	}
 
 	if !versionIsGreater(spec.VOld, spec.VNew) {

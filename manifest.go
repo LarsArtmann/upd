@@ -30,21 +30,25 @@ func dependencySectionNames() []string {
 	}
 }
 
-var versionRe = regexp.MustCompile(`^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`)
+var (
+	versionRe = regexp.MustCompile(`^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`)
+	latestRe  = regexp.MustCompile(`(?i)^\s*latest\s*$`)
+)
 
 type Spec struct {
-	Section string
-	Name    string
-	SOld    string
-	VOld    string
-	SNew    string
-	VNew    string
-	State   State
+	Section  string
+	Name     string
+	SOld     string
+	VOld     string
+	SNew     string
+	VNew     string
+	State    State
+	IsLatest bool
 }
 
 type Manifest map[string][]*Spec
 
-func BuildManifest(pkg *PackageFile, patterns []string) Manifest {
+func BuildManifest(pkg *PackageFile, patterns []string, pinLatest bool) Manifest {
 	manifest := make(Manifest)
 
 	for _, section := range dependencySectionNames() {
@@ -56,24 +60,32 @@ func BuildManifest(pkg *PackageFile, patterns []string) Manifest {
 			}
 
 			vOld := sOld
+			isLatest := false
+
 			if state == StateTodo {
 				m := versionRe.FindStringSubmatch(sOld)
-				if m != nil {
+				switch {
+				case m != nil:
 					vOld = m[1]
 					state = StateCheck
-				} else {
+				case pinLatest && latestRe.MatchString(sOld):
+					vOld = strings.TrimSpace(sOld)
+					state = StateCheck
+					isLatest = true
+				default:
 					state = StateSkipped
 				}
 			}
 
 			spec := &Spec{
-				Section: section,
-				Name:    name,
-				SOld:    sOld,
-				VOld:    vOld,
-				SNew:    sOld,
-				VNew:    vOld,
-				State:   state,
+				Section:  section,
+				Name:     name,
+				SOld:     sOld,
+				VOld:     vOld,
+				SNew:     sOld,
+				VNew:     vOld,
+				State:    state,
+				IsLatest: isLatest,
 			}
 			manifest[name] = append(manifest[name], spec)
 		}

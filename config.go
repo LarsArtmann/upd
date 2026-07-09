@@ -35,6 +35,7 @@ type Config struct {
 	Quiet       bool
 	Nop         bool
 	NoColor     bool
+	PinLatest   bool
 	Concurrency int
 	Patterns    []string
 }
@@ -47,6 +48,7 @@ func DefaultConfig() *Config {
 		Quiet:       false,
 		Nop:         false,
 		NoColor:     false,
+		PinLatest:   false,
 		Concurrency: defaultConcurrency,
 		Patterns:    nil,
 	}
@@ -70,6 +72,7 @@ func ParseFlags(args []string) (*Config, error) {
 	defineBoolFlag(flagSet, &cfg.NoColor, "C", "noColor", "do not use any colors in output")
 	defineBoolFlag(flagSet, &cfg.Greatest, "g", "greatest", "use greatest version (instead of latest stable one)")
 	defineBoolFlag(flagSet, &cfg.All, "a", "all", "show all packages (instead of just updated ones)")
+	defineBoolFlag(flagSet, &cfg.PinLatest, "P", "pin-latest", "pin \"latest\" tag to exact semver version")
 	defineStringFlag(flagSet, &cfg.File, "f", "file", "package.json", "package configuration to use")
 	defineIntFlag(
 		flagSet,
@@ -124,7 +127,7 @@ func defineIntFlag(flagSet *flag.FlagSet, p *int, short, long string, def int, u
 func PrintUsage(w io.Writer) {
 	_, _ = fmt.Fprintf(
 		w,
-		"Usage: %s [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [<pattern> ...]\n",
+		"Usage: %s [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [-P] [<pattern> ...]\n",
 		ProgramName,
 	)
 	_, _ = fmt.Fprintln(w)
@@ -141,6 +144,7 @@ func PrintUsage(w io.Writer) {
 		{"-f", "--file", "package configuration file (default: package.json)"},
 		{"-g", "--greatest", "use greatest version (instead of latest stable)"},
 		{"-a", "--all", "show all packages (not just updated ones)"},
+		{"-P", "--pin-latest", "pin \"latest\" tag to exact version"},
 		{"-c", "--concurrency", "concurrent NPM registry connections (default: 8)"},
 	}
 	for _, l := range lines {
@@ -157,6 +161,6 @@ func PrintVersion(w io.Writer) {
 	_, _ = fmt.Fprintf(w, "%s %s <%s>\n", ProgramName, ProgramVersion, ProgramURL)
 	_, _ = fmt.Fprintf(w, "%s\n", ProgramDesc)
 	_, _ = fmt.Fprintln(w, strings.Repeat("-", versionSeparatorLen))
-	_, _ = fmt.Fprintln(w, "Original: Copyright (c) 2015-2025 Dr. Ralf S. Engelschall")
+	_, _ = fmt.Fprintln(w, "Original: Copyright (c) 2015-2026 Dr. Ralf S. Engelschall")
 	_, _ = fmt.Fprintln(w, "Go port:  MIT License")
 }

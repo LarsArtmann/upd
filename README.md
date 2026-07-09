@@ -31,7 +31,7 @@ $ go install github.com/LarsArtmann/upd/cmd/upd@latest
 ## Usage
 
 ```
-$ upd [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [<pattern> ...]
+$ upd [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [-P] [<pattern> ...]
 ```
 
 - `-h`, `--help`<br/>
@@ -52,9 +52,33 @@ $ upd [-h] [-V] [-q] [-n] [-C] [-f <file>] [-g] [-a] [-c <concurrency>] [<patter
   Show all packages (instead of just updated ones).
 - `-c <concurrency>`, `--concurrency <concurrency>`<br/>
   Number of concurrent network connections to NPM registry.
+- `-P`, `--pin-latest`<br/>
+  Pin "latest" tag to exact version (e.g., `latest` → `1.0.0`).
 - `<pattern>`<br/>
   Positive or negative (if prefixed with `!`) Glob pattern for matching
   names of dependencies to update.
+
+## Demo
+
+Animated demos are rendered with [VHS](https://github.com/charmbracelet/vhs)
+and published to the [VHS cloud](https://vhs.charm.sh).
+
+[![Made with VHS](https://stuff.charm.sh/vhs/badge.svg)](https://github.com/charmbracelet/vhs)
+
+**Render locally:**
+
+```
+$ nix run .#demo
+```
+
+**Publish to the cloud (returns a shareable `vhs.charm.sh` URL):**
+
+```
+$ nix run .#demo -- --publish
+```
+
+Tape sources live in [`demo/`](demo/) and are the single source of truth —
+re-render at any time without touching committed GIFs.
 
 ## Development
 
@@ -66,7 +90,7 @@ $ go vet ./...                 # Vet
 
 ## License
 
-Copyright &copy; 2015-2025 Dr. Ralf S. Engelschall (http://engelschall.com/)
+Copyright &copy; 2015-2026 Dr. Ralf S. Engelschall (http://engelschall.com/)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the

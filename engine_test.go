@@ -2,7 +2,7 @@ package upd
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +18,7 @@ func mockRegistry(versions map[string]map[string]any) *httptest.Server {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(data)
+		_ = json.MarshalWrite(w, data)
 	}))
 }
 
@@ -47,7 +47,7 @@ func buildTestManifest(t *testing.T, json string) (*PackageFile, Manifest) {
 	t.Helper()
 
 	pkg := &PackageFile{raw: []byte(json)}
-	manifest := BuildManifest(pkg, nil)
+	manifest := BuildManifest(pkg, nil, false)
 
 	return pkg, manifest
 }
@@ -163,7 +163,7 @@ func TestEngineApplyUpdatesNop(t *testing.T) {
 	engine, pkg, manifest := setupEngineTest(t, "19.0.0", "19.0.0")
 	engine.cfg.Nop = true
 
-	json := `{"dependencies": {"react": "^18.0.0"}}`
+	originalJSON := `{"dependencies": {"react": "^18.0.0"}}`
 	results := engine.FetchAll(context.Background(), manifest.ToCheck())
 	updates, _ := engine.ApplyUpdates(manifest, results, pkg)
 
@@ -171,7 +171,7 @@ func TestEngineApplyUpdatesNop(t *testing.T) {
 		t.Errorf("expected 1 update in nop mode, got %d", updates)
 	}
 	// package.json should NOT be modified in nop mode
-	if string(pkg.raw) != json {
+	if string(pkg.raw) != originalJSON {
 		t.Errorf("package.json was modified in nop mode")
 	}
 }
@@ -223,5 +223,76 @@ func TestEngineGreatestMode(t *testing.T) {
 
 	if manifest["react"][0].VNew != "19.0.0" {
 		t.Errorf("greatest vNew = %q, want 19.0.0", manifest["react"][0].VNew)
+	}
+}
+
+func TestEnginePinLatest(t *testing.T) {
+	registry := mockRegistry(map[string]map[string]any{
+		"semver": packageVersion("7.7.4", "7.7.4"),
+	})
+	defer registry.Close()
+
+	pkgJSON := `{"dependencies": {"semver": "latest"}}`
+	pkg := &PackageFile{raw: []byte(pkgJSON)}
+	manifest := BuildManifest(pkg, nil, true)
+
+	cfg := DefaultConfig()
+	engine := newTestEngine(t, registry, cfg)
+
+	results := engine.FetchAll(context.Background(), manifest.ToCheck())
+	updates, errors := engine.ApplyUpdates(manifest, results, pkg)
+
+	if errors != 0 {
+		t.Fatalf("expected 0 errors, got %d", errors)
+	}
+
+	if updates != 1 {
+		t.Fatalf("expected 1 update, got %d", updates)
+	}
+
+	spec := manifest["semver"][0]
+	if spec.State != StateUpdated {
+		t.Errorf("state = %s, want updated", spec.State)
+	}
+
+	if spec.VNew != "7.7.4" {
+		t.Errorf("vNew = %q, want 7.7.4", spec.VNew)
+	}
+
+	if spec.SNew != "7.7.4" {
+		t.Errorf("sNew = %q, want 7.7.4", spec.SNew)
+	}
+
+	if !spec.IsLatest {
+		t.Error("IsLatest = false, want true")
+	}
+
+	result := string(pkg.raw)
+	assertContains(t, result, "7.7.4", "pinned version in package.json")
+	assertNotContains(t, result, "latest", "old latest tag removed")
+}
+
+func TestEnginePinLatestDisabled(t *testing.T) {
+	registry := mockRegistry(map[string]map[string]any{
+		"semver": packageVersion("7.7.4", "7.7.4"),
+	})
+	defer registry.Close()
+
+	pkgJSON := `{"dependencies": {"semver": "latest"}}`
+	pkg := &PackageFile{raw: []byte(pkgJSON)}
+	manifest := BuildManifest(pkg, nil, false)
+
+	cfg := DefaultConfig()
+	engine := newTestEngine(t, registry, cfg)
+
+	results := engine.FetchAll(context.Background(), manifest.ToCheck())
+	updates, errors := engine.ApplyUpdates(manifest, results, pkg)
+
+	if errors != 0 || updates != 0 {
+		t.Fatalf("expected no updates/errors for skipped latest, got %d/%d", updates, errors)
+	}
+
+	if manifest["semver"][0].State != StateSkipped {
+		t.Errorf("state = %s, want skipped", manifest["semver"][0].State)
 	}
 }
