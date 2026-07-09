@@ -164,9 +164,9 @@ func borderChars(kind string) (string, string, string) {
 }
 
 func (r *Renderer) writeBorder(left, mid, right string, widths ...int) {
-	segments := make([]string, len(widths))
-	for idx, width := range widths {
-		segments[idx] = strings.Repeat(boxBorderChar, width)
+	segments := make([]string, 0, len(widths))
+	for _, width := range widths {
+		segments = append(segments, strings.Repeat(boxBorderChar, width))
 	}
 
 	_, _ = fmt.Fprintf(r.w, "%s%s%s\n", left, strings.Join(segments, mid), right)

@@ -27,43 +27,42 @@ func diffChars(oldStr, newStr string) []diffChunk {
 	oldRunes := []rune(oldStr)
 	newRunes := []rune(newStr)
 
-	lcs := buildLCSTable(oldRunes, newRunes)
-	steps := backtrackDiff(oldRunes, newRunes, lcs)
+	cols := len(newRunes) + 1
+	lcs := buildLCSTable(oldRunes, newRunes, cols)
+	steps := backtrackDiff(oldRunes, newRunes, lcs, cols)
 
 	return coalesceSteps(steps)
 }
 
-func buildLCSTable(oldRunes, newRunes []rune) [][]int {
+// buildLCSTable builds a flattened (oldLen+1)×(newLen+1) LCS dynamic-programming
+// table as a 1-D slice. The stride is cols (= newLen+1), so lcs[i*cols+j]
+// corresponds to the 2-D position [i][j].
+func buildLCSTable(oldRunes, newRunes []rune, cols int) []int {
 	oldLen := len(oldRunes)
 	newLen := len(newRunes)
 
-	lcs := make([][]int, oldLen+1)
-	for rowIdx := range lcs {
-		lcs[rowIdx] = make([]int, newLen+1)
+	lcs := make([]int, 0, (oldLen+1)*cols)
+	for row := 0; row <= oldLen; row++ {
+		lcs = append(lcs, make([]int, cols)...)
 	}
 
 	for i := 1; i <= oldLen; i++ {
 		for j := 1; j <= newLen; j++ {
-			lcs[i][j] = lcsCell(lcs, oldRunes, newRunes, i, j)
+			switch {
+			case oldRunes[i-1] == newRunes[j-1]:
+				lcs[i*cols+j] = lcs[(i-1)*cols+j-1] + 1
+			case lcs[(i-1)*cols+j] >= lcs[i*cols+j-1]:
+				lcs[i*cols+j] = lcs[(i-1)*cols+j]
+			default:
+				lcs[i*cols+j] = lcs[i*cols+j-1]
+			}
 		}
 	}
 
 	return lcs
 }
 
-func lcsCell(lcs [][]int, oldRunes, newRunes []rune, i, j int) int {
-	if oldRunes[i-1] == newRunes[j-1] {
-		return lcs[i-1][j-1] + 1
-	}
-
-	if lcs[i-1][j] >= lcs[i][j-1] {
-		return lcs[i-1][j]
-	}
-
-	return lcs[i][j-1]
-}
-
-func backtrackDiff(oldRunes, newRunes []rune, lcs [][]int) []diffStep {
+func backtrackDiff(oldRunes, newRunes []rune, lcs []int, cols int) []diffStep {
 	oldLen := len(oldRunes)
 	newLen := len(newRunes)
 
@@ -73,7 +72,7 @@ func backtrackDiff(oldRunes, newRunes []rune, lcs [][]int) []diffStep {
 	j := newLen
 
 	for i > 0 || j > 0 {
-		next := nextDiffStep(oldRunes, newRunes, lcs, i, j)
+		next := nextDiffStep(oldRunes, newRunes, lcs, cols, i, j)
 		if next == nil {
 			break
 		}
@@ -91,7 +90,7 @@ type diffStepResult struct {
 	jdx  int
 }
 
-func nextDiffStep(oldRunes, newRunes []rune, lcs [][]int, i, j int) *diffStepResult {
+func nextDiffStep(oldRunes, newRunes []rune, lcs []int, cols, i, j int) *diffStepResult {
 	if i > 0 && j > 0 && oldRunes[i-1] == newRunes[j-1] {
 		return &diffStepResult{
 			step: diffStep{op: opEqual, char: oldRunes[i-1]},
@@ -100,7 +99,7 @@ func nextDiffStep(oldRunes, newRunes []rune, lcs [][]int, i, j int) *diffStepRes
 		}
 	}
 
-	if j > 0 && (i == 0 || lcs[i][j-1] >= lcs[i-1][j]) {
+	if j > 0 && (i == 0 || lcs[i*cols+j-1] >= lcs[(i-1)*cols+j]) {
 		return &diffStepResult{
 			step: diffStep{op: opInsert, char: newRunes[j-1]},
 			idx:  i,

@@ -11,6 +11,7 @@ var (
 	ErrNoValidVersions        = errors.New("no valid versions found")
 	ErrNoSemverVersions       = errors.New("no valid semver versions found")
 	ErrSectionNotFound        = errors.New("section not found in package configuration file")
+	ErrSectionNotObject       = errors.New("section is not a JSON object")
 	ErrDependencyNotFound     = errors.New("dependency not found in package configuration file")
 	ErrConcurrentModification = errors.New("package configuration file was modified concurrently since read")
 )

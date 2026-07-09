@@ -53,7 +53,9 @@ func (p *PackageFile) GetDependencySection(section string) map[string]string {
 	}
 
 	var deps map[string]string
-	if err := json.Unmarshal(sectionRaw, &deps); err != nil {
+
+	err = json.Unmarshal(sectionRaw, &deps)
+	if err != nil {
 		return make(map[string]string)
 	}
 
@@ -74,33 +76,52 @@ func (p *PackageFile) GetUpdArgs() []string {
 		return nil
 	}
 
-	switch v.Upd.Kind() {
-	case jsontext.KindBeginArray:
-		var args []string
+	kind := v.Upd.Kind()
+	if kind == jsontext.KindBeginArray {
+		return parseUpdArray(v.Upd)
+	}
 
-		err := json.Unmarshal(v.Upd, &args)
-		if err != nil {
-			return nil
-		}
+	if kind == jsontext.KindString {
+		return parseUpdString(v.Upd)
+	}
 
-		return args
-	case jsontext.KindString:
-		var s string
+	return nil
+}
 
-		err := json.Unmarshal(v.Upd, &s)
-		if err != nil {
-			return nil
-		}
+func parseUpdArray(raw jsontext.Value) []string {
+	var args []string
 
-		return strings.Fields(s)
-	default:
+	err := json.Unmarshal(raw, &args)
+	if err != nil {
 		return nil
 	}
+
+	return args
+}
+
+func parseUpdString(raw jsontext.Value) []string {
+	var s string
+
+	err := json.Unmarshal(raw, &s)
+	if err != nil {
+		return nil
+	}
+
+	return strings.Fields(s)
 }
 
 func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
 	dec := jsontext.NewDecoder(bytes.NewReader(p.raw))
 
+	err := p.navigateToSection(dec, section)
+	if err != nil {
+		return err
+	}
+
+	return p.replaceDependency(dec, name, newValue)
+}
+
+func (p *PackageFile) navigateToSection(dec *jsontext.Decoder, section string) error {
 	tok, err := dec.ReadToken()
 	if err != nil {
 		return fmt.Errorf("parse root: %w", err)
@@ -110,8 +131,6 @@ func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
 		return fmt.Errorf("expected root object: %w", ErrInvalidJSON)
 	}
 
-	sectionFound := false
-
 	for dec.PeekKind() != jsontext.KindEndObject {
 		keyTok, err := dec.ReadToken()
 		if err != nil {
@@ -119,31 +138,32 @@ func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
 		}
 
 		if keyTok.String() == section {
-			sectionFound = true
-
-			break
+			return p.enterSection(dec, section)
 		}
 
-		if err := dec.SkipValue(); err != nil {
+		err = dec.SkipValue()
+		if err != nil {
 			return fmt.Errorf("skip value: %w", err)
 		}
 	}
 
-	if !sectionFound {
-		return fmt.Errorf("%w: %q", ErrSectionNotFound, section)
-	}
+	return fmt.Errorf("%w: %q", ErrSectionNotFound, section)
+}
 
+func (p *PackageFile) enterSection(dec *jsontext.Decoder, section string) error {
 	objTok, err := dec.ReadToken()
 	if err != nil {
 		return fmt.Errorf("read section start: %w", err)
 	}
 
 	if objTok.Kind() != jsontext.KindBeginObject {
-		return fmt.Errorf("section %q is not an object", section)
+		return fmt.Errorf("%w: %q", ErrSectionNotObject, section)
 	}
 
-	found := false
+	return nil
+}
 
+func (p *PackageFile) replaceDependency(dec *jsontext.Decoder, name, newValue string) error {
 	for dec.PeekKind() != jsontext.KindEndObject {
 		keyTok, err := dec.ReadToken()
 		if err != nil {
@@ -158,29 +178,27 @@ func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
 		}
 
 		if keyStr == name {
-			encoded, err := json.Marshal(newValue)
-			if err != nil {
-				return fmt.Errorf("encode new value: %w", err)
-			}
-
-			endOffset := int(dec.InputOffset())
-			startOffset := endOffset - len(val)
-
-			newRaw := make([]byte, 0, len(p.raw)-(endOffset-startOffset)+len(encoded))
-			newRaw = append(newRaw, p.raw[:startOffset]...)
-			newRaw = append(newRaw, encoded...)
-			newRaw = append(newRaw, p.raw[endOffset:]...)
-			p.raw = newRaw
-
-			found = true
-
-			break
+			return p.spliceDependency(dec, val, newValue)
 		}
 	}
 
-	if !found {
-		return fmt.Errorf("%w: %q in %q", ErrDependencyNotFound, name, section)
+	return fmt.Errorf("%w: %q", ErrDependencyNotFound, name)
+}
+
+func (p *PackageFile) spliceDependency(dec *jsontext.Decoder, val jsontext.Value, newValue string) error {
+	encoded, err := json.Marshal(newValue)
+	if err != nil {
+		return fmt.Errorf("encode new value: %w", err)
 	}
+
+	endOffset := int(dec.InputOffset())
+	startOffset := endOffset - len(val)
+
+	newRaw := make([]byte, 0, len(p.raw)-(endOffset-startOffset)+len(encoded))
+	newRaw = append(newRaw, p.raw[:startOffset]...)
+	newRaw = append(newRaw, encoded...)
+	newRaw = append(newRaw, p.raw[endOffset:]...)
+	p.raw = newRaw
 
 	return nil
 }

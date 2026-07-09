@@ -71,7 +71,7 @@ func (p *Packument) LatestVersion() (string, error) {
 	var v struct {
 		DistTags struct {
 			Latest string `json:"latest"`
-		} `json:"dist-tags"`
+		} `json:"dist-tags"` //nolint:tagliatelle // NPM registry uses kebab-case, not camelCase
 	}
 
 	err := json.Unmarshal(p.raw, &v)
