@@ -86,7 +86,7 @@ func (p *PackageFile) GetUpdArgs() ([]string, error) {
 	}
 
 	if kind == jsontext.KindString {
-		return parseUpdString(v.Upd), nil
+		return parseUpdString(v.Upd)
 	}
 
 	return nil, nil
@@ -103,15 +103,15 @@ func parseUpdArray(raw jsontext.Value) ([]string, error) {
 	return args, nil
 }
 
-func parseUpdString(raw jsontext.Value) []string {
+func parseUpdString(raw jsontext.Value) ([]string, error) {
 	var s string
 
 	err := json.Unmarshal(raw, &s)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("parse upd string: %w", err)
 	}
 
-	return strings.Fields(s)
+	return strings.Fields(s), nil
 }
 
 func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
