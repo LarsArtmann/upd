@@ -97,6 +97,36 @@ func TestRenderWithColorContainsANSI(t *testing.T) {
 	assertContains(t, output, "\x1b[", "ANSI escape sequences")
 }
 
+func TestRenderTableNoColorColumnOrder(t *testing.T) {
+	json := `{"dependencies": {"react": "^18.0.0"}}`
+	pkg := &PackageFile{raw: []byte(json)}
+	manifest := BuildManifest(pkg, nil, false)
+	markReactUpdated(manifest)
+
+	output := renderManifest(t, manifest, 1, 0, true, false)
+
+	for line := range strings.SplitSeq(output, "\n") {
+		if !strings.Contains(line, "react") {
+			continue
+		}
+
+		oldIdx := strings.Index(line, "^18.0.0")
+
+		newIdx := strings.Index(line, "^19.0.0")
+		if oldIdx < 0 || newIdx < 0 {
+			t.Fatalf("expected both versions in row: %q", line)
+		}
+
+		if oldIdx > newIdx {
+			t.Errorf("VERSION OLD should appear before VERSION NEW in noColor mode:\n%s", line)
+		}
+
+		return
+	}
+
+	t.Fatal("react row not found in output")
+}
+
 func TestVisibleLength(t *testing.T) {
 	tests := []struct {
 		input string

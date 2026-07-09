@@ -182,7 +182,7 @@ func (r *Renderer) markGreen(text, other string) string {
 
 func (r *Renderer) diffHighlight(text, other, color string) string {
 	if r.noColor {
-		return text
+		return other
 	}
 
 	chunks := diffChars(text, other)
