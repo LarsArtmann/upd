@@ -162,5 +162,5 @@ func PrintVersion(w io.Writer) {
 	_, _ = fmt.Fprintf(w, "%s\n", ProgramDesc)
 	_, _ = fmt.Fprintln(w, strings.Repeat("-", versionSeparatorLen))
 	_, _ = fmt.Fprintln(w, "Original: Copyright (c) 2015-2026 Dr. Ralf S. Engelschall")
-	_, _ = fmt.Fprintln(w, "Go port:  MIT License")
+	_, _ = fmt.Fprintln(w, "Go port:  Copyright (c) 2026 Lars Artmann — MIT License")
 }
