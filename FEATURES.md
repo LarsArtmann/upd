@@ -61,19 +61,19 @@
 
 | Feature                       | Status                | Notes                                                                                                                                                                                                           |
 | ----------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sentinel error taxonomy       | 🟢 `FULLY_FUNCTIONAL` | 12 sentinels in `errors.go`. All wrapped with `fmt.Errorf("...: %w", err)`.                                                                                                                                     |
+| Sentinel error taxonomy       | 🟢 `FULLY_FUNCTIONAL` | 13 sentinels in `errors.go`. All wrapped with `fmt.Errorf("...: %w", err)`.                                                                                                                                     |
 | `Spec.Err` — per-spec error   | 🟢 `FULLY_FUNCTIONAL` | Errored specs carry concrete error reason. `manifest.go:46`. Populated in `engine.go:141,151,158,166`. Tested: `TestApplyUpdatesPopulatesSpecErr`.                                                              |
 | Registry error classification | 🟢 `FULLY_FUNCTIONAL` | 404/410 → `ErrPackageNotFound` (user typo); 5xx → `ErrRegistryUnavailable` (system fault). `npm.go:70-76`. Tested: `TestRegistryClassifiesNotFoundAsRejection`, `TestRegistryClassifiesServerErrorAsTransient`. |
-| Exit code differentiation     | 🟢 `FULLY_FUNCTIONAL` | `ErrRegistryUnavailable` → 75 (EX_TEMPFAIL); all others → 1. `cmd/upd/main.go:22-31`. 5 tests in `cmd/upd/main_test.go`.                                                                                        |
+| Exit code differentiation     | 🟢 `FULLY_FUNCTIONAL` | `ErrRegistryUnavailable` → 75 (EX_TEMPFAIL); `ErrPartialFailure` → 1; all others → 1. `cmd/upd/main.go:20-32`. 6 exit-code tests in `cmd/upd/main_test.go`.                                                     |
 | Error detail block in table   | 🟢 `FULLY_FUNCTIONAL` | `Errors (n):` block below table with per-package error reasons. `render.go:75`. Tested: `TestRenderTableErrorDetailSurfacesReason`.                                                                             |
 | Warnings pipeline             | 🟢 `FULLY_FUNCTIONAL` | `BuildManifest` returns `[]string` warnings for malformed sections/patterns. Printed as yellow `WARNING:` lines. `cmd/upd/main.go:111-115`. Tested: `TestPrintWarnings*`.                                       |
-| `--fail-on-error` flag        | ⚪ `PLANNED`          | Exit non-zero when per-package errors occur. Not implemented.                                                                                                                                                   |
+| Partial failure exit code     | 🟢 `FULLY_FUNCTIONAL` | Non-zero exit (1) when any package fails to resolve. Default behavior, no flag needed. File still written for successful updates. `cmd/upd/main.go:108-109`. Tested: `TestExitCodePartialFailureReturns1`.      |
 
 ## Output & Rendering
 
 | Feature                         | Status                    | Notes                                                                                                                 |
 | ------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Unicode box-drawing table       | 🟢 `FULLY_FUNCTIONAL`     | `render.go:72-98`. Fixed column widths (37/14/14/9).                                                                  |
+| Unicode box-drawing table       | 🟢 `FULLY_FUNCTIONAL`     | `render.go:56-102`. Fixed column widths (37/14/14/9).                                                                 |
 | Character-level diff highlight  | 🟢 `FULLY_FUNCTIONAL`     | LCS-based diff, red/green ANSI. `diff.go`, `render.go:183-204`. 6 tests in `diff_test.go`.                            |
 | "All up-to-date" box            | 🟢 `FULLY_FUNCTIONAL`     | Green centered message when no updates. `render.go:64-70`. Tested: `TestRenderAllUpToDate`.                           |
 | Progress bar                    | 🟡 `PARTIALLY_FUNCTIONAL` | Unicode bar on stderr during fetch. Hardcoded 80-char clear width — no terminal width detection. `progress.go:14,37`. |

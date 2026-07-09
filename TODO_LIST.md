@@ -24,7 +24,7 @@
 | #   | Task                                                                     | Evidence                                                               |
 | --- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | D1  | Use Go `min()`/`max()` builtins in `progress.go`                         | `progress.go:41,43,49` — confirmed                                     |
-| D2  | Tagged switch on `spec.State` in `render.go`                             | `render.go:120` — `switch spec.State`                                  |
+| D2  | Tagged switch on `spec.State` in `render.go`                             | `render.go:152` — `switch spec.State`                                  |
 | D3  | Share `http.Client` across goroutines                                    | `npm.go:24` — single client in `RegistryClient`                        |
 | D4  | Write `flake.nix` with build/test/lint/run/demo apps                     | `flake.nix` — all apps present                                         |
 | D5  | Write project `AGENTS.md`                                                | `AGENTS.md` — comprehensive, kept current                              |
@@ -36,10 +36,10 @@
 | D11 | Copyright year → 2026                                                    | `config.go:164`                                                        |
 | D12 | `latestReplaceRe` consolidation                                          | Removed; `resolveSpecVersion` sets `SNew=VNew`                         |
 | D13 | `FEATURES.md`                                                            | This file                                                              |
-| D14 | `cmd/upd/main_test.go` — exit code + warnings tests                      | 7 tests, all passing                                                   |
+| D14 | `cmd/upd/main_test.go` — exit code + warnings tests                      | 8 tests, all passing                                                   |
 | D15 | `doc.go` example signatures fixed                                        | Updated to new `BuildManifest`/`GetUpdArgs` API                        |
 | D16 | AGENTS.md updated with error handling (Spec.Err, exit codes)             | Pipeline steps 4,7,8,9; Gotchas; Domain concepts                       |
-| D17 | Error handling overhaul (`Spec.Err`, `ErrRegistryUnavailable`, warnings) | 12 sentinels, exit 75, error detail block, warnings pipeline           |
+| D17 | Error handling overhaul (`Spec.Err`, `ErrRegistryUnavailable`, warnings) | 13 sentinels, exit 75, error detail block, warnings pipeline           |
 | D18 | VHS demo rendered + published                                            | `demo/demo.gif` exists, README has cloud URL                           |
 | D19 | CONTRIBUTING.md updated with GOEXPERIMENT + nix workflow                 | Done                                                                   |
 | D20 | README usage line fixed (`-c <concurrency>`)                             | Done                                                                   |
@@ -51,13 +51,13 @@
 
 ## NOT DONE — High Priority
 
-| #   | Task                                                                                          | Source                | Notes                                                                          |
-| --- | --------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------ |
-| 1   | Consolidate quiet/non-quiet fetch+apply duplication in `main.go`                              | e6, f2, #18           | `FetchAll` called twice (lines ~49 and ~59); `finalizeRun` partially extracted |
-| 2   | Add golangci-lint to CI workflow                                                              | #10, #21, #34, f6, f7 | `.golangci.yml` exists with 100+ linters but CI runs only `go vet`             |
-| 3   | Add `golangci-lint` to `nix run .#lint`                                                       | f7                    | Currently `go vet && go build` only                                            |
-| 4   | Add integration test with mock HTTP registry server (full pipeline: read→fetch→compare→write) | e4, f3                | Engine tested but not with `httptest.Server` mock                              |
-| 5   | Add HTTP retry logic for transient NPM registry failures (429, 5xx)                           | e10, #2, #40          | No retry/backoff code exists                                                   |
+| #   | Task                                                                                          | Source                | Notes                                                                           |
+| --- | --------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------- |
+| 1   | Consolidate quiet/non-quiet fetch+apply duplication in `main.go`                              | e6, f2, #18           | `FetchAll` called twice (lines ~49 and ~59); `finalizeRun` partially extracted  |
+| 2   | Add golangci-lint to CI workflow                                                              | #10, #21, #34, f6, f7 | `.golangci.yml` exists with 100+ linters but CI runs only `go vet`              |
+| 3   | Add `golangci-lint` to `nix run .#lint`                                                       | f7                    | Currently `go vet && go build` only                                             |
+| 4   | Add integration test with mock HTTP registry server (full pipeline: read→fetch→compare→write) | e4, f3                | Engine uses `httptest.Server` (5 tests); but no full-pipeline test (read→write) |
+| 5   | Add HTTP retry logic for transient NPM registry failures (429, 5xx)                           | e10, #2, #40          | No retry/backoff code exists                                                    |
 
 ## NOT DONE — Medium Priority
 
