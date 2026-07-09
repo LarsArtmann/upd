@@ -7,17 +7,20 @@ Node Package Manager (NPM) `package.json` configuration file while
 strictly preserving the formatting of the existing JSON syntax and
 intentionally skipping version constraint formulas.
 
+> **Go rewrite of [`rse/upd`](https://github.com/rse/upd)** — the
+> original JavaScript/Node.js CLI by
+> [Dr. Ralf S. Engelschall](https://engelschall.com/).
+
 ## Origin
 
-This project is a port of the original **`upd`** utility from
-**JavaScript to Go**.
-
-- Originally written in **JavaScript** by
+- **Original:** [`rse/upd`](https://github.com/rse/upd) — an
+  [npm](https://www.npmjs.com/package/upd) package written in
+  JavaScript/Node.js by
   [Dr. Ralf S. Engelschall](https://engelschall.com/).
-- Ported to **Go** by [Lars Artmann](https://lars.software/).
-
-The Go port keeps the same CLI behavior and philosophy while leveraging
-Go's performance, type safety, and single-binary distribution.
+- **This project:** a complete [Go](https://go.dev/) rewrite by
+  [Lars Artmann](https://lars.software/), keeping the same CLI behavior
+  and philosophy while leveraging Go's performance, compile-time type
+  safety, and single-binary distribution.
 
 ## Installation
 
