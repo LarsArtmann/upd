@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	errorfamily "github.com/larsartmann/go-error-family"
 )
 
 const (
@@ -95,7 +96,11 @@ func (c *RegistryClient) FetchPackument(ctx context.Context, name string) (*Pack
 
 		delay := backoffDuration(attempt, retryErr.retryAfter)
 		if !c.sleep(ctx, delay) {
-			return nil, 0, fmt.Errorf("fetch %q aborted during backoff: %w", name, ctx.Err())
+			return nil, 0, errorfamily.WrapRejection(
+				ctx.Err(),
+				"registry.fetch_aborted",
+				fmt.Sprintf("fetch %q aborted during backoff", name),
+			)
 		}
 	}
 
@@ -107,7 +112,11 @@ func (c *RegistryClient) fetchOnce(ctx context.Context, name string) (*Packument
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
-		return nil, 0, fmt.Errorf("build registry request for %q: %w", name, err)
+		return nil, 0, errorfamily.WrapRejection(
+			err,
+			"registry.request_build",
+			fmt.Sprintf("build registry request for %q", name),
+		)
 	}
 
 	req.Header.Set("User-Agent", c.userAgent)
@@ -116,7 +125,11 @@ func (c *RegistryClient) fetchOnce(ctx context.Context, name string) (*Packument
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return nil, 0, &retryableError{
-			cause:      fmt.Errorf("send registry request for %q: %w", name, err),
+			cause: errorfamily.WrapTransient(
+				err,
+				"registry.request_send",
+				fmt.Sprintf("send registry request for %q", name),
+			),
 			retryAfter: 0,
 		}
 	}
@@ -128,7 +141,11 @@ func (c *RegistryClient) fetchOnce(ctx context.Context, name string) (*Packument
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to read packument for %q: %w", name, err)
+		return nil, 0, errorfamily.WrapTransient(
+			err,
+			"registry.read_body",
+			fmt.Sprintf("read packument body for %q", name),
+		)
 	}
 
 	return &Packument{raw: data}, len(data), nil
@@ -208,10 +225,10 @@ func sleepWithContext(ctx context.Context, delay time.Duration) bool {
 
 func classifyRegistryError(status int, name string) error {
 	if status == http.StatusNotFound || status == http.StatusGone {
-		return fmt.Errorf("registry returned status %d for %q: %w", status, name, ErrPackageNotFound)
+		return ErrPackageNotFound.WithContext("package", name).WithContextf("status", "%d", status)
 	}
 
-	return fmt.Errorf("registry returned status %d for %q: %w", status, name, ErrRegistryUnavailable)
+	return ErrRegistryUnavailable.WithContext("package", name).WithContextf("status", "%d", status)
 }
 
 func (p *Packument) LatestVersion() (string, error) {
@@ -223,7 +240,7 @@ func (p *Packument) LatestVersion() (string, error) {
 
 	err := json.Unmarshal(p.raw, &v)
 	if err != nil {
-		return "", fmt.Errorf("parse packument dist-tags: %w", err)
+		return "", errorfamily.WrapCorruption(err, "registry.parse_dist_tags", "parse packument dist-tags")
 	}
 
 	if v.DistTags.Latest == "" {

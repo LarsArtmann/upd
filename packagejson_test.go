@@ -163,8 +163,8 @@ func TestGetDependencySection(t *testing.T) {
 			t.Fatal("expected error for non-object section, got nil")
 		}
 
-		if !errors.Is(err, ErrInvalidJSON) {
-			t.Errorf("expected error wrapping ErrInvalidJSON, got: %v", err)
+		if !errors.Is(err, ErrSectionNotObject) {
+			t.Errorf("expected error wrapping ErrSectionNotObject, got: %v", err)
 		}
 	})
 

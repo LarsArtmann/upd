@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	"github.com/Masterminds/semver/v3"
+	errorfamily "github.com/larsartmann/go-error-family"
 )
 
 const (
@@ -138,7 +139,11 @@ func (e *Engine) applyOne(
 	writeErr := pkg.UpdateDependency(spec.Section, spec.Name, spec.SNew)
 	if writeErr != nil {
 		spec.State = StateError
-		spec.Err = fmt.Errorf("write %q in %q: %w", spec.Name, spec.Section, writeErr)
+		spec.Err = errorfamily.WrapRejection(
+			writeErr,
+			"update.write_failed",
+			fmt.Sprintf("write %q in %q", spec.Name, spec.Section),
+		)
 		errors++
 	}
 
@@ -148,7 +153,7 @@ func (e *Engine) applyOne(
 func resolveSpecVersion(spec *Spec, result *FetchResult, cfg *Config) bool {
 	if result == nil {
 		spec.State = StateError
-		spec.Err = fmt.Errorf("%q: %w", spec.Name, ErrPackageNotFound)
+		spec.Err = ErrPackageNotFound.WithContext("package", spec.Name)
 
 		return false
 	}
@@ -163,7 +168,7 @@ func resolveSpecVersion(spec *Spec, result *FetchResult, cfg *Config) bool {
 	vNew, err := pickVersion(result.pkg, cfg)
 	if err != nil {
 		spec.State = StateError
-		spec.Err = fmt.Errorf("resolve version for %q: %w", spec.Name, err)
+		spec.Err = errorfamily.WrapCorruption(err, "version.resolve", fmt.Sprintf("resolve version for %q", spec.Name))
 
 		return false
 	}

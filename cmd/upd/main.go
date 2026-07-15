@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/LarsArtmann/upd"
+	errorfamily "github.com/larsartmann/go-error-family"
 )
 
 func main() {
@@ -19,18 +20,16 @@ func main() {
 	}
 }
 
-const exitTransient = 75
-
 func exitCode(err error) int {
 	if err == nil {
 		return 0
 	}
 
-	if errors.Is(err, upd.ErrRegistryUnavailable) {
-		return exitTransient
+	if errors.Is(err, upd.ErrHelp) || errors.Is(err, upd.ErrVersion) {
+		return 0
 	}
 
-	return 1
+	return errorfamily.ExitCode(err)
 }
 
 func run(args []string) error {
@@ -40,7 +39,7 @@ func run(args []string) error {
 			return nil
 		}
 
-		return fmt.Errorf("parse flags: %w", err)
+		return err
 	}
 
 	// Auto-detect color suppression: NO_COLOR env var or non-TTY stdout
@@ -50,13 +49,13 @@ func run(args []string) error {
 
 	pkg, err := upd.ReadPackageFile(cfg.File)
 	if err != nil {
-		return fmt.Errorf("read package file: %w", err)
+		return err
 	}
 
 	// Honor embedded "upd" field in package.json
 	embedded, err := pkg.GetUpdArgs()
 	if err != nil {
-		return fmt.Errorf("read embedded upd args: %w", err)
+		return err
 	}
 
 	if len(embedded) > 0 {
@@ -107,7 +106,7 @@ func finalizeRun(
 		if cfg.JSON {
 			err := upd.RenderJSON(os.Stdout, manifest, updates)
 			if err != nil {
-				return fmt.Errorf("render JSON output: %w", err)
+				return err
 			}
 		} else {
 			renderer := upd.NewRenderer(os.Stdout, upd.RendererOptions{NoColor: cfg.NoColor, Verbose: cfg.Verbose})
@@ -119,15 +118,17 @@ func finalizeRun(
 		err := pkg.Write(cfg.File)
 		if err != nil {
 			if errors.Is(err, upd.ErrConcurrentModification) {
-				return fmt.Errorf("%w; your file was not changed — re-run upd", err)
+				fmt.Fprintln(os.Stderr, "Your file was not changed — re-run upd to try again.")
+
+				return err
 			}
 
-			return fmt.Errorf("write package file: %w", err)
+			return err
 		}
 	}
 
 	if errCount > 0 {
-		return fmt.Errorf("%d package(s) failed: %w", errCount, upd.ErrPartialFailure)
+		return upd.ErrPartialFailure.WithContextf("error_count", "%d", errCount)
 	}
 
 	return nil

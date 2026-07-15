@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	atomicwrite "github.com/larsartmann/go-atomic-write"
+	errorfamily "github.com/larsartmann/go-error-family"
 )
 
 type PackageFile struct {
@@ -22,14 +23,18 @@ func ReadPackageFile(path string) (*PackageFile, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("cannot find NPM package configuration file %q: %w", path, ErrFileNotFound)
+			return nil, ErrFileNotFound.WithContext("path", path)
 		}
 
-		return nil, fmt.Errorf("failed to read package configuration file %q: %w", path, err)
+		return nil, errorfamily.WrapRejection(
+			err,
+			"file.read_failed",
+			fmt.Sprintf("read package configuration file %q", path),
+		)
 	}
 
 	if !jsontext.Value(data).IsValid() {
-		return nil, fmt.Errorf("failed to parse package configuration file %q: %w", path, ErrInvalidJSON)
+		return nil, ErrInvalidJSON.WithContext("path", path)
 	}
 
 	return &PackageFile{raw: data, fingerprint: atomicwrite.FingerprintFromBytes(data)}, nil
@@ -44,7 +49,11 @@ func (p *PackageFile) GetDependencySection(section string) (map[string]string, e
 
 	err := json.Unmarshal(p.raw, &topLevel)
 	if err != nil {
-		return nil, fmt.Errorf("parse top-level JSON for section %q: %w", section, err)
+		return nil, errorfamily.WrapCorruption(
+			err,
+			"json.parse_toplevel",
+			fmt.Sprintf("parse top-level JSON for section %q", section),
+		)
 	}
 
 	sectionRaw, ok := topLevel[section]
@@ -53,14 +62,18 @@ func (p *PackageFile) GetDependencySection(section string) (map[string]string, e
 	}
 
 	if sectionRaw.Kind() != jsontext.KindBeginObject {
-		return nil, fmt.Errorf("section %q is %s, expected object: %w", section, sectionRaw.Kind(), ErrInvalidJSON)
+		return nil, ErrSectionNotObject.WithContext("section", section).WithContextf("kind", "%s", sectionRaw.Kind())
 	}
 
 	var deps map[string]string
 
 	err = json.Unmarshal(sectionRaw, &deps)
 	if err != nil {
-		return nil, fmt.Errorf("parse section %q: expected object of name→version strings: %w", section, err)
+		return nil, errorfamily.WrapCorruption(
+			err,
+			"json.parse_section",
+			fmt.Sprintf("parse section %q: expected object of name→version strings", section),
+		)
 	}
 
 	return deps, nil
@@ -73,7 +86,7 @@ func (p *PackageFile) GetUpdArgs() ([]string, error) {
 
 	err := json.Unmarshal(p.raw, &v)
 	if err != nil {
-		return nil, fmt.Errorf("parse upd field: %w", err)
+		return nil, errorfamily.WrapCorruption(err, "json.parse_upd_field", "parse upd field")
 	}
 
 	if !v.Upd.IsValid() {
@@ -97,7 +110,7 @@ func parseUpdArray(raw jsontext.Value) ([]string, error) {
 
 	err := json.Unmarshal(raw, &args)
 	if err != nil {
-		return nil, fmt.Errorf("parse upd array: %w", err)
+		return nil, errorfamily.WrapCorruption(err, "json.parse_upd_array", "parse upd array")
 	}
 
 	return args, nil
@@ -108,7 +121,7 @@ func parseUpdString(raw jsontext.Value) ([]string, error) {
 
 	err := json.Unmarshal(raw, &s)
 	if err != nil {
-		return nil, fmt.Errorf("parse upd string: %w", err)
+		return nil, errorfamily.WrapCorruption(err, "json.parse_upd_string", "parse upd string")
 	}
 
 	return strings.Fields(s), nil
@@ -128,17 +141,17 @@ func (p *PackageFile) UpdateDependency(section, name, newValue string) error {
 func (p *PackageFile) navigateToSection(dec *jsontext.Decoder, section string) error {
 	tok, err := dec.ReadToken()
 	if err != nil {
-		return fmt.Errorf("parse root: %w", err)
+		return errorfamily.WrapCorruption(err, "json.read_root", "parse root token")
 	}
 
 	if tok.Kind() != jsontext.KindBeginObject {
-		return fmt.Errorf("expected root object: %w", ErrInvalidJSON)
+		return ErrInvalidJSON.WithContext("kind", tok.Kind().String())
 	}
 
 	for dec.PeekKind() != jsontext.KindEndObject {
 		keyTok, err := dec.ReadToken()
 		if err != nil {
-			return fmt.Errorf("read key: %w", err)
+			return errorfamily.WrapCorruption(err, "json.read_key", "read key token")
 		}
 
 		if keyTok.String() == section {
@@ -147,21 +160,21 @@ func (p *PackageFile) navigateToSection(dec *jsontext.Decoder, section string) e
 
 		err = dec.SkipValue()
 		if err != nil {
-			return fmt.Errorf("skip value: %w", err)
+			return errorfamily.WrapCorruption(err, "json.skip_value", "skip value")
 		}
 	}
 
-	return fmt.Errorf("%w: %q", ErrSectionNotFound, section)
+	return ErrSectionNotFound.WithContext("section", section)
 }
 
 func (p *PackageFile) enterSection(dec *jsontext.Decoder, section string) error {
 	objTok, err := dec.ReadToken()
 	if err != nil {
-		return fmt.Errorf("read section start: %w", err)
+		return errorfamily.WrapCorruption(err, "json.read_section_start", "read section start token")
 	}
 
 	if objTok.Kind() != jsontext.KindBeginObject {
-		return fmt.Errorf("%w: %q", ErrSectionNotObject, section)
+		return ErrSectionNotObject.WithContext("section", section).WithContextf("kind", "%s", objTok.Kind())
 	}
 
 	return nil
@@ -171,14 +184,14 @@ func (p *PackageFile) replaceDependency(dec *jsontext.Decoder, name, newValue st
 	for dec.PeekKind() != jsontext.KindEndObject {
 		keyTok, err := dec.ReadToken()
 		if err != nil {
-			return fmt.Errorf("read dependency key: %w", err)
+			return errorfamily.WrapCorruption(err, "json.read_dependency_key", "read dependency key")
 		}
 
 		keyStr := keyTok.String()
 
 		val, err := dec.ReadValue()
 		if err != nil {
-			return fmt.Errorf("read dependency value: %w", err)
+			return errorfamily.WrapCorruption(err, "json.read_dependency_value", "read dependency value")
 		}
 
 		if keyStr == name {
@@ -186,13 +199,13 @@ func (p *PackageFile) replaceDependency(dec *jsontext.Decoder, name, newValue st
 		}
 	}
 
-	return fmt.Errorf("%w: %q", ErrDependencyNotFound, name)
+	return ErrDependencyNotFound.WithContext("dependency", name)
 }
 
 func (p *PackageFile) spliceDependency(dec *jsontext.Decoder, val jsontext.Value, newValue string) error {
 	encoded, err := json.Marshal(newValue)
 	if err != nil {
-		return fmt.Errorf("encode new value: %w", err)
+		return errorfamily.WrapCorruption(err, "json.encode_value", "encode new value")
 	}
 
 	endOffset := int(dec.InputOffset())
@@ -211,10 +224,14 @@ func (p *PackageFile) Write(path string) error {
 	err := atomicwrite.Write(path, p.raw, p.fingerprint)
 	if err != nil {
 		if errors.Is(err, atomicwrite.ErrConcurrentModification) {
-			return fmt.Errorf("%w: %q", ErrConcurrentModification, path)
+			return ErrConcurrentModification.WithContext("path", path)
 		}
 
-		return fmt.Errorf("write package configuration file %q: %w", path, err)
+		return errorfamily.WrapRejection(
+			err,
+			"file.write_failed",
+			fmt.Sprintf("write package configuration file %q", path),
+		)
 	}
 
 	return nil

@@ -25,8 +25,8 @@ func TestExitCodeRegistryUnavailableReturns75(t *testing.T) {
 
 	got := exitCode(upd.ErrRegistryUnavailable)
 
-	if got != exitTransient {
-		t.Fatalf("exitCode(ErrRegistryUnavailable) = %d, want %d", got, exitTransient)
+	if got != 75 {
+		t.Fatalf("exitCode(ErrRegistryUnavailable) = %d, want 75", got)
 	}
 }
 
@@ -37,8 +37,8 @@ func TestExitCodeWrappedRegistryUnavailableReturns75(t *testing.T) {
 
 	got := exitCode(wrapped)
 
-	if got != exitTransient {
-		t.Fatalf("exitCode(wrapped ErrRegistryUnavailable) = %d, want %d", got, exitTransient)
+	if got != 75 {
+		t.Fatalf("exitCode(wrapped ErrRegistryUnavailable) = %d, want 75", got)
 	}
 }
 
@@ -64,13 +64,13 @@ func TestExitCodePartialFailureReturns1(t *testing.T) {
 	}
 }
 
-func TestExitCodeGenericErrorReturns1(t *testing.T) {
+func TestExitCodeCorruptionReturns65(t *testing.T) {
 	t.Parallel()
 
 	got := exitCode(upd.ErrInvalidJSON)
 
-	if got != 1 {
-		t.Fatalf("exitCode(generic error) = %d, want 1", got)
+	if got != 65 {
+		t.Fatalf("exitCode(ErrInvalidJSON) = %d, want 65 (EX_DATAERR)", got)
 	}
 }
 

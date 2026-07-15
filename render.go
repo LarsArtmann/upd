@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	errorfamily "github.com/larsartmann/go-error-family"
 )
 
 const (
@@ -369,12 +371,12 @@ func RenderJSON(w io.Writer, manifest Manifest, updates int) error {
 
 	err := json.MarshalEncode(enc, output)
 	if err != nil {
-		return fmt.Errorf("encode JSON output: %w", err)
+		return errorfamily.WrapCorruption(err, "json.encode_output", "encode JSON output")
 	}
 
 	_, err = io.WriteString(w, "\n")
 	if err != nil {
-		return fmt.Errorf("write JSON newline: %w", err)
+		return errorfamily.WrapCorruption(err, "json.write_newline", "write JSON newline")
 	}
 
 	return nil

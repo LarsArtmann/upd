@@ -135,6 +135,7 @@ linters:
           allow:
             - $gostd
             - github.com/LarsArtmann/upd
+            - github.com/larsartmann/go-error-family
           files:
             - "**/cmd/**"
         main:
@@ -144,6 +145,7 @@ linters:
             - github.com/Masterminds/semver/v3
             - github.com/gobwas/glob
             - github.com/larsartmann/go-atomic-write
+            - github.com/larsartmann/go-error-family
           files:
             - $all
             - "!$test"
@@ -220,6 +222,11 @@ linters:
         - "y"
         - z
       ignore-type-assert-ok: true
+    wrapcheck:
+      ignore-sig-regex-es:
+        - ".*errorfamily\\."
+      ignore-package-globs:
+        - github.com/LarsArtmann/upd
   exclusions:
     generated: lax
     rules:
