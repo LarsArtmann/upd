@@ -70,6 +70,38 @@ func setupEngineTest(t *testing.T, latest string, versions ...string) (*Engine, 
 	return engine, pkg, manifest
 }
 
+func newStatusServer(t *testing.T, status int) *httptest.Server {
+	t.Helper()
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(status)
+	}))
+	t.Cleanup(s.Close)
+
+	return s
+}
+
+func fetchAndApply(engine *Engine, manifest Manifest, pkg *PackageFile) (int, int) {
+	results := engine.FetchAll(context.Background(), manifest.ToCheck())
+
+	return engine.ApplyUpdates(manifest, results, pkg)
+}
+
+func setupPinLatestTest(t *testing.T, pinLatest bool) (*Engine, *PackageFile, Manifest) {
+	t.Helper()
+
+	registry := mockRegistry(map[string]map[string]any{
+		"semver": packageVersion("7.7.4", "7.7.4"),
+	})
+	t.Cleanup(registry.Close)
+
+	pkgJSON := `{"dependencies": {"semver": "latest"}}`
+	pkg := &PackageFile{raw: []byte(pkgJSON)}
+	manifest, _ := BuildManifest(pkg, nil, pinLatest)
+	engine := newTestEngine(t, registry, DefaultConfig())
+
+	return engine, pkg, manifest
+}
+
 const (
 	testPackageName             = "react"
 	singleDependencyPackageJSON = `{"dependencies": {"react": "^18.0.0"}}`
@@ -113,18 +145,15 @@ func TestEngineApplyUpdates(t *testing.T) {
 	})
 	defer registry.Close()
 
-	pkg, manifest := buildTestManifest(t, `{
-		"dependencies": {
-			"react": "^18.0.0",
-			"lodash": "4.17.20"
-		}
-	}`)
+	pkg, manifest := buildTestManifest(t, `{"dependencies": {
+		"react": "^18.0.0",
+		"lodash": "4.17.20"
+	}}`)
 
 	cfg := DefaultConfig()
 	engine := newTestEngine(t, registry, cfg)
 
-	results := engine.FetchAll(context.Background(), manifest.ToCheck())
-	updates, errors := engine.ApplyUpdates(manifest, results, pkg)
+	updates, errors := fetchAndApply(engine, manifest, pkg)
 
 	if errors != 0 {
 		t.Errorf("expected 0 errors, got %d", errors)
@@ -151,8 +180,7 @@ func TestEngineApplyUpdates(t *testing.T) {
 func TestEngineApplyUpdatesKept(t *testing.T) {
 	engine, pkg, manifest := setupEngineTest(t, "18.0.0", "18.0.0")
 
-	results := engine.FetchAll(context.Background(), manifest.ToCheck())
-	updates, _ := engine.ApplyUpdates(manifest, results, pkg)
+	updates, _ := fetchAndApply(engine, manifest, pkg)
 
 	if updates != 0 {
 		t.Errorf("expected 0 updates for same version, got %d", updates)
@@ -168,8 +196,7 @@ func TestEngineApplyUpdatesNop(t *testing.T) {
 	engine.cfg.Nop = true
 
 	originalJSON := `{"dependencies": {"react": "^18.0.0"}}`
-	results := engine.FetchAll(context.Background(), manifest.ToCheck())
-	updates, _ := engine.ApplyUpdates(manifest, results, pkg)
+	updates, _ := fetchAndApply(engine, manifest, pkg)
 
 	if updates != 1 {
 		t.Errorf("expected 1 update in nop mode, got %d", updates)
@@ -181,18 +208,14 @@ func TestEngineApplyUpdatesNop(t *testing.T) {
 }
 
 func TestEngineApplyUpdatesError(t *testing.T) {
-	registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer registry.Close()
+	registry := newStatusServer(t, http.StatusNotFound)
 
 	pkg, manifest := buildTestManifest(t, `{"dependencies": {"nonexistent": "^1.0.0"}}`)
 
 	cfg := DefaultConfig()
 	engine := newTestEngine(t, registry, cfg)
 
-	results := engine.FetchAll(context.Background(), manifest.ToCheck())
-	_, errors := engine.ApplyUpdates(manifest, results, pkg)
+	_, errors := fetchAndApply(engine, manifest, pkg)
 
 	if errors == 0 {
 		t.Error("expected errors for 404 package, got 0")
@@ -206,8 +229,7 @@ func TestEngineApplyUpdatesError(t *testing.T) {
 func TestEngineApplyUpdatesWritesPackageJSON(t *testing.T) {
 	engine, pkg, manifest := setupEngineTest(t, "19.0.0", "19.0.0")
 
-	results := engine.FetchAll(context.Background(), manifest.ToCheck())
-	engine.ApplyUpdates(manifest, results, pkg)
+	fetchAndApply(engine, manifest, pkg)
 
 	result := string(pkg.raw)
 	assertContains(t, result, "19.0.0", "new version")
@@ -222,8 +244,7 @@ func TestEngineGreatestMode(t *testing.T) {
 	)
 	engine.cfg.Greatest = true
 
-	results := engine.FetchAll(context.Background(), manifest.ToCheck())
-	engine.ApplyUpdates(manifest, results, pkg)
+	fetchAndApply(engine, manifest, pkg)
 
 	if manifest["react"][0].VNew != "19.0.0" {
 		t.Errorf("greatest vNew = %q, want 19.0.0", manifest["react"][0].VNew)
@@ -231,20 +252,9 @@ func TestEngineGreatestMode(t *testing.T) {
 }
 
 func TestEnginePinLatest(t *testing.T) {
-	registry := mockRegistry(map[string]map[string]any{
-		"semver": packageVersion("7.7.4", "7.7.4"),
-	})
-	defer registry.Close()
+	engine, pkg, manifest := setupPinLatestTest(t, true)
 
-	pkgJSON := `{"dependencies": {"semver": "latest"}}`
-	pkg := &PackageFile{raw: []byte(pkgJSON)}
-	manifest, _ := BuildManifest(pkg, nil, true)
-
-	cfg := DefaultConfig()
-	engine := newTestEngine(t, registry, cfg)
-
-	results := engine.FetchAll(context.Background(), manifest.ToCheck())
-	updates, errors := engine.ApplyUpdates(manifest, results, pkg)
+	updates, errors := fetchAndApply(engine, manifest, pkg)
 
 	if errors != 0 {
 		t.Fatalf("expected 0 errors, got %d", errors)
@@ -277,20 +287,9 @@ func TestEnginePinLatest(t *testing.T) {
 }
 
 func TestEnginePinLatestDisabled(t *testing.T) {
-	registry := mockRegistry(map[string]map[string]any{
-		"semver": packageVersion("7.7.4", "7.7.4"),
-	})
-	defer registry.Close()
+	engine, pkg, manifest := setupPinLatestTest(t, false)
 
-	pkgJSON := `{"dependencies": {"semver": "latest"}}`
-	pkg := &PackageFile{raw: []byte(pkgJSON)}
-	manifest, _ := BuildManifest(pkg, nil, false)
-
-	cfg := DefaultConfig()
-	engine := newTestEngine(t, registry, cfg)
-
-	results := engine.FetchAll(context.Background(), manifest.ToCheck())
-	updates, errors := engine.ApplyUpdates(manifest, results, pkg)
+	updates, errors := fetchAndApply(engine, manifest, pkg)
 
 	if errors != 0 || updates != 0 {
 		t.Fatalf("expected no updates/errors for skipped latest, got %d/%d", updates, errors)
@@ -302,10 +301,7 @@ func TestEnginePinLatestDisabled(t *testing.T) {
 }
 
 func TestRegistryClassifiesNotFoundAsRejection(t *testing.T) {
-	registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer registry.Close()
+	registry := newStatusServer(t, http.StatusNotFound)
 
 	engine := newTestEngine(t, registry, DefaultConfig())
 	_, _, err := engine.registry.FetchPackument(context.Background(), "ghost")
@@ -322,10 +318,7 @@ func TestRegistryClassifiesNotFoundAsRejection(t *testing.T) {
 func TestRegistryClassifiesServerErrorAsTransient(t *testing.T) {
 	for _, status := range []int{http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable} {
 		t.Run(http.StatusText(status), func(t *testing.T) {
-			registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(status)
-			}))
-			defer registry.Close()
+			registry := newStatusServer(t, status)
 
 			engine := newTestEngine(t, registry, DefaultConfig())
 			_, _, err := engine.registry.FetchPackument(context.Background(), "react")
@@ -338,16 +331,12 @@ func TestRegistryClassifiesServerErrorAsTransient(t *testing.T) {
 }
 
 func TestApplyUpdatesPopulatesSpecErr(t *testing.T) {
-	registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer registry.Close()
+	registry := newStatusServer(t, http.StatusNotFound)
 
 	pkg, manifest := buildTestManifest(t, `{"dependencies": {"ghost": "^1.0.0"}}`)
 	engine := newTestEngine(t, registry, DefaultConfig())
 
-	results := engine.FetchAll(context.Background(), manifest.ToCheck())
-	_, errCount := engine.ApplyUpdates(manifest, results, pkg)
+	_, errCount := fetchAndApply(engine, manifest, pkg)
 
 	if errCount == 0 {
 		t.Fatal("expected errors for 404, got 0")

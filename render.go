@@ -122,8 +122,7 @@ func (r *Renderer) renderUpgradeTable(manifest Manifest, showAll bool) {
 	)
 
 	// Header
-	left, mid, right := borderChars("top")
-	r.writeBorder(left, mid, right, colName, colVer, colVer, colState)
+	r.renderBorder("top", colName, colVer, colVer, colState)
 
 	_, _ = fmt.Fprintf(
 		r.w, "│%s│%s│%s│%s│\n",
@@ -133,13 +132,11 @@ func (r *Renderer) renderUpgradeTable(manifest Manifest, showAll bool) {
 		r.bold(padCell("STATE", colState)),
 	)
 
-	left, mid, right = borderChars("mid")
-	r.writeBorder(left, mid, right, colName, colVer, colVer, colState)
+	r.renderBorder("mid", colName, colVer, colVer, colState)
 
 	r.renderRows(manifest, colName, colVer, colState, showAll)
 
-	left, mid, right = borderChars("bottom")
-	r.writeBorder(left, mid, right, colName, colVer, colVer, colState)
+	r.renderBorder("bottom", colName, colVer, colVer, colState)
 }
 
 func (r *Renderer) renderRows(manifest Manifest, colName, colVer, colState int, showAll bool) {
@@ -206,6 +203,11 @@ func borderChars(kind string) (string, string, string) {
 	}
 
 	return "", "", ""
+}
+
+func (r *Renderer) renderBorder(kind string, widths ...int) {
+	left, mid, right := borderChars(kind)
+	r.writeBorder(left, mid, right, widths...)
 }
 
 func (r *Renderer) writeBorder(left, mid, right string, widths ...int) {

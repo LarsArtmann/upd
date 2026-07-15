@@ -67,14 +67,33 @@ func TestRenderTableAllMode(t *testing.T) {
 	assertContains(t, output, "lodash", "package name")
 }
 
-func TestRenderTableErrorState(t *testing.T) {
-	json := `{"dependencies": {"broken": "^1.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
+func newErrorManifest(name string, err error) Manifest {
+	pkgJSON := fmt.Sprintf(`{"dependencies": {%q: "^1.0.0"}}`, name)
+	pkg := &PackageFile{raw: []byte(pkgJSON)}
 	manifest, _ := BuildManifest(pkg, nil, false)
 
-	for _, spec := range manifest["broken"] {
+	for _, spec := range manifest[name] {
 		spec.State = StateError
+		spec.Err = err
 	}
+
+	return manifest
+}
+
+func newVerboseErrorManifest() Manifest {
+	pkgJSON := `{"dependencies": {"broken": "^1.0.0"}}`
+	pkg := &PackageFile{raw: []byte(pkgJSON)}
+	manifest, _ := BuildManifest(pkg, nil, false)
+
+	wrappedErr := &verboseTestError{msg: "connection refused", extra: "stack: goroutine 42"}
+	manifest["broken"][0].State = StateError
+	manifest["broken"][0].Err = wrappedErr
+
+	return manifest
+}
+
+func TestRenderTableErrorState(t *testing.T) {
+	manifest := newErrorManifest("broken", nil)
 
 	output := renderManifest(t, manifest, 0, 1, true, false)
 
@@ -82,14 +101,7 @@ func TestRenderTableErrorState(t *testing.T) {
 }
 
 func TestRenderTableErrorDetailSurfacesReason(t *testing.T) {
-	json := `{"dependencies": {"broken": "^1.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest, _ := BuildManifest(pkg, nil, false)
-
-	for _, spec := range manifest["broken"] {
-		spec.State = StateError
-		spec.Err = ErrPackageNotFound
-	}
+	manifest := newErrorManifest("broken", ErrPackageNotFound)
 
 	output := renderManifest(t, manifest, 0, 1, true, false)
 
@@ -191,13 +203,7 @@ func (e *verboseTestError) Format(f fmt.State, verb rune) {
 }
 
 func TestRenderVerboseShowsFullErrorChain(t *testing.T) {
-	json := `{"dependencies": {"broken": "^1.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest, _ := BuildManifest(pkg, nil, false)
-
-	wrappedErr := &verboseTestError{msg: "connection refused", extra: "stack: goroutine 42"}
-	manifest["broken"][0].State = StateError
-	manifest["broken"][0].Err = wrappedErr
+	manifest := newVerboseErrorManifest()
 
 	var buf bytes.Buffer
 
@@ -210,13 +216,7 @@ func TestRenderVerboseShowsFullErrorChain(t *testing.T) {
 }
 
 func TestRenderNonVerboseOmitsErrorChainDetail(t *testing.T) {
-	json := `{"dependencies": {"broken": "^1.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest, _ := BuildManifest(pkg, nil, false)
-
-	wrappedErr := &verboseTestError{msg: "connection refused", extra: "stack: goroutine 42"}
-	manifest["broken"][0].State = StateError
-	manifest["broken"][0].Err = wrappedErr
+	manifest := newVerboseErrorManifest()
 
 	var buf bytes.Buffer
 

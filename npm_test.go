@@ -21,13 +21,50 @@ func newTestClient(registryURL string, retries int) *RegistryClient {
 	return client
 }
 
-func TestFetchPackumentRetriesOn503(t *testing.T) {
+func newCountingServer(
+	t *testing.T,
+	handler func(w http.ResponseWriter, attempt int32),
+) (*httptest.Server, *atomic.Int32) {
+	t.Helper()
+
 	var attempts atomic.Int32
 
-	registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		attempts.Add(1)
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler(w, attempts.Add(1))
+	}))
+	t.Cleanup(s.Close)
 
-		if attempts.Load() <= 2 {
+	return s, &attempts
+}
+
+func fetchAndCaptureDelays(t *testing.T, registryURL string, retries int, pkgName string) []time.Duration {
+	t.Helper()
+
+	cfg := DefaultConfig()
+	cfg.Registry = registryURL
+	cfg.Retries = retries
+
+	client := NewRegistryClient(cfg)
+
+	var delays []time.Duration
+
+	client.sleep = func(_ context.Context, d time.Duration) bool {
+		delays = append(delays, d)
+
+		return true
+	}
+
+	_, _, err := client.FetchPackument(context.Background(), pkgName)
+	if err == nil {
+		t.Fatal("expected error after retries exhausted")
+	}
+
+	return delays
+}
+
+func TestFetchPackumentRetriesOn503(t *testing.T) {
+	registry, attempts := newCountingServer(t, func(w http.ResponseWriter, n int32) {
+		if n <= 2 {
 			w.Header().Set("Retry-After", "0")
 			w.WriteHeader(http.StatusServiceUnavailable)
 
@@ -36,8 +73,7 @@ func TestFetchPackumentRetriesOn503(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"dist-tags":{"latest":"1.0.0"},"versions":{"1.0.0":{}}}`))
-	}))
-	t.Cleanup(registry.Close)
+	})
 
 	client := newTestClient(registry.URL, 3)
 
@@ -56,13 +92,9 @@ func TestFetchPackumentRetriesOn503(t *testing.T) {
 }
 
 func TestFetchPackumentDoesNotRetry404(t *testing.T) {
-	var attempts atomic.Int32
-
-	registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		attempts.Add(1)
+	registry, attempts := newCountingServer(t, func(w http.ResponseWriter, _ int32) {
 		w.WriteHeader(http.StatusNotFound)
-	}))
-	t.Cleanup(registry.Close)
+	})
 
 	client := newTestClient(registry.URL, 3)
 
@@ -77,14 +109,10 @@ func TestFetchPackumentDoesNotRetry404(t *testing.T) {
 }
 
 func TestFetchPackumentRetries429ThenGivesUp(t *testing.T) {
-	var attempts atomic.Int32
-
-	registry := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		attempts.Add(1)
+	registry, attempts := newCountingServer(t, func(w http.ResponseWriter, _ int32) {
 		w.Header().Set("Retry-After", "0")
 		w.WriteHeader(http.StatusTooManyRequests)
-	}))
-	t.Cleanup(registry.Close)
+	})
 
 	client := newTestClient(registry.URL, 2)
 
@@ -128,24 +156,7 @@ func TestFetchPackumentBackoffScheduleRecorded(t *testing.T) {
 	}))
 	t.Cleanup(registry.Close)
 
-	cfg := DefaultConfig()
-	cfg.Registry = registry.URL
-	cfg.Retries = 2
-
-	client := NewRegistryClient(cfg)
-
-	var delays []time.Duration
-
-	client.sleep = func(_ context.Context, d time.Duration) bool {
-		delays = append(delays, d)
-
-		return true
-	}
-
-	_, _, fetchErr := client.FetchPackument(context.Background(), "backoff-test")
-	if fetchErr == nil {
-		t.Fatal("expected error after retries exhausted")
-	}
+	delays := fetchAndCaptureDelays(t, registry.URL, 2, "backoff-test")
 
 	wantDelays := []time.Duration{1 * time.Second, 2 * time.Second}
 
@@ -167,24 +178,7 @@ func TestFetchPackumentSleepRecordsRetryAfter(t *testing.T) {
 	}))
 	t.Cleanup(registry.Close)
 
-	cfg := DefaultConfig()
-	cfg.Registry = registry.URL
-	cfg.Retries = 1
-
-	client := NewRegistryClient(cfg)
-
-	var delays []time.Duration
-
-	client.sleep = func(_ context.Context, d time.Duration) bool {
-		delays = append(delays, d)
-
-		return true
-	}
-
-	_, _, fetchErr := client.FetchPackument(context.Background(), "retry-after-test")
-	if fetchErr == nil {
-		t.Fatal("expected error after retry exhausted")
-	}
+	delays := fetchAndCaptureDelays(t, registry.URL, 1, "retry-after-test")
 
 	if len(delays) != 1 {
 		t.Fatalf("expected 1 delay, got %d: %v", len(delays), delays)

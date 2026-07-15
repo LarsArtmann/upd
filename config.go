@@ -196,15 +196,19 @@ func defineDurationFlag(flagSet *flag.FlagSet, p *time.Duration, short, long str
 	}
 }
 
+func usageBlankLine(w io.Writer) {
+	_, _ = fmt.Fprintln(w)
+}
+
 func PrintUsage(w io.Writer) {
 	_, _ = fmt.Fprintf(
 		w,
 		"Usage: %s [-h] [-V] [-q] [-n|--dry-run] [-C] [-f <file>] [-r <registry>] [-g] [-a] [-c <concurrency>] [-P] [-t <timeout>] [--retries <n>] [--json] [--verbose] [<pattern> ...]\n",
 		ProgramName,
 	)
-	_, _ = fmt.Fprintln(w)
+	usageBlankLine(w)
 	_, _ = fmt.Fprintln(w, "Upgrade NPM package dependencies in package.json while preserving formatting.")
-	_, _ = fmt.Fprintln(w)
+	usageBlankLine(w)
 	_, _ = fmt.Fprintln(w, "Options:")
 
 	lines := []struct{ short, long, desc string }{
@@ -229,12 +233,12 @@ func PrintUsage(w io.Writer) {
 		_, _ = fmt.Fprintf(w, "  %-4s %-16s  %s\n", l.short, l.long, l.desc)
 	}
 
-	_, _ = fmt.Fprintln(w)
+	usageBlankLine(w)
 	_, _ = fmt.Fprintln(w, "Patterns:")
 	_, _ = fmt.Fprintln(w, "  Positive or negative (prefixed with !) glob patterns for")
 	_, _ = fmt.Fprintln(w, "  matching dependency names to update.")
 
-	_, _ = fmt.Fprintln(w)
+	usageBlankLine(w)
 	_, _ = fmt.Fprintln(w, "Exit codes:")
 	_, _ = fmt.Fprintln(w, "  0   success — all dependencies resolved without errors")
 	_, _ = fmt.Fprintln(w, "  1   failure — package not found, partial errors, IO error")

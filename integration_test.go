@@ -10,6 +10,20 @@ import (
 	"testing"
 )
 
+func writeTempPackageJSON(t *testing.T, content string) string {
+	t.Helper()
+
+	dir := t.TempDir()
+	pkgPath := filepath.Join(dir, "package.json")
+
+	err := os.WriteFile(pkgPath, []byte(content), 0o644)
+	if err != nil {
+		t.Fatalf("write temp package.json: %v", err)
+	}
+
+	return pkgPath
+}
+
 // TestFullPipelineReadFetchWrite exercises the entire read→fetch→compare→write
 // flow against a mock registry, verifying that the on-disk file is updated
 // with byte-preserving edits.
@@ -26,13 +40,7 @@ func TestFullPipelineReadFetchWrite(t *testing.T) {
 }
 `
 
-	dir := t.TempDir()
-	pkgPath := filepath.Join(dir, "package.json")
-
-	err := os.WriteFile(pkgPath, []byte(originalJSON), 0o644)
-	if err != nil {
-		t.Fatalf("write temp package.json: %v", err)
-	}
+	pkgPath := writeTempPackageJSON(t, originalJSON)
 
 	// Mock registry
 	registry := mockRegistry(map[string]map[string]any{
@@ -119,13 +127,7 @@ func TestFullPipelineReadFetchWrite(t *testing.T) {
 func TestFullPipelineDryRunDoesNotWrite(t *testing.T) {
 	originalJSON := `{"dependencies": {"react": "^18.0.0"}}`
 
-	dir := t.TempDir()
-	pkgPath := filepath.Join(dir, "package.json")
-
-	err := os.WriteFile(pkgPath, []byte(originalJSON), 0o644)
-	if err != nil {
-		t.Fatalf("write temp package.json: %v", err)
-	}
+	pkgPath := writeTempPackageJSON(t, originalJSON)
 
 	registry := mockRegistry(map[string]map[string]any{
 		"react": packageVersion("19.0.0", "19.0.0"),

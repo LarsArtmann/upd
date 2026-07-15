@@ -84,6 +84,12 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **Partial failure** (`cmd/upd/main.go`): when `errCount > 0` (one or more packages failed to resolve), `finalizeRun` returns `ErrPartialFailure` after successfully writing the file for packages that did update. Exit code is 1. Successful updates are NOT lost — the file is written before the error is returned.
 - **Linter: ERRORFAMILY_ADOPT**: The `branching-flow` linter suggests replacing `errors.New`/`fmt.Errorf` with "go-error-family" constructors (`NewRejection`, `WrapTransient`). This is **deliberately not adopted** — the project intentionally keeps only 3 direct dependencies, `depguard` restricts non-stdlib imports, and the current sentinel-error + `fmt.Errorf("context: %w", err)` pattern is idiomatic Go. Do not add a 4th dependency to satisfy this rule.
 - **Renderer API**: `NewRenderer(w io.Writer, opts RendererOptions)` takes an options struct, not positional bools. `RendererOptions{NoColor, Verbose bool}`. This prevents `NewRenderer(w, true, false)` ambiguity.
+- **Linter: PHANTOM** (branching-flow): 56 violations for primitive types (string/int/bool params and fields) that "should" be phantom types. **Deliberately not adopted** — wrapping every `string`/`int` in a named type would be massive over-engineering for a focused CLI. `State` is already a named type (7 distinct domain values). Other primitives (`short`, `long`, `section`, `updates`, etc.) are clear from context and don't benefit from phantom wrapping.
+- **Linter: STRONG-ID** (branching-flow): 1 violation for `mid string` in `render.go:writeBorder`. **False positive** — `mid` means "middle border position" (top/mid/bottom), not a database ID. The name coincidentally contains "id".
+- **Linter: BOOLBLIND** (branching-flow): 1 violation for `Config` struct (8 bool fields → bit flags). **Deliberately not adopted** — bool fields on a config struct is idiomatic Go. Bit flags (`cfg.Flags&FlagGreatest != 0`) add ceremony without readability gain. The 7-byte savings (8B→1B) is irrelevant for a config struct created once.
+- **Linter: MIXINS** (branching-flow): 1 low-confidence opportunity for `FetchResult`/`entry` shared fields. **Skipped** — only 2 structs share fields, and they serve different purposes (fetch result vs. manifest entry).
+- **Linter: CONTEXT** (branching-flow): 14 MEDIUM error-context issues. **Skipped** — the caller (`engine.applyOne`) already wraps errors with `name` and `section` context. Adding redundant context at every level creates noise. Current pattern: errors include context where first available; callers add broader context. This is the idiomatic Go error-wrapping pattern.
+- **`usageBlankLine`**: Previously had an infinite recursion bug (`usageBlankLine` called itself instead of `fmt.Fprintln(w)`). Fixed — SA5007 (staticcheck) would catch this.
 
 ## Dependencies (intentional — only 3 direct)
 
@@ -94,7 +100,8 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 
 ## Testing
 
-- Tests are in package `upd` (white-box) alongside source. Helpers in `testhelpers_test.go` / `config_test.go`.
+- Tests are in package `upd` (white-box) alongside source. Shared helpers in `testhelpers_test.go` / `config_test.go`; per-file helpers inline (e.g. `newStatusServer`, `fetchAndApply`, `setupPinLatestTest` in `engine_test.go`, `newCountingServer`/`fetchAndCaptureDelays` in `npm_test.go`, `writeTempPackageJSON` in `integration_test.go`, `newErrorManifest`/`newVerboseErrorManifest` in `render_test.go`, `renderJSONAndParse` in `render_json_test.go`).
+- **Zero jscpd clones**: all test duplication eliminated via helper extraction. `jscpd --pattern "**/*.go" --min-lines 5 --min-tokens 40 .` reports 0 clones.
 - No network in unit tests — packuments and package files are built from literals.
 - Run the full suite before declaring done: `nix run .#test`.
 - Race detector is included in CI: `GOEXPERIMENT=jsonv2 go test -race ./...`.
