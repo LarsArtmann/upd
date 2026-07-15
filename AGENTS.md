@@ -79,23 +79,23 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **Signal handling**: SIGINT/SIGTERM cancels the fetch phase via `signal.NotifyContext`. In-flight HTTP requests are cancelled gracefully.
 - **Auto color detection**: `NO_COLOR` env var and non-TTY stdout automatically disable colors. `-C` is still available for manual override.
 - **`ProgramVersion`** defaults to `"dev"`; set via `-ldflags -X` at build time.
-- **Error classification** (`npm.go`): `classifyRegistryError` splits HTTP failures into `ErrPackageNotFound` (404/410 — user typo, exit 1) vs `ErrRegistryUnavailable` (5xx/timeout — system fault, exit 75). This lets CI scripts distinguish retryable from permanent failures.
+- **Error classification** (`npm.go`): `classifyRegistryError` splits HTTP failures into `ErrPackageNotFound` (404/410 — Rejection, exit 1) vs `ErrRegistryUnavailable` (5xx/timeout — Transient, exit 75). This lets CI scripts distinguish retryable from permanent failures. Exit codes derived from `errorfamily.Family.ExitCode()` — Rejection=1, Transient=75, Corruption=65 (EX_DATAERR), Conflict=1, Infrastructure=69.
 - **Warnings pipeline** (`cmd/upd/main.go`): `BuildManifest` returns `[]string` warnings for malformed sections and invalid glob patterns. These print as yellow `WARNING:` lines on stderr but don't stop execution. A malformed `upd` field in `package.json` is fatal (stops the run); malformed sections/patterns are non-fatal.
 - **Partial failure** (`cmd/upd/main.go`): when `errCount > 0` (one or more packages failed to resolve), `finalizeRun` returns `ErrPartialFailure` after successfully writing the file for packages that did update. Exit code is 1. Successful updates are NOT lost — the file is written before the error is returned.
-- **Linter: ERRORFAMILY_ADOPT**: The `branching-flow` linter suggests replacing `errors.New`/`fmt.Errorf` with "go-error-family" constructors (`NewRejection`, `WrapTransient`). This is **deliberately not adopted** — the project intentionally keeps only 3 direct dependencies, `depguard` restricts non-stdlib imports, and the current sentinel-error + `fmt.Errorf("context: %w", err)` pattern is idiomatic Go. Do not add a 4th dependency to satisfy this rule.
-- **Renderer API**: `NewRenderer(w io.Writer, opts RendererOptions)` takes an options struct, not positional bools. `RendererOptions{NoColor, Verbose bool}`. This prevents `NewRenderer(w, true, false)` ambiguity.
-- **Linter: PHANTOM** (branching-flow): 56 violations for primitive types (string/int/bool params and fields) that "should" be phantom types. **Deliberately not adopted** — wrapping every `string`/`int` in a named type would be massive over-engineering for a focused CLI. `State` is already a named type (7 distinct domain values). Other primitives (`short`, `long`, `section`, `updates`, etc.) are clear from context and don't benefit from phantom wrapping.
-- **Linter: STRONG-ID** (branching-flow): 1 violation for `mid string` in `render.go:writeBorder`. **False positive** — `mid` means "middle border position" (top/mid/bottom), not a database ID. The name coincidentally contains "id".
-- **Linter: BOOLBLIND** (branching-flow): 1 violation for `Config` struct (8 bool fields → bit flags). **Deliberately not adopted** — bool fields on a config struct is idiomatic Go. Bit flags (`cfg.Flags&FlagGreatest != 0`) add ceremony without readability gain. The 7-byte savings (8B→1B) is irrelevant for a config struct created once.
-- **Linter: MIXINS** (branching-flow): 1 low-confidence opportunity for `FetchResult`/`entry` shared fields. **Skipped** — only 2 structs share fields, and they serve different purposes (fetch result vs. manifest entry).
-- **Linter: CONTEXT** (branching-flow): 14 MEDIUM error-context issues. **Skipped** — the caller (`engine.applyOne`) already wraps errors with `name` and `section` context. Adding redundant context at every level creates noise. Current pattern: errors include context where first available; callers add broader context. This is the idiomatic Go error-wrapping pattern.
-- **`usageBlankLine`**: Previously had an infinite recursion bug (`usageBlankLine` called itself instead of `fmt.Fprintln(w)`). Fixed — SA5007 (staticcheck) would catch this.
+- **`go-error-family` adoption**: All 13 domain sentinels (`errors.go`) use `errorfamily.NewRejection/NewCorruption/NewTransient/NewConflict` constructors. `ErrHelp`/`ErrVersion` remain plain `errors.New` (control-flow signals, not domain errors). All `fmt.Errorf` wrapping sites in `npm.go`, `packagejson.go`, `engine.go`, `config.go`, `render.go`, `cmd/upd/main.go` use `errorfamily.Wrap*` or `sentinel.WithContext()`. Exit codes derived from `Family.ExitCode()` via `errorfamily.ExitCode(err)`. The `retryableError` wrapper in `npm.go` stays (carries `retryAfter` which errorfamily doesn't model).
+- **Linter: ERRORFAMILY_ADOPT**: Adopted. Only 2 remaining hits (`ErrHelp`, `ErrVersion`) — deliberately kept as `errors.New` because they are control-flow signals (show help, show version), not domain errors.
+- **Linter: PHANTOM** (branching-flow): 56 violations for primitive types that "should" be phantom types. **Deliberately not adopted** — over-engineering for a focused CLI. `State` is already a named type; other primitives are clear from context.
+- **Linter: STRONG-ID** (branching-flow): 1 violation for `mid string` in `render.go:writeBorder`. **False positive** — `mid` means "middle border position" (top/mid/bottom), not a database ID.
+- **Linter: BOOLBLIND** (branching-flow): 1 violation for `Config` struct (8 bool fields). **Deliberately not adopted** — bool config fields is idiomatic Go.
+- **Linter: MIXINS** (branching-flow): 1 low-confidence opportunity. **Skipped**.
+- **Linter: CONTEXT** (branching-flow): 14 MEDIUM context issues. **Addressed** — errorfamily's `WithContext(key, value)` now attaches structured context at error creation sites. Remaining issues are for complex types (manifest, decoder) that are intentionally suppressed.
 
-## Dependencies (intentional — only 3 direct)
+## Dependencies (intentional — only 4 direct)
 
 - `github.com/Masterminds/semver/v3` — semver parse + compare.
 - `github.com/gobwas/glob` — dependency-name pattern matching.
 - `github.com/larsartmann/go-atomic-write` — TOCTOU-safe atomic file write (fingerprint verify + rename).
+- `github.com/larsartmann/go-error-family` — structured error classification (Family, exit codes, context, retry decisions).
 - `encoding/json/v2` + `encoding/json/jsontext` — standard library JSON (requires `GOEXPERIMENT=jsonv2`).
 
 ## Testing
