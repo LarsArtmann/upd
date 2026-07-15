@@ -15,21 +15,8 @@ import (
 func main() {
 	err := run(os.Args[1:])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "\x1b[31mERROR:\x1b[0m %v\n", err)
-		os.Exit(exitCode(err))
+		os.Exit(errorfamily.HandleError(err))
 	}
-}
-
-func exitCode(err error) int {
-	if err == nil {
-		return 0
-	}
-
-	if errors.Is(err, upd.ErrHelp) || errors.Is(err, upd.ErrVersion) {
-		return 0
-	}
-
-	return errorfamily.ExitCode(err)
 }
 
 func run(args []string) error {
@@ -42,7 +29,6 @@ func run(args []string) error {
 		return err
 	}
 
-	// Auto-detect color suppression: NO_COLOR env var or non-TTY stdout
 	if !cfg.NoColor {
 		cfg.NoColor = upd.ShouldDisableColor(os.Stdout)
 	}
@@ -52,7 +38,6 @@ func run(args []string) error {
 		return err
 	}
 
-	// Honor embedded "upd" field in package.json
 	embedded, err := pkg.GetUpdArgs()
 	if err != nil {
 		return err
@@ -64,8 +49,6 @@ func run(args []string) error {
 
 	manifest, warnings := upd.BuildManifest(pkg, cfg.Patterns, cfg.PinLatest)
 
-	// In quiet mode, suppress warnings too; in JSON mode, emit warnings as JSON
-	// metadata on stderr so stdout stays pure JSON
 	if !cfg.Quiet {
 		printWarnings(os.Stderr, warnings)
 	}
@@ -73,7 +56,6 @@ func run(args []string) error {
 	toCheck := manifest.ToCheck()
 	engine := upd.NewEngine(cfg)
 
-	// Progress bar only in interactive mode with work to do
 	showProgress := !cfg.Quiet && len(toCheck) > 0
 
 	reporter := upd.NewProgressReporter(os.Stderr, len(toCheck), cfg.NoColor)
@@ -117,12 +99,6 @@ func finalizeRun(
 	if updates > 0 && !cfg.Nop {
 		err := pkg.Write(cfg.File)
 		if err != nil {
-			if errors.Is(err, upd.ErrConcurrentModification) {
-				fmt.Fprintln(os.Stderr, "Your file was not changed — re-run upd to try again.")
-
-				return err
-			}
-
 			return err
 		}
 	}

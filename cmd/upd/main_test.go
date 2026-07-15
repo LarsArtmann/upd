@@ -1,78 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/LarsArtmann/upd"
 )
-
-func TestExitCodeNilReturnsZero(t *testing.T) {
-	t.Parallel()
-
-	got := exitCode(nil)
-
-	if got != 0 {
-		t.Fatalf("exitCode(nil) = %d, want 0", got)
-	}
-}
-
-func TestExitCodeRegistryUnavailableReturns75(t *testing.T) {
-	t.Parallel()
-
-	got := exitCode(upd.ErrRegistryUnavailable)
-
-	if got != 75 {
-		t.Fatalf("exitCode(ErrRegistryUnavailable) = %d, want 75", got)
-	}
-}
-
-func TestExitCodeWrappedRegistryUnavailableReturns75(t *testing.T) {
-	t.Parallel()
-
-	wrapped := fmt.Errorf("fetch failed: %w", upd.ErrRegistryUnavailable)
-
-	got := exitCode(wrapped)
-
-	if got != 75 {
-		t.Fatalf("exitCode(wrapped ErrRegistryUnavailable) = %d, want 75", got)
-	}
-}
-
-func TestExitCodeConcurrentModificationReturns1(t *testing.T) {
-	t.Parallel()
-
-	got := exitCode(upd.ErrConcurrentModification)
-
-	if got != 1 {
-		t.Fatalf("exitCode(ErrConcurrentModification) = %d, want 1", got)
-	}
-}
-
-func TestExitCodePartialFailureReturns1(t *testing.T) {
-	t.Parallel()
-
-	wrapped := fmt.Errorf("2 package(s) failed: %w", upd.ErrPartialFailure)
-
-	got := exitCode(wrapped)
-
-	if got != 1 {
-		t.Fatalf("exitCode(wrapped ErrPartialFailure) = %d, want 1", got)
-	}
-}
-
-func TestExitCodeCorruptionReturns65(t *testing.T) {
-	t.Parallel()
-
-	got := exitCode(upd.ErrInvalidJSON)
-
-	if got != 65 {
-		t.Fatalf("exitCode(ErrInvalidJSON) = %d, want 65 (EX_DATAERR)", got)
-	}
-}
 
 func TestPrintWarningsEmptyProducesNoOutput(t *testing.T) {
 	t.Parallel()
@@ -96,13 +29,13 @@ func TestPrintWarningsOutputsFormattedLines(t *testing.T) {
 		t.Fatalf("expected %d lines, got %d: %q", len(warnings), len(lines), output)
 	}
 
-	for i, want := range warnings {
-		if !strings.Contains(lines[i], want) {
-			t.Errorf("line %d: expected to contain %q, got %q", i, want, lines[i])
+	for idx, want := range warnings {
+		if !strings.Contains(lines[idx], want) {
+			t.Errorf("line %d: expected to contain %q, got %q", idx, want, lines[idx])
 		}
 
-		if !strings.Contains(lines[i], "\x1b[33mWARNING:\x1b[0m") {
-			t.Errorf("line %d: missing yellow WARNING prefix, got %q", i, lines[i])
+		if !strings.Contains(lines[idx], "\x1b[33mWARNING:\x1b[0m") {
+			t.Errorf("line %d: missing yellow WARNING prefix, got %q", idx, lines[idx])
 		}
 	}
 }
@@ -110,26 +43,26 @@ func TestPrintWarningsOutputsFormattedLines(t *testing.T) {
 func capturePrintWarnings(t *testing.T, warnings []string) string {
 	t.Helper()
 
-	r, w, err := os.Pipe()
+	reader, writer, err := os.Pipe()
 	if err != nil {
 		t.Fatalf("create pipe: %v", err)
 	}
 
 	defer func() {
-		err := r.Close()
-		if err != nil {
-			t.Errorf("close pipe reader: %v", err)
+		closeErr := reader.Close()
+		if closeErr != nil {
+			t.Errorf("close pipe reader: %v", closeErr)
 		}
 	}()
 
-	printWarnings(w, warnings)
+	printWarnings(writer, warnings)
 
-	err = w.Close()
-	if err != nil {
-		t.Fatalf("close pipe writer: %v", err)
+	closeErr := writer.Close()
+	if closeErr != nil {
+		t.Fatalf("close pipe writer: %v", closeErr)
 	}
 
-	output, err := io.ReadAll(r)
+	output, err := io.ReadAll(reader)
 	if err != nil {
 		t.Fatalf("read pipe: %v", err)
 	}
