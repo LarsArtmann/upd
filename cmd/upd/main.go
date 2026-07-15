@@ -110,7 +110,7 @@ func finalizeRun(
 				return fmt.Errorf("render JSON output: %w", err)
 			}
 		} else {
-			renderer := upd.NewRenderer(os.Stdout, cfg.NoColor, cfg.Verbose)
+			renderer := upd.NewRenderer(os.Stdout, upd.RendererOptions{NoColor: cfg.NoColor, Verbose: cfg.Verbose})
 			renderer.RenderTable(manifest, updates, errCount, cfg.All)
 		}
 	}

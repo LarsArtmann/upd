@@ -9,6 +9,18 @@ import (
 	"time"
 )
 
+func newTestClient(registryURL string, retries int) *RegistryClient {
+	cfg := DefaultConfig()
+	cfg.Registry = registryURL
+	cfg.Retries = retries
+	cfg.Timeout = 5 * time.Second
+
+	client := NewRegistryClient(cfg)
+	client.sleep = func(_ context.Context, _ time.Duration) bool { return true }
+
+	return client
+}
+
 func TestFetchPackumentRetriesOn503(t *testing.T) {
 	var attempts atomic.Int32
 
@@ -27,13 +39,7 @@ func TestFetchPackumentRetriesOn503(t *testing.T) {
 	}))
 	t.Cleanup(registry.Close)
 
-	cfg := DefaultConfig()
-	cfg.Registry = registry.URL
-	cfg.Retries = 3
-	cfg.Timeout = 5 * time.Second
-
-	client := NewRegistryClient(cfg)
-	client.sleep = func(_ context.Context, _ time.Duration) bool { return true }
+	client := newTestClient(registry.URL, 3)
 
 	pkg, _, err := client.FetchPackument(context.Background(), "test-pkg")
 	if err != nil {
@@ -58,13 +64,7 @@ func TestFetchPackumentDoesNotRetry404(t *testing.T) {
 	}))
 	t.Cleanup(registry.Close)
 
-	cfg := DefaultConfig()
-	cfg.Registry = registry.URL
-	cfg.Retries = 3
-	cfg.Timeout = 5 * time.Second
-
-	client := NewRegistryClient(cfg)
-	client.sleep = func(_ context.Context, _ time.Duration) bool { return true }
+	client := newTestClient(registry.URL, 3)
 
 	_, _, err := client.FetchPackument(context.Background(), "ghost")
 	if err == nil {
@@ -86,13 +86,7 @@ func TestFetchPackumentRetries429ThenGivesUp(t *testing.T) {
 	}))
 	t.Cleanup(registry.Close)
 
-	cfg := DefaultConfig()
-	cfg.Registry = registry.URL
-	cfg.Retries = 2
-	cfg.Timeout = 5 * time.Second
-
-	client := NewRegistryClient(cfg)
-	client.sleep = func(_ context.Context, _ time.Duration) bool { return true }
+	client := newTestClient(registry.URL, 2)
 
 	_, _, err := client.FetchPackument(context.Background(), "rate-limited")
 	if err == nil {

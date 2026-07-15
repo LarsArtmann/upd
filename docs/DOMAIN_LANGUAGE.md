@@ -29,12 +29,12 @@ Objects with identity and lifecycle.
 
 Immutable objects defined by attributes.
 
-| Term        | Definition                                                                        | Context                                                  |
+| Term | Definition | Context |
 | ----------- | --------------------------------------------------------------------------------- | -------------------------------------------------------- | ------- | ----------------------- | ------------------------------------ |
-| Config      | Parsed CLI flags + patterns: file path, concurrency, greatest/nop/pinLatest, etc. | Built once from args; never mutated after parse          |
-| Packument   | NPM registry JSON for one package (`dist-tags`, `versions`, ...)                  | Held as raw bytes; queried for version resolution        |
-| Fingerprint | xxhash64 hash of the original file bytes captured at read time                    | Guards the atomic write against concurrent modifications |
-| State       | The lifecycle stage of a Spec: `todo → check → {skipped                           | kept                                                     | updated | error}`, plus `ignored` | Drives rendering and write decisions |
+| Config | Parsed CLI flags + patterns: file path, concurrency, greatest/nop/pinLatest, etc. | Built once from args; never mutated after parse |
+| Packument | NPM registry JSON for one package (`dist-tags`, `versions`, ...) | Held as raw bytes; queried for version resolution |
+| Fingerprint | xxhash64 hash of the original file bytes captured at read time | Guards the atomic write against concurrent modifications |
+| State | The lifecycle stage of a Spec: `todo → check → {skipped                           | kept                                                     | updated | error}`, plus `ignored` | Drives rendering and write decisions |
 
 ## State Transitions
 

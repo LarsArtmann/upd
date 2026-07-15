@@ -82,6 +82,8 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **Error classification** (`npm.go`): `classifyRegistryError` splits HTTP failures into `ErrPackageNotFound` (404/410 — user typo, exit 1) vs `ErrRegistryUnavailable` (5xx/timeout — system fault, exit 75). This lets CI scripts distinguish retryable from permanent failures.
 - **Warnings pipeline** (`cmd/upd/main.go`): `BuildManifest` returns `[]string` warnings for malformed sections and invalid glob patterns. These print as yellow `WARNING:` lines on stderr but don't stop execution. A malformed `upd` field in `package.json` is fatal (stops the run); malformed sections/patterns are non-fatal.
 - **Partial failure** (`cmd/upd/main.go`): when `errCount > 0` (one or more packages failed to resolve), `finalizeRun` returns `ErrPartialFailure` after successfully writing the file for packages that did update. Exit code is 1. Successful updates are NOT lost — the file is written before the error is returned.
+- **Linter: ERRORFAMILY_ADOPT**: The `branching-flow` linter suggests replacing `errors.New`/`fmt.Errorf` with "go-error-family" constructors (`NewRejection`, `WrapTransient`). This is **deliberately not adopted** — the project intentionally keeps only 3 direct dependencies, `depguard` restricts non-stdlib imports, and the current sentinel-error + `fmt.Errorf("context: %w", err)` pattern is idiomatic Go. Do not add a 4th dependency to satisfy this rule.
+- **Renderer API**: `NewRenderer(w io.Writer, opts RendererOptions)` takes an options struct, not positional bools. `RendererOptions{NoColor, Verbose bool}`. This prevents `NewRenderer(w, true, false)` ambiguity.
 
 ## Dependencies (intentional — only 3 direct)
 

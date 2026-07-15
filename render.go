@@ -28,8 +28,13 @@ type Renderer struct {
 	verbose bool
 }
 
-func NewRenderer(w io.Writer, noColor, verbose bool) *Renderer {
-	return &Renderer{w: w, noColor: noColor, verbose: verbose}
+type RendererOptions struct {
+	NoColor bool
+	Verbose bool
+}
+
+func NewRenderer(w io.Writer, opts RendererOptions) *Renderer {
+	return &Renderer{w: w, noColor: opts.NoColor, verbose: opts.Verbose}
 }
 
 func (r *Renderer) color(code, text string) string {
@@ -131,13 +136,13 @@ func (r *Renderer) renderUpgradeTable(manifest Manifest, showAll bool) {
 	left, mid, right = borderChars("mid")
 	r.writeBorder(left, mid, right, colName, colVer, colVer, colState)
 
-	r.renderRows(manifest, showAll, colName, colVer, colState)
+	r.renderRows(manifest, colName, colVer, colState, showAll)
 
 	left, mid, right = borderChars("bottom")
 	r.writeBorder(left, mid, right, colName, colVer, colVer, colState)
 }
 
-func (r *Renderer) renderRows(manifest Manifest, showAll bool, colName, colVer, colState int) {
+func (r *Renderer) renderRows(manifest Manifest, colName, colVer, colState int, showAll bool) {
 	for _, name := range manifest.SortedNames() {
 		for _, spec := range manifest[name] {
 			if !showAll && spec.State != StateUpdated && spec.State != StateError {

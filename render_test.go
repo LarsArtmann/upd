@@ -15,22 +15,27 @@ func markReactUpdated(manifest Manifest) {
 	}
 }
 
+func newUpdatedReactManifest() Manifest {
+	pkg := &PackageFile{raw: []byte(`{"dependencies": {"react": "^18.0.0"}}`)}
+	manifest, _ := BuildManifest(pkg, nil, false)
+	markReactUpdated(manifest)
+
+	return manifest
+}
+
 func renderManifest(t *testing.T, manifest Manifest, updated, errored int, noColor, showAll bool) string {
 	t.Helper()
 
 	var buf bytes.Buffer
 
-	r := NewRenderer(&buf, noColor, false)
+	r := NewRenderer(&buf, RendererOptions{NoColor: noColor})
 	r.RenderTable(manifest, updated, errored, showAll)
 
 	return buf.String()
 }
 
 func TestRenderTableUpdated(t *testing.T) {
-	json := `{"dependencies": {"react": "^18.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest, _ := BuildManifest(pkg, nil, false)
-	markReactUpdated(manifest)
+	manifest := newUpdatedReactManifest()
 
 	output := renderManifest(t, manifest, 1, 0, true, false)
 
@@ -94,10 +99,7 @@ func TestRenderTableErrorDetailSurfacesReason(t *testing.T) {
 }
 
 func TestRenderNoColorStripsANSI(t *testing.T) {
-	json := `{"dependencies": {"react": "^18.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest, _ := BuildManifest(pkg, nil, false)
-	markReactUpdated(manifest)
+	manifest := newUpdatedReactManifest()
 
 	output := renderManifest(t, manifest, 1, 0, true, false)
 
@@ -105,10 +107,7 @@ func TestRenderNoColorStripsANSI(t *testing.T) {
 }
 
 func TestRenderWithColorContainsANSI(t *testing.T) {
-	json := `{"dependencies": {"react": "^18.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest, _ := BuildManifest(pkg, nil, false)
-	markReactUpdated(manifest)
+	manifest := newUpdatedReactManifest()
 
 	output := renderManifest(t, manifest, 1, 0, false, false)
 
@@ -116,10 +115,7 @@ func TestRenderWithColorContainsANSI(t *testing.T) {
 }
 
 func TestRenderTableNoColorColumnOrder(t *testing.T) {
-	json := `{"dependencies": {"react": "^18.0.0"}}`
-	pkg := &PackageFile{raw: []byte(json)}
-	manifest, _ := BuildManifest(pkg, nil, false)
-	markReactUpdated(manifest)
+	manifest := newUpdatedReactManifest()
 
 	output := renderManifest(t, manifest, 1, 0, true, false)
 
@@ -205,7 +201,7 @@ func TestRenderVerboseShowsFullErrorChain(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	r := NewRenderer(&buf, true, true)
+	r := NewRenderer(&buf, RendererOptions{NoColor: true, Verbose: true})
 	r.RenderTable(manifest, 0, 1, false)
 
 	output := buf.String()
@@ -224,7 +220,7 @@ func TestRenderNonVerboseOmitsErrorChainDetail(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	r := NewRenderer(&buf, true, false)
+	r := NewRenderer(&buf, RendererOptions{NoColor: true})
 	r.RenderTable(manifest, 0, 1, false)
 
 	output := buf.String()

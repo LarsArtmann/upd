@@ -195,6 +195,25 @@ func writePackageFixture(t *testing.T, path, content string) {
 	}
 }
 
+func readUpdateAndWrite(t *testing.T, path string) {
+	t.Helper()
+
+	pkg, err := ReadPackageFile(path)
+	if err != nil {
+		t.Fatalf("ReadPackageFile: %v", err)
+	}
+
+	err = pkg.UpdateDependency("dependencies", "react", "^19.0.0")
+	if err != nil {
+		t.Fatalf("UpdateDependency: %v", err)
+	}
+
+	err = pkg.Write(path)
+	if err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+}
+
 func TestReadPackageFileComputesFingerprint(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "package.json")
 	data := `{"dependencies":{"react":"^18.0.0"}}`
@@ -225,20 +244,7 @@ func TestWriteRoundTripPreservesContentAndFormatting(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "package.json")
 	writePackageFixture(t, path, original)
 
-	pkg, err := ReadPackageFile(path)
-	if err != nil {
-		t.Fatalf("ReadPackageFile: %v", err)
-	}
-
-	err = pkg.UpdateDependency("dependencies", "react", "^19.0.0")
-	if err != nil {
-		t.Fatalf("UpdateDependency: %v", err)
-	}
-
-	err = pkg.Write(path)
-	if err != nil {
-		t.Fatalf("Write: %v", err)
-	}
+	readUpdateAndWrite(t, path)
 
 	written, err := os.ReadFile(path)
 	if err != nil {
@@ -256,20 +262,7 @@ func TestWritePreservesPermissions(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "package.json")
 	writePackageFixture(t, path, `{"dependencies":{"react":"^18.0.0"}}`)
 
-	pkg, err := ReadPackageFile(path)
-	if err != nil {
-		t.Fatalf("ReadPackageFile: %v", err)
-	}
-
-	err = pkg.UpdateDependency("dependencies", "react", "^19.0.0")
-	if err != nil {
-		t.Fatalf("UpdateDependency: %v", err)
-	}
-
-	err = pkg.Write(path)
-	if err != nil {
-		t.Fatalf("Write: %v", err)
-	}
+	readUpdateAndWrite(t, path)
 
 	info, err := os.Stat(path)
 	if err != nil {
@@ -314,20 +307,7 @@ func TestWriteLeavesNoLeftoverFiles(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "package.json")
 	writePackageFixture(t, path, `{"dependencies":{"react":"^18.0.0"}}`)
 
-	pkg, err := ReadPackageFile(path)
-	if err != nil {
-		t.Fatalf("ReadPackageFile: %v", err)
-	}
-
-	err = pkg.UpdateDependency("dependencies", "react", "^19.0.0")
-	if err != nil {
-		t.Fatalf("UpdateDependency: %v", err)
-	}
-
-	err = pkg.Write(path)
-	if err != nil {
-		t.Fatalf("Write: %v", err)
-	}
+	readUpdateAndWrite(t, path)
 
 	// The library no longer creates .bak files; verify nothing is left behind.
 	matches, globErr := filepath.Glob(path + ".*")
