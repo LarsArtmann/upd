@@ -48,6 +48,9 @@ number inside each constraint string changes. Nothing else is touched.
   changed in red/green.
 - **Embedded defaults** — an `"upd"` field in `package.json` supplies
   default CLI arguments so you don't repeat yourself.
+- **Styled CLI help** — built with `charm.land/fang/v2` + Cobra: color-coded help,
+  usage examples, man pages (`upd man`), and shell completions
+  (`upd completion <bash|zsh|fish>`).
 - **Single static binary** — no runtime dependencies, no Node.js required.
 
 ## Quick Start
@@ -114,25 +117,25 @@ nix run .#build    # or: GOEXPERIMENT=jsonv2 go build -o upd ./cmd/upd
 upd [-h] [-V] [-q] [-n|--dry-run] [-C] [-f <file>] [-r <registry>] [-g] [-a] [-c <concurrency>] [-P] [-t <timeout>] [--retries <n>] [--json] [--verbose] [<pattern> ...]
 ```
 
-| Flag | Long form       | Description                                               |
-| ---- | --------------- | --------------------------------------------------------- |
-| `-h` | `--help`        | Show usage help.                                          |
-| `-V` | `--version`     | Show program version.                                     |
-| `-q` | `--quiet`       | Suppress output (no progress bar, no table, no warnings). |
-| `-n` | `--nop`         | Dry run — do not modify `package.json`.                   |
-|      | `--dry-run`     | Alias for `--nop`.                                        |
-| `-C` | `--noColor`     | Disable ANSI colors in output.                            |
-| `-f` | `--file`        | Path to package config (default: `package.json`).         |
-| `-r` | `--registry`    | NPM registry base URL (default: `registry.npmjs.org`).    |
-| `-g` | `--greatest`    | Use greatest published version instead of `latest` tag.   |
-| `-a` | `--all`         | Show all packages, not just updated ones.                 |
-| `-c` | `--concurrency` | Concurrent NPM registry connections (default: 8).         |
-| `-P` | `--pin-latest`  | Pin bare `latest` tags to exact semver.                   |
-| `-t` | `--timeout`     | Per-request timeout (default: `20s`).                     |
-|      | `--retries`     | Max retries for transient 429/5xx failures (default: 3).  |
-|      | `--json`        | Machine-readable JSON output for CI/scripts.              |
-|      | `--verbose`     | Show full error chains in the error detail block.         |
-|      | `<pattern>`     | Glob pattern for dependency names. `!` prefix excludes.   |
+| Flag | Long form       | Description                                                   |
+| ---- | --------------- | ------------------------------------------------------------- |
+| `-h` | `--help`        | Show usage help.                                              |
+| `-V` | `--version`     | Show program version.                                         |
+| `-q` | `--quiet`       | Suppress output (no progress bar, no table, no warnings).     |
+| `-n` | `--nop`         | Dry run — do not modify `package.json`.                       |
+|      | `--dry-run`     | Alias for `--nop`.                                            |
+| `-C` | `--no-color`    | Disable ANSI colors in output. `--noColor` is a hidden alias. |
+| `-f` | `--file`        | Path to package config (default: `package.json`).             |
+| `-r` | `--registry`    | NPM registry base URL (default: `registry.npmjs.org`).        |
+| `-g` | `--greatest`    | Use greatest published version instead of `latest` tag.       |
+| `-a` | `--all`         | Show all packages, not just updated ones.                     |
+| `-c` | `--concurrency` | Concurrent NPM registry connections (default: 8).             |
+| `-P` | `--pin-latest`  | Pin bare `latest` tags to exact semver.                       |
+| `-t` | `--timeout`     | Per-request timeout (default: `20s`).                         |
+|      | `--retries`     | Max retries for transient 429/5xx failures (default: 3).      |
+|      | `--json`        | Machine-readable JSON output for CI/scripts.                  |
+|      | `--verbose`     | Show full error chains in the error detail block.             |
+|      | `<pattern>`     | Glob pattern for dependency names. `!` prefix excludes.       |
 
 **Color auto-detection:** Colors are automatically disabled when the `NO_COLOR`
 environment variable is set (see [no-color.org](https://no-color.org/)) or when
@@ -209,6 +212,44 @@ that are **prepended** to CLI flags:
 Now `upd` is equivalent to `upd react* !react-dom -c 16`. CLI flags
 override or supplement these defaults. The field accepts a string or an
 array.
+
+### Environment variables
+
+Every public flag can also be set via an environment variable with the
+`UPD_` prefix. CLI flags always override environment variables.
+
+| Env var           | Equivalent flag |
+| ----------------- | --------------- |
+| `UPD_REGISTRY`    | `--registry`    |
+| `UPD_FILE`        | `--file`        |
+| `UPD_TIMEOUT`     | `--timeout`     |
+| `UPD_CONCURRENCY` | `--concurrency` |
+| `UPD_RETRIES`     | `--retries`     |
+| `UPD_QUIET`       | `--quiet`       |
+| `UPD_NOP`         | `--nop`         |
+| `UPD_DRY_RUN`     | `--dry-run`     |
+| `UPD_NO_COLOR`    | `--no-color`    |
+| `UPD_GREATEST`    | `--greatest`    |
+| `UPD_ALL`         | `--all`         |
+| `UPD_PIN_LATEST`  | `--pin-latest`  |
+| `UPD_JSON`        | `--json`        |
+| `UPD_VERBOSE`     | `--verbose`     |
+
+For example:
+
+```bash
+UPD_REGISTRY=https://my-registry.example.com upd -n
+```
+
+## Shell Completions
+
+Generate shell completions for bash, zsh, or fish:
+
+```bash
+upd completion bash > /etc/bash_completion.d/upd
+upd completion zsh > /usr/share/zsh/site-functions/_upd
+upd completion fish > ~/.config/fish/completions/upd.fish
+```
 
 ## Exit Codes
 

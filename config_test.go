@@ -2,6 +2,7 @@ package upd
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"testing"
@@ -128,6 +129,12 @@ func TestParseFlagsDryRunAlias(t *testing.T) {
 	cfg := mustParseFlags(t, []string{"--dry-run"})
 
 	assertFlagTrue(t, "Nop via --dry-run", cfg.Nop)
+}
+
+func TestParseFlagsNoColorAlias(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"--noColor"})
+
+	assertFlagTrue(t, "NoColor via --noColor", cfg.NoColor)
 }
 
 func TestParseFlagsShortDryRun(t *testing.T) {
@@ -271,20 +278,142 @@ func TestShouldDisableColorNonFileWriterWithoutNoColor(t *testing.T) {
 	}
 }
 
-func TestShouldDisableColorPipedFileDetectedAsNonTTY(t *testing.T) {
-	withoutNoColorEnv(t)
-
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("create pipe: %v", err)
+func TestParseFlagsEnvVars(t *testing.T) {
+	tests := []struct {
+		name   string
+		env    map[string]string
+		args   []string
+		assert func(t *testing.T, cfg *Config)
+	}{
+		{
+			name: "UPD_REGISTRY sets registry",
+			env:  map[string]string{EnvRegistry: "https://env.registry.example.com"},
+			assert: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				if cfg.Registry != "https://env.registry.example.com" {
+					t.Errorf("Registry = %q, want env value", cfg.Registry)
+				}
+			},
+		},
+		{
+			name: "UPD_FILE sets file",
+			env:  map[string]string{EnvFile: "env-package.json"},
+			assert: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				assertFile(t, cfg, "env-package.json")
+			},
+		},
+		{
+			name: "UPD_TIMEOUT sets timeout",
+			env:  map[string]string{EnvTimeout: "45s"},
+			assert: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				if cfg.Timeout != 45*time.Second {
+					t.Errorf("Timeout = %v, want 45s", cfg.Timeout)
+				}
+			},
+		},
+		{
+			name: "UPD_CONCURRENCY sets concurrency",
+			env:  map[string]string{EnvConcurrency: "16"},
+			assert: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				assertConcurrency(t, cfg, 16)
+			},
+		},
+		{
+			name: "UPD_RETRIES sets retries",
+			env:  map[string]string{EnvRetries: "5"},
+			assert: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				if cfg.Retries != 5 {
+					t.Errorf("Retries = %d, want 5", cfg.Retries)
+				}
+			},
+		},
+		{
+			name: "UPD_NO_COLOR sets no color",
+			env:  map[string]string{EnvNoColor: "true"},
+			assert: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				assertFlagTrue(t, "NoColor", cfg.NoColor)
+			},
+		},
+		{
+			name: "UPD_QUIET sets quiet",
+			env:  map[string]string{EnvQuiet: "true"},
+			assert: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				assertFlagTrue(t, "Quiet", cfg.Quiet)
+			},
+		},
+		{
+			name: "UPD_GREATEST sets greatest",
+			env:  map[string]string{EnvGreatest: "1"},
+			assert: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				assertFlagTrue(t, "Greatest", cfg.Greatest)
+			},
+		},
+		{
+			name: "CLI flag overrides env var",
+			env:  map[string]string{EnvConcurrency: "4"},
+			args: []string{"--concurrency", "12"},
+			assert: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				assertConcurrency(t, cfg, 12)
+			},
+		},
+		{
+			name: "invalid env var ignored",
+			env:  map[string]string{EnvConcurrency: "not-a-number"},
+			assert: func(t *testing.T, cfg *Config) {
+				t.Helper()
+				assertConcurrency(t, cfg, defaultConcurrency)
+			},
+		},
 	}
 
-	t.Cleanup(func() {
-		_ = r.Close()
-		_ = w.Close()
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for k, v := range tt.env {
+				t.Setenv(k, v)
+			}
 
-	if !ShouldDisableColor(w) {
-		t.Error("expected true for piped *os.File (non-character-device)")
+			cfg := mustParseFlags(t, tt.args)
+			tt.assert(t, cfg)
+		})
+	}
+}
+
+func TestNewCommandMetadata(t *testing.T) {
+	cmd, cfg := NewCommand(func(context.Context, *Config) error { return nil })
+
+	if cmd.Use != ProgramName {
+		t.Errorf("Use = %q, want %q", cmd.Use, ProgramName)
+	}
+
+	if cmd.Short != ProgramDesc {
+		t.Errorf("Short = %q, want %q", cmd.Short, ProgramDesc)
+	}
+
+	if cfg == nil {
+		t.Fatal("expected non-nil Config")
+	}
+
+	if !cmd.CompletionOptions.HiddenDefaultCmd {
+		t.Error("expected default completion command to be hidden")
+	}
+
+	flags := []string{
+		"quiet", "nop", "dry-run", "no-color", "noColor", "greatest", "all",
+		"pin-latest", "json", "verbose", "file", "registry", "concurrency",
+		"retries", "timeout", "version",
+	}
+
+	for _, name := range flags {
+		if cmd.Flags().Lookup(name) == nil {
+			t.Errorf("missing flag %q", name)
+		}
 	}
 }

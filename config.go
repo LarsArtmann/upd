@@ -24,6 +24,23 @@ const (
 	defaultTimeout     = 20 * time.Second
 )
 
+const (
+	EnvQuiet       = "UPD_QUIET"
+	EnvNop         = "UPD_NOP"
+	EnvDryRun      = "UPD_DRY_RUN"
+	EnvNoColor     = "UPD_NO_COLOR"
+	EnvGreatest    = "UPD_GREATEST"
+	EnvAll         = "UPD_ALL"
+	EnvPinLatest   = "UPD_PIN_LATEST"
+	EnvJSON        = "UPD_JSON"
+	EnvVerbose     = "UPD_VERBOSE"
+	EnvFile        = "UPD_FILE"
+	EnvRegistry    = "UPD_REGISTRY"
+	EnvConcurrency = "UPD_CONCURRENCY"
+	EnvRetries     = "UPD_RETRIES"
+	EnvTimeout     = "UPD_TIMEOUT"
+)
+
 // ProgramVersion is injected at build time via -ldflags="-X github.com/LarsArtmann/upd.ProgramVersion=1.2.3".
 //
 //nolint:gochecknoglobals
@@ -124,6 +141,7 @@ func NewCommand(runE func(context.Context, *Config) error) (*cobra.Command, *Con
 	}
 
 	bindFlags(cmd, cfg)
+	applyEnvFlags(cmd)
 	cmd.CompletionOptions.HiddenDefaultCmd = true
 
 	return cmd, cfg
@@ -149,6 +167,58 @@ func bindFlags(cmd *cobra.Command, cfg *Config) {
 	flags.IntVar(&cfg.Retries, "retries", cfg.Retries, "max retries for transient registry failures")
 	flags.DurationVarP(&cfg.Timeout, "timeout", "t", cfg.Timeout, "per-request timeout (e.g. 30s)")
 	flags.BoolP("version", "V", false, "version for "+ProgramName)
+}
+
+// envFlag maps a flag name to the environment variable that can override it.
+// The env var is applied before flag parsing, so explicit CLI flags still win.
+type envFlag struct {
+	flag string
+	env  string
+}
+
+// applyEnvFlags applies environment variables to their bound flags before Cobra
+// parses CLI arguments. If an env var is set and its value is valid for the flag
+// type, it becomes the flag's default value; an explicit CLI flag then overrides
+// it. Invalid env var values are silently ignored so the program's built-in
+// defaults remain in effect.
+func applyEnvFlags(cmd *cobra.Command) {
+	for _, mapping := range envFlagMappings() {
+		value, ok := os.LookupEnv(mapping.env)
+		if !ok {
+			continue
+		}
+
+		flag := cmd.Flags().Lookup(mapping.flag)
+		if flag == nil {
+			continue
+		}
+
+		original := flag.Value.String()
+		if err := cmd.Flags().Set(mapping.flag, value); err != nil {
+			_ = cmd.Flags().Set(mapping.flag, original)
+		}
+	}
+}
+
+// envFlagMappings returns the list of flags that may be read from environment
+// variables. The hidden --noColor alias and --version are intentionally omitted.
+func envFlagMappings() []envFlag {
+	return []envFlag{
+		{"quiet", EnvQuiet},
+		{"nop", EnvNop},
+		{"dry-run", EnvDryRun},
+		{"no-color", EnvNoColor},
+		{"greatest", EnvGreatest},
+		{"all", EnvAll},
+		{"pin-latest", EnvPinLatest},
+		{"json", EnvJSON},
+		{"verbose", EnvVerbose},
+		{"file", EnvFile},
+		{"registry", EnvRegistry},
+		{"concurrency", EnvConcurrency},
+		{"retries", EnvRetries},
+		{"timeout", EnvTimeout},
+	}
 }
 
 // ParseFlags parses CLI arguments into a Config without executing the command.

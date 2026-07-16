@@ -4,6 +4,7 @@ go 1.26.4
 
 require (
 	charm.land/fang/v2 v2.0.1
+	charm.land/lipgloss/v2 v2.0.5
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/gobwas/glob v0.2.3
 	github.com/larsartmann/go-atomic-write v0.2.0
@@ -13,7 +14,6 @@ require (
 )
 
 require (
-	charm.land/lipgloss/v2 v2.0.5 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260713092251-4bee1914c0cf // indirect

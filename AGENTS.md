@@ -38,7 +38,7 @@ VHS demos (`demo/*.tape`) are rendered with `vhs` and published to the [VHS clou
 
 `cmd/upd/main.go:run()` drives a linear flow via `charm.land/fang/v2` + Cobra; the files below each own one stage:
 
-1. **Build command** → `upd.NewCommand()` returns a `*cobra.Command` with flags bound to a `Config` (`config.go`). `fang.Execute()` styles help/errors and adds hidden `man`/`completion` commands. Auto color detection via `ShouldDisableColor` (`NO_COLOR` env var, non-TTY stdout). The signal-aware context is supplied by `fang.WithNotifySignal()`.
+1. **Build command** → `upd.NewCommand()` returns a `*cobra.Command` with flags bound to a `Config` (`config.go`). Env vars (`UPD_*`) are applied to their flags before CLI parsing, so explicit flags still override env values (`config.go:applyEnvFlags`). `fang.Execute()` styles help/errors with a `ColorSchemeFunc` that disables fang colors when `cfg.NoColor` is true, and adds hidden `man`/`completion` commands. Auto color detection via `ShouldDisableColor` (`NO_COLOR` env var, non-TTY stdout). The signal-aware context is supplied by `fang.WithNotifySignal()`.
 2. **Parse flags** → Cobra/pflag parses short and long forms (`-h`/`--help`, `-c`/`--concurrency`, `-P`/`--pin-latest`, `-r`/`--registry`, `-t`/`--timeout`, `--retries`, `--json`, `--verbose`, `--dry-run`). `--no-color` is the canonical long form; `--noColor` remains a hidden alias for backwards compatibility. `ParseFlags()` is retained for tests.
 3. **Read `package.json`** → `PackageFile` keeps the raw bytes and an xxhash64 fingerprint of them (`packagejson.go`). The fingerprint guards the later write against concurrent modifications.
 4. **Merge patterns**: if `package.json` has an `upd` field (string or array), those args are **prepended** to CLI patterns.
@@ -78,7 +78,8 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **JSON output**: `--json` emits machine-readable JSON to stdout instead of the table. Output includes summary (updated/kept/errors/total), package list, and error details. Intended for CI pipelines.
 - **Retry logic**: `npm.go` retries 429/5xx responses with exponential backoff (1s base, 30s cap). `Retry-After` header honored if present. Non-retryable errors (404, network errors) fail immediately. The `RegistryClient.sleep` field (type `sleeper`) abstracts delays so tests run without real sleeps — `newTestEngine` sets it to a no-op; npm_test.go tests can capture delays to assert backoff timing.
 - **Signal handling**: SIGINT/SIGTERM cancels the fetch phase via `fang.WithNotifyContext`. In-flight HTTP requests are cancelled gracefully.
-- **Auto color detection**: `NO_COLOR` env var and non-TTY stdout automatically disable colors for upd's own output. `-C`/`--no-color` is still available for manual override. Fang's styled help/errors respect `NO_COLOR`/TTY independently.
+- **Auto color detection**: `NO_COLOR` env var and non-TTY stdout automatically disable colors for upd's own output. `-C`/`--no-color` and `UPD_NO_COLOR` additionally disable fang's styled help/error colors via a custom `ColorSchemeFunc`. Fang's `colorprofile` writer still handles `NO_COLOR` and non-TTY stdout on its own.
+- **Env-var flags**: All public flags can be set via environment variables (`UPD_QUIET`, `UPD_REGISTRY`, `UPD_FILE`, `UPD_TIMEOUT`, etc.). `applyEnvFlags` sets the flag default before Cobra parses CLI args, so explicit flags still override env vars. Invalid env values are ignored and the flag's built-in default is kept. The hidden `--noColor` alias and `--version` do not have env vars.
 - **`ProgramVersion`** defaults to `"dev"`; set via `-ldflags -X` at build time. Version is rendered via a custom Cobra template.
 - **Error classification** (`npm.go`): `classifyRegistryError` splits HTTP failures into `ErrPackageNotFound` (404/410 — Rejection, exit 1) vs `ErrRegistryUnavailable` (5xx/timeout — Transient, exit 75). This lets CI scripts distinguish retryable from permanent failures. Exit codes derived from `errorfamily.Family.ExitCode()` — Rejection=1, Transient=75, Corruption=65 (EX_DATAERR), Conflict=1, Infrastructure=69.
 - **Warnings pipeline** (`cmd/upd/main.go`): `BuildManifest` returns `[]string` warnings for malformed sections and invalid glob patterns. These print as yellow `WARNING:` lines on stderr but don't stop execution. A malformed `upd` field in `package.json` is fatal (stops the run); malformed sections/patterns are non-fatal.
@@ -91,9 +92,10 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **Linter: MIXINS** (branching-flow): 1 low-confidence opportunity. **Skipped**.
 - **Linter: CONTEXT** (branching-flow): 14 MEDIUM context issues. **Addressed** — errorfamily's `WithContext(key, value)` now attaches structured context at error creation sites. Remaining issues are for complex types (manifest, decoder) that are intentionally suppressed.
 
-## Dependencies (intentional — 6 direct)
+## Dependencies (intentional — 8 direct)
 
 - `charm.land/fang/v2` — styled Cobra help, error rendering, man pages, and signal-aware execution.
+- `charm.land/lipgloss/v2` — color/style primitives used by fang; used directly to implement the no-color `ColorSchemeFunc`.
 - `github.com/spf13/cobra` — command framework, flag parsing, shell-completion, and man-page scaffolding.
 - `github.com/spf13/pflag` — POSIX-style short/long flag parsing (used by Cobra).
 - `github.com/Masterminds/semver/v3` — semver parse + compare.

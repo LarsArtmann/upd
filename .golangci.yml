@@ -138,6 +138,7 @@ linters:
             - github.com/LarsArtmann/upd
             - github.com/larsartmann/go-error-family
             - charm.land/fang/v2
+            - charm.land/lipgloss/v2
           files:
             - "**/cmd/**"
         main:

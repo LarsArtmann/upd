@@ -19,7 +19,7 @@ func main() {
 }
 
 func run() error {
-	cmd, _ := upd.NewCommand(executeRun)
+	cmd, cfg := upd.NewCommand(executeRun)
 	cmd.Version = upd.ProgramVersion
 	cmd.SetVersionTemplate(versionTemplate)
 
@@ -28,6 +28,7 @@ func run() error {
 		cmd,
 		fang.WithoutVersion(),
 		fang.WithNotifySignal(syscall.SIGINT, syscall.SIGTERM),
+		fang.WithColorSchemeFunc(colorSchemeFunc(cfg)),
 	)
 	if err != nil {
 		return errorfamily.Wrap(err, errorfamily.Classify(err), "cli.execute", "execute command")
