@@ -1,7 +1,7 @@
 version: "2"
 run:
   timeout: 5m
-  go: "1.26.5"
+  go: 1.26.4
   build-tags:
     - goexperiment.arenas
     - goexperiment.goroutineleakprofile
@@ -89,7 +89,6 @@ linters:
     - nilnil
     - nlreturn
     - noctx
-    - noinlineerr
     - nolintlint
     - nonamedreturns
     - nosprintfhostport
@@ -126,6 +125,8 @@ linters:
     - wrapcheck
     - wsl_v5
     - zerologlint
+  disable:
+    - noinlineerr
   settings:
     cyclop:
       max-complexity: 12
@@ -136,6 +137,7 @@ linters:
             - $gostd
             - github.com/LarsArtmann/upd
             - github.com/larsartmann/go-error-family
+            - charm.land/fang/v2
           files:
             - "**/cmd/**"
         main:
@@ -146,6 +148,8 @@ linters:
             - github.com/gobwas/glob
             - github.com/larsartmann/go-atomic-write
             - github.com/larsartmann/go-error-family
+            - github.com/spf13/cobra
+            - github.com/spf13/pflag
           files:
             - $all
             - "!$test"
@@ -155,6 +159,7 @@ linters:
         - os/exec.Cmd
         - net/http.Client
         - net/http.Transport
+        - github.com/spf13/cobra.Command
     ginkgolinter:
       forbid-focus-container: true
       forbid-spec-pollution: true
@@ -223,10 +228,10 @@ linters:
         - z
       ignore-type-assert-ok: true
     wrapcheck:
-      ignore-sig-regex-es:
-        - ".*errorfamily\\."
       ignore-package-globs:
         - github.com/LarsArtmann/upd
+      ignore-sig-regex-es:
+        - .*errorfamily\.
   exclusions:
     generated: lax
     rules:

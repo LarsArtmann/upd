@@ -36,17 +36,18 @@ VHS demos (`demo/*.tape`) are rendered with `vhs` and published to the [VHS clou
 
 ## Execution Pipeline
 
-`cmd/upd/main.go:run()` drives a linear flow; the files below each own one stage:
+`cmd/upd/main.go:run()` drives a linear flow via `charm.land/fang/v2` + Cobra; the files below each own one stage:
 
-1. **Parse flags** → `Config` (`config.go`). Short and long forms are both registered (`-h`/`--help`, `-c`/`--concurrency`, `-P`/`--pin-latest`, `-r`/`--registry`, `-t`/`--timeout`, `--retries`, `--json`, `--verbose`, `--dry-run`). Auto color detection via `ShouldDisableColor` (`NO_COLOR` env var, non-TTY stdout).
-2. **Read `package.json`** → `PackageFile` keeps the raw bytes and an xxhash64 fingerprint of them (`packagejson.go`). The fingerprint guards the later write against concurrent modifications.
-3. **Merge patterns**: if `package.json` has an `upd` field (string or array), those args are **prepended** to CLI patterns.
-4. **Build manifest** → `(Manifest, []string)` — the manifest is `name → []*Spec` across four sections in fixed order: `optionalDependencies`, `peerDependencies`, `devDependencies`, `dependencies` (`manifest.go`). The second return value is a slice of warning strings (malformed sections, invalid glob patterns). Takes `pinLatest bool` as third arg. `GetUpdArgs()` and `GetDependencySection()` return `error` as second value.
-5. **Classify** each spec into a `State` via the version regex (`versionRe`) + `latestRe` + glob pattern matching.
-6. **Fetch** packuments concurrently (semaphore bounded by `-c`, default 8) from registry (`engine.go`, `npm.go`). Names are lowercased before fetch. `RegistryClient` takes `*Config` (supports custom registry URL, timeout, retries). Retry logic: 429/5xx retried with exponential backoff + `Retry-After` header support. HTTP transport tuned (MaxIdleConns, IdleConnTimeout). Context is signal-aware (SIGINT/SIGTERM cancellation).
-7. **Apply updates**: resolve target version, compare semver, mutate `PackageFile` bytes in place. When `IsLatest=true`, `SNew` is set directly. Errored specs carry their concrete error in `Spec.Err`.
-8. **Render** terminal table (`render.go`) or JSON output (`--json`, `RenderJSON`). Error detail block supports `--verbose`. **Write back** only if updates occurred and `-n` is not set. Atomic write via `go-atomic-write`.
-9. **Exit code** (`cmd/upd/main.go`): `ErrRegistryUnavailable` → exit 75; `ErrPartialFailure` → exit 1; all other errors → exit 1; success → exit 0. Warnings print to stderr but are suppressed in quiet mode.
+1. **Build command** → `upd.NewCommand()` returns a `*cobra.Command` with flags bound to a `Config` (`config.go`). `fang.Execute()` styles help/errors and adds hidden `man`/`completion` commands. Auto color detection via `ShouldDisableColor` (`NO_COLOR` env var, non-TTY stdout). The signal-aware context is supplied by `fang.WithNotifySignal()`.
+2. **Parse flags** → Cobra/pflag parses short and long forms (`-h`/`--help`, `-c`/`--concurrency`, `-P`/`--pin-latest`, `-r`/`--registry`, `-t`/`--timeout`, `--retries`, `--json`, `--verbose`, `--dry-run`). `--no-color` is the canonical long form; `--noColor` remains a hidden alias for backwards compatibility. `ParseFlags()` is retained for tests.
+3. **Read `package.json`** → `PackageFile` keeps the raw bytes and an xxhash64 fingerprint of them (`packagejson.go`). The fingerprint guards the later write against concurrent modifications.
+4. **Merge patterns**: if `package.json` has an `upd` field (string or array), those args are **prepended** to CLI patterns.
+5. **Build manifest** → `(Manifest, []string)` — the manifest is `name → []*Spec` across four sections in fixed order: `optionalDependencies`, `peerDependencies`, `devDependencies`, `dependencies` (`manifest.go`). The second return value is a slice of warning strings (malformed sections, invalid glob patterns). Takes `pinLatest bool` as third arg. `GetUpdArgs()` and `GetDependencySection()` return `error` as second value.
+6. **Classify** each spec into a `State` via the version regex (`versionRe`) + `latestRe` + glob pattern matching.
+7. **Fetch** packuments concurrently (semaphore bounded by `-c`, default 8) from registry (`engine.go`, `npm.go`). Names are lowercased before fetch. `RegistryClient` takes `*Config` (supports custom registry URL, timeout, retries). Retry logic: 429/5xx retried with exponential backoff + `Retry-After` header support. HTTP transport tuned (MaxIdleConns, IdleConnTimeout). Context is signal-aware (SIGINT/SIGTERM cancellation).
+8. **Apply updates**: resolve target version, compare semver, mutate `PackageFile` bytes in place. When `IsLatest=true`, `SNew` is set directly. Errored specs carry their concrete error in `Spec.Err`.
+9. **Render** terminal table (`render.go`) or JSON output (`--json`, `RenderJSON`). Error detail block supports `--verbose`. **Write back** only if updates occurred and `-n` is not set. Atomic write via `go-atomic-write`.
+10. **Exit code** (`cmd/upd/main.go`): `ErrRegistryUnavailable` → exit 75; `ErrPartialFailure` → exit 1; all other errors → exit 1; success → exit 0. Warnings print to stderr but are suppressed in quiet mode.
 
 ## Domain Concepts
 
@@ -76,9 +77,9 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **Quiet path**: `-q`/quiet suppresses the progress bar, table output, AND warnings. The fetch+apply logic is now consolidated — single code path for quiet and non-quiet (reporter is set to noop when quiet).
 - **JSON output**: `--json` emits machine-readable JSON to stdout instead of the table. Output includes summary (updated/kept/errors/total), package list, and error details. Intended for CI pipelines.
 - **Retry logic**: `npm.go` retries 429/5xx responses with exponential backoff (1s base, 30s cap). `Retry-After` header honored if present. Non-retryable errors (404, network errors) fail immediately. The `RegistryClient.sleep` field (type `sleeper`) abstracts delays so tests run without real sleeps — `newTestEngine` sets it to a no-op; npm_test.go tests can capture delays to assert backoff timing.
-- **Signal handling**: SIGINT/SIGTERM cancels the fetch phase via `signal.NotifyContext`. In-flight HTTP requests are cancelled gracefully.
-- **Auto color detection**: `NO_COLOR` env var and non-TTY stdout automatically disable colors. `-C` is still available for manual override.
-- **`ProgramVersion`** defaults to `"dev"`; set via `-ldflags -X` at build time.
+- **Signal handling**: SIGINT/SIGTERM cancels the fetch phase via `fang.WithNotifyContext`. In-flight HTTP requests are cancelled gracefully.
+- **Auto color detection**: `NO_COLOR` env var and non-TTY stdout automatically disable colors for upd's own output. `-C`/`--no-color` is still available for manual override. Fang's styled help/errors respect `NO_COLOR`/TTY independently.
+- **`ProgramVersion`** defaults to `"dev"`; set via `-ldflags -X` at build time. Version is rendered via a custom Cobra template.
 - **Error classification** (`npm.go`): `classifyRegistryError` splits HTTP failures into `ErrPackageNotFound` (404/410 — Rejection, exit 1) vs `ErrRegistryUnavailable` (5xx/timeout — Transient, exit 75). This lets CI scripts distinguish retryable from permanent failures. Exit codes derived from `errorfamily.Family.ExitCode()` — Rejection=1, Transient=75, Corruption=65 (EX_DATAERR), Conflict=1, Infrastructure=69.
 - **Warnings pipeline** (`cmd/upd/main.go`): `BuildManifest` returns `[]string` warnings for malformed sections and invalid glob patterns. These print as yellow `WARNING:` lines on stderr but don't stop execution. A malformed `upd` field in `package.json` is fatal (stops the run); malformed sections/patterns are non-fatal.
 - **Partial failure** (`cmd/upd/main.go`): when `errCount > 0` (one or more packages failed to resolve), `finalizeRun` returns `ErrPartialFailure` after successfully writing the file for packages that did update. Exit code is 1. Successful updates are NOT lost — the file is written before the error is returned.
@@ -90,8 +91,11 @@ The version regex (`manifest.go`): `^\s*(?:[\^~]\s*)?(\d+[^\s<>|=]*)\s*$`
 - **Linter: MIXINS** (branching-flow): 1 low-confidence opportunity. **Skipped**.
 - **Linter: CONTEXT** (branching-flow): 14 MEDIUM context issues. **Addressed** — errorfamily's `WithContext(key, value)` now attaches structured context at error creation sites. Remaining issues are for complex types (manifest, decoder) that are intentionally suppressed.
 
-## Dependencies (intentional — only 4 direct)
+## Dependencies (intentional — 6 direct)
 
+- `charm.land/fang/v2` — styled Cobra help, error rendering, man pages, and signal-aware execution.
+- `github.com/spf13/cobra` — command framework, flag parsing, shell-completion, and man-page scaffolding.
+- `github.com/spf13/pflag` — POSIX-style short/long flag parsing (used by Cobra).
 - `github.com/Masterminds/semver/v3` — semver parse + compare.
 - `github.com/gobwas/glob` — dependency-name pattern matching.
 - `github.com/larsartmann/go-atomic-write` — TOCTOU-safe atomic file write (fingerprint verify + rename).

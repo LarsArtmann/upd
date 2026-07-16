@@ -2,33 +2,47 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
-	"os/signal"
 	"syscall"
 
+	"charm.land/fang/v2"
 	"github.com/LarsArtmann/upd"
 	errorfamily "github.com/larsartmann/go-error-family"
 )
 
 func main() {
-	err := run(os.Args[1:])
+	err := run()
 	if err != nil {
-		os.Exit(errorfamily.HandleError(err))
+		os.Exit(errorfamily.ExitCode(err))
 	}
 }
 
-func run(args []string) error {
-	cfg, err := upd.ParseFlags(args)
-	if err != nil {
-		if errors.Is(err, upd.ErrHelp) || errors.Is(err, upd.ErrVersion) {
-			return nil
-		}
+func run() error {
+	cmd, _ := upd.NewCommand(executeRun)
+	cmd.Version = upd.ProgramVersion
+	cmd.SetVersionTemplate(versionTemplate)
 
-		return err
+	err := fang.Execute(
+		context.Background(),
+		cmd,
+		fang.WithoutVersion(),
+		fang.WithNotifySignal(syscall.SIGINT, syscall.SIGTERM),
+	)
+	if err != nil {
+		return errorfamily.Wrap(err, errorfamily.Classify(err), "cli.execute", "execute command")
 	}
 
+	return nil
+}
+
+const versionTemplate = `{{.Name}} {{.Version}} <https://github.com/LarsArtmann/upd>
+Upgrade NPM Package Dependencies
+----------------------------------------
+Original: Copyright (c) 2015-2026 Dr. Ralf S. Engelschall
+Go port:  Copyright (c) 2026 Lars Artmann — MIT License`
+
+func executeRun(ctx context.Context, cfg *upd.Config) error {
 	if !cfg.NoColor {
 		cfg.NoColor = upd.ShouldDisableColor(os.Stdout)
 	}
@@ -63,9 +77,6 @@ func run(args []string) error {
 		reporter.Start()
 		engine = engine.WithReporter(reporter)
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
 
 	results := engine.FetchAll(ctx, toCheck)
 

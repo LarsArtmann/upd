@@ -116,7 +116,7 @@ func TestParseFlagsShortFlags(t *testing.T) {
 
 func TestParseFlagsLongFlags(t *testing.T) {
 	cfg := mustParseFlags(t, []string{
-		"--nop", "--noColor", "--greatest", "--all", "--pin-latest", "--concurrency", "4", "--file", "other.json",
+		"--nop", "--no-color", "--greatest", "--all", "--pin-latest", "--concurrency", "4", "--file", "other.json",
 	})
 
 	assertCoreBoolFlags(t, cfg)
@@ -211,7 +211,8 @@ func TestParseFlagsHelpAndVersion(t *testing.T) {
 	}{
 		{"short help", []string{"-h"}, ErrHelp},
 		{"long help", []string{"--help"}, ErrHelp},
-		{"version", []string{"-V"}, ErrVersion},
+		{"short version", []string{"-V"}, ErrVersion},
+		{"long version", []string{"--version"}, ErrVersion},
 	}
 
 	for _, tt := range tests {

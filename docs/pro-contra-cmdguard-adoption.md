@@ -79,3 +79,7 @@ If individual features are desired, they can be added standalone — no framewor
 - **Better help formatting** → `flag.FlagSet.VisitAll()` to auto-generate help from registered flags (no lipgloss needed)
 
 Total estimated cost: ~50 lines vs 92 transitive modules.
+
+---
+
+**Update 2026-07-16:** We ended up adopting `charm.land/fang/v2` (a thin Cobra styling layer) instead of `cmdguard`. It gives us styled help, styled errors, man pages, and shell completions while adding only ~28 modules and keeping `upd` a single-command CLI. This is the focused, proportional improvement the original analysis argued for.

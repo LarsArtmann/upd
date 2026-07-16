@@ -1,15 +1,16 @@
 package upd
 
 import (
+	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	errorfamily "github.com/larsartmann/go-error-family"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -17,11 +18,10 @@ const (
 	ProgramDesc = "Upgrade NPM Package Dependencies"
 	ProgramURL  = "https://github.com/LarsArtmann/upd"
 
-	defaultConcurrency  = 8
-	defaultRetries      = 3
-	defaultRegistryURL  = "https://registry.npmjs.org"
-	defaultTimeout      = 20 * time.Second
-	versionSeparatorLen = 40
+	defaultConcurrency = 8
+	defaultRetries     = 3
+	defaultRegistryURL = "https://registry.npmjs.org"
+	defaultTimeout     = 20 * time.Second
 )
 
 // ProgramVersion is injected at build time via -ldflags="-X github.com/LarsArtmann/upd.ProgramVersion=1.2.3".
@@ -96,157 +96,82 @@ func ShouldDisableColor(w io.Writer) bool {
 	return false
 }
 
-func ParseFlags(args []string) (*Config, error) {
+// NewCommand builds the root cobra command for upd.
+// The run callback receives the signal-aware context provided by fang and the
+// parsed configuration. The returned Config is the same instance passed to the
+// callback, so callers can inspect it after ParseFlags in tests.
+func NewCommand(runE func(context.Context, *Config) error) (*cobra.Command, *Config) {
 	cfg := DefaultConfig()
-	flagSet := flag.NewFlagSet(ProgramName, flag.ContinueOnError)
-	flagSet.SetOutput(os.Stderr)
-	flagSet.Usage = func() { PrintUsage(flagSet.Output()) }
+	cmd := &cobra.Command{
+		Use:   ProgramName,
+		Short: ProgramDesc,
+		Long: fmt.Sprintf(`%s while preserving original JSON formatting, key order, and whitespace.
 
-	var help, version bool
-	defineBoolFlag(flagSet, &help, "h", "help", "show usage help")
-	defineBoolFlag(flagSet, &version, "V", "version", "show program version information")
-	defineBoolFlag(flagSet, &cfg.Quiet, "q", "quiet", "quiet operation (do not output upgrade information)")
-	defineBoolFlag(flagSet, &cfg.Nop, "n", "nop", "no operation (do not modify package configuration file)")
-	defineBoolFlag(flagSet, &cfg.NoColor, "C", "noColor", "do not use any colors in output")
-	defineBoolFlag(flagSet, &cfg.Greatest, "g", "greatest", "use greatest version (instead of latest stable one)")
-	defineBoolFlag(flagSet, &cfg.All, "a", "all", "show all packages (instead of just updated ones)")
-	defineBoolFlag(flagSet, &cfg.PinLatest, "P", "pin-latest", "pin \"latest\" tag to exact semver version")
-	defineBoolFlag(flagSet, &cfg.JSON, "", "json", "emit machine-readable JSON to stdout instead of the table")
-	defineBoolFlag(flagSet, &cfg.Verbose, "", "verbose", "show full error chains (useful for debugging)")
-	defineStringFlag(flagSet, &cfg.File, "f", "file", "package.json", "package configuration to use")
-	defineStringFlag(flagSet, &cfg.Registry, "r", "registry", defaultRegistryURL, "NPM registry base URL")
-	defineIntFlag(
-		flagSet,
-		&cfg.Concurrency,
-		"c",
-		"concurrency",
-		defaultConcurrency,
-		"number of concurrent network connections to NPM registry",
-	)
-	defineIntFlag(
-		flagSet,
-		&cfg.Retries,
-		"",
-		"retries",
-		defaultRetries,
-		"max retries for transient registry failures (429/5xx)",
-	)
-	defineDurationFlag(flagSet, &cfg.Timeout, "t", "timeout", defaultTimeout, "per-request timeout (e.g. 30s)")
+%s`, ProgramDesc, ProgramURL),
+		Example: fmt.Sprintf(`  # Upgrade all dependencies in package.json
+  %s
 
-	flagSet.BoolVar(&cfg.Nop, "dry-run", false, "alias for --nop (do not modify package.json)")
+  # Preview changes without writing
+  %s -n
 
-	parseErr := flagSet.Parse(args)
-	if parseErr != nil {
-		return nil, errorfamily.WrapRejection(parseErr, "cli.parse_flags", "parse flags")
+  # Only upgrade packages matching a pattern
+  %s react*`, ProgramName, ProgramName, ProgramName),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg.Patterns = args
+
+			return runE(cmd.Context(), cfg)
+		},
 	}
 
-	if help {
-		PrintUsage(os.Stdout)
+	bindFlags(cmd, cfg)
+	cmd.CompletionOptions.HiddenDefaultCmd = true
 
-		return nil, ErrHelp
+	return cmd, cfg
+}
+
+func bindFlags(cmd *cobra.Command, cfg *Config) {
+	flags := cmd.Flags()
+
+	flags.BoolVarP(&cfg.Quiet, "quiet", "q", cfg.Quiet, "quiet operation (no upgrade output)")
+	flags.BoolVarP(&cfg.Nop, "nop", "n", cfg.Nop, "no operation (do not modify package.json)")
+	flags.BoolVar(&cfg.Nop, "dry-run", cfg.Nop, "alias for --nop")
+	flags.BoolVarP(&cfg.NoColor, "no-color", "C", cfg.NoColor, "do not use any colors in output")
+	flags.BoolVar(&cfg.NoColor, "noColor", cfg.NoColor, "alias for --no-color")
+	flags.Lookup("noColor").Hidden = true
+	flags.BoolVarP(&cfg.Greatest, "greatest", "g", cfg.Greatest, "use greatest version (instead of latest stable)")
+	flags.BoolVarP(&cfg.All, "all", "a", cfg.All, "show all packages (not just updated ones)")
+	flags.BoolVarP(&cfg.PinLatest, "pin-latest", "P", cfg.PinLatest, "pin \"latest\" tag to exact semver version")
+	flags.BoolVar(&cfg.JSON, "json", cfg.JSON, "emit machine-readable JSON to stdout instead of the table")
+	flags.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "show full error chains (useful for debugging)")
+	flags.StringVarP(&cfg.File, "file", "f", cfg.File, "package configuration file (default: package.json)")
+	flags.StringVarP(&cfg.Registry, "registry", "r", cfg.Registry, "NPM registry base URL")
+	flags.IntVarP(&cfg.Concurrency, "concurrency", "c", cfg.Concurrency, "concurrent NPM registry connections")
+	flags.IntVar(&cfg.Retries, "retries", cfg.Retries, "max retries for transient registry failures")
+	flags.DurationVarP(&cfg.Timeout, "timeout", "t", cfg.Timeout, "per-request timeout (e.g. 30s)")
+	flags.BoolP("version", "V", false, "version for "+ProgramName)
+}
+
+// ParseFlags parses CLI arguments into a Config without executing the command.
+// It is kept for backwards compatibility and for tests. If help or version is
+// requested, it returns ErrHelp or ErrVersion.
+func ParseFlags(args []string) (*Config, error) {
+	cmd, cfg := NewCommand(func(context.Context, *Config) error { return nil })
+	cmd.SetArgs(args)
+
+	err := cmd.ParseFlags(args)
+	if err != nil {
+		if errors.Is(err, pflag.ErrHelp) {
+			return nil, ErrHelp
+		}
+
+		return nil, errorfamily.WrapRejection(err, "cli.parse_flags", "parse flags")
 	}
 
-	if version {
-		PrintVersion(os.Stdout)
-
+	if flag := cmd.Flag("version"); flag != nil && flag.Changed {
 		return nil, ErrVersion
 	}
 
-	cfg.Patterns = flagSet.Args()
+	cfg.Patterns = cmd.Flags().Args()
 
 	return cfg, nil
-}
-
-// defineBoolFlag registers a flag under both its short and long form so a single
-// declaration covers both spellings (mirrors flag.FlagSet.BoolVar's per-name semantics).
-// When short is empty, only the long form is registered.
-func defineBoolFlag(flagSet *flag.FlagSet, p *bool, short, long, usage string) {
-	flagSet.BoolVar(p, long, false, usage)
-
-	if short != "" {
-		flagSet.BoolVar(p, short, false, usage)
-	}
-}
-
-// defineStringFlag registers a string flag under both its short and long form.
-// When short is empty, only the long form is registered.
-func defineStringFlag(flagSet *flag.FlagSet, p *string, short, long, def, usage string) {
-	flagSet.StringVar(p, long, def, usage)
-
-	if short != "" {
-		flagSet.StringVar(p, short, def, usage)
-	}
-}
-
-// defineIntFlag registers an int flag under both its short and long form.
-// When short is empty, only the long form is registered.
-func defineIntFlag(flagSet *flag.FlagSet, p *int, short, long string, def int, usage string) {
-	flagSet.IntVar(p, long, def, usage)
-
-	if short != "" {
-		flagSet.IntVar(p, short, def, usage)
-	}
-}
-
-// defineDurationFlag registers a duration flag under both its short and long form.
-// When short is empty, only the long form is registered.
-func defineDurationFlag(flagSet *flag.FlagSet, p *time.Duration, short, long string, def time.Duration, usage string) {
-	flagSet.DurationVar(p, long, def, usage)
-
-	if short != "" {
-		flagSet.DurationVar(p, short, def, usage)
-	}
-}
-
-func PrintUsage(w io.Writer) {
-	_, _ = fmt.Fprintf(
-		w,
-		"Usage: %s [-h] [-V] [-q] [-n|--dry-run] [-C] [-f <file>] [-r <registry>] [-g] [-a] [-c <concurrency>] [-P] [-t <timeout>] [--retries <n>] [--json] [--verbose] [<pattern> ...]\n",
-		ProgramName,
-	)
-	_, _ = fmt.Fprintln(w)
-	_, _ = fmt.Fprintln(w, "Upgrade NPM package dependencies in package.json while preserving formatting.")
-	_, _ = fmt.Fprintln(w)
-	_, _ = fmt.Fprintln(w, "Options:")
-
-	lines := []struct{ short, long, desc string }{
-		{"-h", "--help", "show usage help"},
-		{"-V", "--version", "show program version information"},
-		{"-q", "--quiet", "quiet operation (no upgrade output)"},
-		{"-n", "--nop", "no operation (do not modify package.json)"},
-		{"", "--dry-run", "alias for --nop"},
-		{"-C", "--noColor", "do not use any colors in output"},
-		{"-f", "--file", "package configuration file (default: package.json)"},
-		{"-r", "--registry", "NPM registry base URL (default: registry.npmjs.org)"},
-		{"-g", "--greatest", "use greatest version (instead of latest stable)"},
-		{"-a", "--all", "show all packages (not just updated ones)"},
-		{"-P", "--pin-latest", "pin \"latest\" tag to exact version"},
-		{"-c", "--concurrency", "concurrent NPM registry connections (default: 8)"},
-		{"", "--retries", "max retries for transient failures (default: 3)"},
-		{"-t", "--timeout", "per-request timeout (default: 20s)"},
-		{"", "--json", "machine-readable JSON output (for CI/scripts)"},
-		{"", "--verbose", "show full error chains"},
-	}
-	for _, l := range lines {
-		_, _ = fmt.Fprintf(w, "  %-4s %-16s  %s\n", l.short, l.long, l.desc)
-	}
-
-	_, _ = fmt.Fprintln(w)
-	_, _ = fmt.Fprintln(w, "Patterns:")
-	_, _ = fmt.Fprintln(w, "  Positive or negative (prefixed with !) glob patterns for")
-	_, _ = fmt.Fprintln(w, "  matching dependency names to update.")
-
-	_, _ = fmt.Fprintln(w)
-	_, _ = fmt.Fprintln(w, "Exit codes:")
-	_, _ = fmt.Fprintln(w, "  0   success — all dependencies resolved without errors")
-	_, _ = fmt.Fprintln(w, "  1   failure — package not found, partial errors, IO error")
-	_, _ = fmt.Fprintln(w, "  75  registry unavailable — transient 5xx/timeout (retryable)")
-}
-
-func PrintVersion(w io.Writer) {
-	_, _ = fmt.Fprintf(w, "%s %s <%s>\n", ProgramName, ProgramVersion, ProgramURL)
-	_, _ = fmt.Fprintf(w, "%s\n", ProgramDesc)
-	_, _ = fmt.Fprintln(w, strings.Repeat("-", versionSeparatorLen))
-	_, _ = fmt.Fprintln(w, "Original: Copyright (c) 2015-2026 Dr. Ralf S. Engelschall")
-	_, _ = fmt.Fprintln(w, "Go port:  Copyright (c) 2026 Lars Artmann — MIT License")
 }
