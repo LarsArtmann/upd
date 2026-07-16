@@ -62,16 +62,16 @@
 
 ## Error Handling
 
-| Feature                       | Status                | Notes                                                                                                                                                             |
-| ----------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sentinel error taxonomy       | 🟢 `FULLY_FUNCTIONAL` | 13 sentinels in `errors.go`. All wrapped with `fmt.Errorf("...: %w", err)`.                                                                                       |
-| `Spec.Err` — per-spec error   | 🟢 `FULLY_FUNCTIONAL` | Errored specs carry concrete error reason. Tested: `TestApplyUpdatesPopulatesSpecErr`.                                                                            |
-| Registry error classification | 🟢 `FULLY_FUNCTIONAL` | 404/410 → `ErrPackageNotFound` (user typo); 5xx → `ErrRegistryUnavailable` (system fault). `npm.go:classifyRegistryError`.                                        |
-| Exit code differentiation     | 🟢 `FULLY_FUNCTIONAL` | `ErrRegistryUnavailable` → 75 (EX_TEMPFAIL); `ErrPartialFailure` → 1; all others → 1. Documented in `--help` output. 6 exit-code tests in `cmd/upd/main_test.go`. |
-| Error detail block in table   | 🟢 `FULLY_FUNCTIONAL` | `Errors (n):` block below table with per-package error reasons. `--verbose` shows `%+v` formatting.                                                               |
-| Warnings pipeline             | 🟢 `FULLY_FUNCTIONAL` | `BuildManifest` returns `[]string` warnings for malformed sections/patterns. Suppressed in quiet mode.                                                            |
-| Partial failure exit code     | 🟢 `FULLY_FUNCTIONAL` | Non-zero exit (1) when any package fails to resolve. File still written for successful updates.                                                                   |
-| HTTP retry logic              | 🟢 `FULLY_FUNCTIONAL` | 429/5xx retried with exponential backoff (1s base, 30s cap). `Retry-After` header honored. `npm.go:FetchPackument`. Tested: 6 tests in `npm_test.go`.             |
+| Feature                       | Status                | Notes                                                                                                                                                                    |
+| ----------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sentinel error taxonomy       | 🟢 `FULLY_FUNCTIONAL` | 13 sentinels in `errors.go` via `errorfamily.New*` constructors. All wrapping uses `errorfamily.Wrap*` or `sentinel.WithContext()`. Exit codes from `Family.ExitCode()`. |
+| `Spec.Err` — per-spec error   | 🟢 `FULLY_FUNCTIONAL` | Errored specs carry concrete error reason. Tested: `TestApplyUpdatesPopulatesSpecErr`.                                                                                   |
+| Registry error classification | 🟢 `FULLY_FUNCTIONAL` | 404/410 → `ErrPackageNotFound` (user typo); 5xx → `ErrRegistryUnavailable` (system fault). `npm.go:classifyRegistryError`.                                               |
+| Exit code differentiation     | 🟢 `FULLY_FUNCTIONAL` | `ErrRegistryUnavailable` → 75 (EX_TEMPFAIL); `ErrPartialFailure` → 1; all others → 1. Documented in `--help` output. 6 exit-code tests in `cmd/upd/main_test.go`.        |
+| Error detail block in table   | 🟢 `FULLY_FUNCTIONAL` | `Errors (n):` block below table with per-package error reasons. `--verbose` shows `%+v` formatting.                                                                      |
+| Warnings pipeline             | 🟢 `FULLY_FUNCTIONAL` | `BuildManifest` returns `[]string` warnings for malformed sections/patterns. Suppressed in quiet mode.                                                                   |
+| Partial failure exit code     | 🟢 `FULLY_FUNCTIONAL` | Non-zero exit (1) when any package fails to resolve. File still written for successful updates.                                                                          |
+| HTTP retry logic              | 🟢 `FULLY_FUNCTIONAL` | 429/5xx retried with exponential backoff (1s base, 30s cap). `Retry-After` header honored. `npm.go:FetchPackument`. Tested: 6 tests in `npm_test.go`.                    |
 
 ## Output & Rendering
 
