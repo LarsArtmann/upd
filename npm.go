@@ -89,8 +89,8 @@ func (c *RegistryClient) FetchPackument(ctx context.Context, name string) (*Pack
 			break
 		}
 
-		var retryErr *retryableError
-		if !errors.As(err, &retryErr) {
+		retryErr, ok := errors.AsType[*retryableError](err)
+		if !ok {
 			break
 		}
 
