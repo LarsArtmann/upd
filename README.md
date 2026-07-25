@@ -200,12 +200,12 @@ that are **prepended** to CLI flags:
 
 ```json
 {
-  "upd": ["react*", "!react-dom", "-c", "16"],
-  "dependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "lodash": "^4.17.20"
-  }
+	"upd": ["react*", "!react-dom", "-c", "16"],
+	"dependencies": {
+		"react": "^18.0.0",
+		"react-dom": "^18.0.0",
+		"lodash": "^4.17.20"
+	}
 }
 ```
 
