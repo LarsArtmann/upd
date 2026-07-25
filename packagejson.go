@@ -221,7 +221,7 @@ func (p *PackageFile) spliceDependency(dec *jsontext.Decoder, val jsontext.Value
 }
 
 func (p *PackageFile) Write(path string) error {
-	err := atomicwrite.Write(path, p.raw, p.fingerprint)
+	err := atomicwrite.WriteVerified(path, p.raw, p.fingerprint)
 	if err != nil {
 		if errors.Is(err, atomicwrite.ErrConcurrentModification) {
 			return ErrConcurrentModification.WithContext("path", path)
