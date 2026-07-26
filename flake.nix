@@ -30,7 +30,7 @@
               pname = "upd";
               inherit version;
               src = ./.;
-              vendorHash = "sha256-W2Ezulsi0hURq6MlMCHjJEAZDAAddEV1p/79BqNoFZk=";
+              vendorHash = "sha256-rsQ4ZY49A0XMehG8ISBpRBDdvIDvN9hCrVniH8Els/A=";
               subPackages = [ "cmd/upd" ];
               env.GOEXPERIMENT = goExperiment;
               ldflags = [
