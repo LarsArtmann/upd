@@ -19,7 +19,7 @@
       perSystem =
         { pkgs, ... }:
         let
-          version = "1.1.0";
+          version = "1.2.0";
           goExperiment = "jsonv2";
         in
         {

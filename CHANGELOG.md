@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+_Nothing yet._
+
+### Changed
+
+_Nothing yet._
+
+### Fixed
+
+_Nothing yet._
+
+## [1.2.0] - 2026-07-26
+
+### Added
+
 - **fang/Cobra CLI migration** — replaced stdlib `flag` with `charm.land/fang/v2` + Cobra. Adds styled `--help` output, styled error rendering, hidden `man` and `completion` commands, and signal-aware execution via `fang.WithNotifySignal`.
 - **Unified no-color override** — `-C`/`--no-color` and `UPD_NO_COLOR` now disable fang's styled help and error colors in addition to `upd`'s own table/progress/warning output.
 - **Environment variable support** — every public flag can be set via `UPD_*` env vars (e.g., `UPD_REGISTRY`, `UPD_FILE`, `UPD_TIMEOUT`). CLI flags override env vars; invalid env values fall back to defaults.
@@ -19,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Flag canonicalization** — `--no-color` is the canonical long form; `--noColor` remains a hidden backwards-compatible alias.
 - **README expanded** — added documentation for styled help/man/completions, environment variables, and shell completion setup.
 - **Direct dependency count increased** to 8 (added `charm.land/fang/v2` and `charm.land/lipgloss/v2` on top of the pre-migration dependencies).
+- **Minimum Go toolchain** bumped to Go 1.26.5 (`GOEXPERIMENT=jsonv2` still required).
 
 ### Fixed
 
