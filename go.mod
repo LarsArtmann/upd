@@ -7,7 +7,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.5
 	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/gobwas/glob v0.2.3
-	github.com/larsartmann/go-atomic-write v0.4.0
+	github.com/larsartmann/go-atomic-write v0.4.1
 	github.com/larsartmann/go-error-family v0.10.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
@@ -16,7 +16,7 @@ require (
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
-	github.com/charmbracelet/ultraviolet v0.0.0-20260720091822-7cc6674724ac // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260730002925-d9e819d7acab // indirect
 	github.com/charmbracelet/x/ansi v0.11.7 // indirect
 	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260727090823-41c9e6be3365 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
