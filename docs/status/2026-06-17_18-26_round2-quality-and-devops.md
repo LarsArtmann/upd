@@ -65,7 +65,7 @@ The project is now **production-ready** for its current feature scope.
 | **GitHub Actions CI**         | Build + vet + test on push/PR to master                                                                                                       | ✅ Written                       |
 | **Version injection**         | `ProgramVersion` is a `var` (default "dev"), injectable via `-ldflags="-X ...=1.0.0"`                                                         | ✅ Verified binary shows `1.0.0` |
 | **Dead code removal**         | Removed unused `contains`/`indexOf` helpers from engine_test.go                                                                               | ✅ Build clean                   |
-| **Semantic cleanup**          | Moved `RegistryURL` from config.go to npm.go where it belongs                                                                                 | ✅ Build clean                   |
+| **Semantic cleanup**          | Moved `RegistryURL` from config.go to pnpm.go where it belongs                                                                                 | ✅ Build clean                   |
 
 ## b) PARTIALLY DONE
 

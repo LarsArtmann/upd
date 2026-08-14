@@ -283,7 +283,7 @@ func TestWriteRejectsConcurrentModification(t *testing.T) {
 		t.Fatalf("ReadPackageFile: %v", err)
 	}
 
-	// Simulate another process (npm install, IDE formatter) editing the file
+	// Simulate another process (pnpm install, IDE formatter) editing the file
 	// after upd read it but before upd writes it back.
 	writePackageFixture(t, path, `{"dependencies":{"react":"^20.0.0"}}`)
 

@@ -44,7 +44,7 @@ Audited every `errors.` / `fmt.Errorf` call in the repo (74 matches across 11 fi
 | `ErrConcurrentModification`          | Conflict                     | 1               | 1 (same)                             |
 | `ErrPackageNotFound`                 | Rejection                    | 1               | 1 (same)                             |
 | `ErrVersionParse`                    | Rejection                    | 1               | 1 (same)                             |
-| Network / registry failures (npm.go) | Transient                    | 1               | **75 (EX_TEMPFAIL)**                 |
+| Network / registry failures (pnpm.go) | Transient                    | 1               | **75 (EX_TEMPFAIL)**                 |
 | `ErrHelp` / `ErrVersion`             | _(control flow, not errors)_ | 0               | N/A                                  |
 
 The **only** exit-code change that would be genuinely user-visible and useful: a Transient network failure (NPM registry timeout / 5xx) getting exit code 75 instead of 1, so a CI wrapper script could `&& retry` on 75 but fail-fast on 1.
@@ -63,7 +63,7 @@ The **only** exit-code change that would be genuinely user-visible and useful: a
 | P2  | **`HandleError(err)` replaces manual stderr formatting**: `os.Exit(errorfamily.HandleError(err))` is cleaner than the current `fmt.Fprintf + os.Exit(1)`. Saves ~5 lines in `main.go`. | Low — the current code is 3 lines and already clear                                       |
 | P3  | **Structured What/Why/Fix/WayOut messages**: richer user-facing errors than raw `err.Error()`.                                                                                         | Low — `upd`'s user is a developer who benefits from the raw error, not a softened message |
 | P4  | **Zero dependencies** — root module is stdlib-only, consistent with `upd`'s minimalism.                                                                                                | Medium — doesn't violate the "small dep tree" principle at the transitive level           |
-| P5  | **Classification of npm registry responses**: a 404 is Rejection (typo), a 500/timeout is Transient (retry). Currently both are indistinguishable to the caller.                       | Low — `upd` doesn't retry, so the classification has no consumer                          |
+| P5  | **Classification of pnpm registry responses**: a 404 is Rejection (typo), a 500/timeout is Transient (retry). Currently both are indistinguishable to the caller.                       | Low — `upd` doesn't retry, so the classification has no consumer                          |
 | P6  | **Future-proofing**: if `upd` ever adds a `--retry` flag, `IsRetryable(err)` is already there.                                                                                         | Low — YAGNI until the flag exists                                                         |
 
 #### CONTRA
@@ -195,5 +195,5 @@ Until one of these materializes, **the stdlib is the right tool for this job.**
 - **go-error-family README**: `github.com/LarsArtmann/go-error-family` (master branch, fetched 2026-07-09)
 - **go-error-family SKILL.md**: full architecture + API reference (master branch)
 - **samber/oops README**: `github.com/samber/oops` (main branch, fetched 2026-07-09) — 969 stars, MIT, v1 stable
-- **upd codebase audit**: `errors.go`, `cmd/upd/main.go`, `npm.go`, `packagejson.go`, `.golangci.yml`, `go.mod`
+- **upd codebase audit**: `errors.go`, `cmd/upd/main.go`, `pnpm.go`, `packagejson.go`, `.golangci.yml`, `go.mod`
 - **how-to-golang skill**: banned-libraries.md (error handling section: `cockroachdb/errors + uniflow` is canonical), key-patterns.md

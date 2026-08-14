@@ -39,12 +39,12 @@
 
 4. **`ErrRegistryUnavailable` sentinel** (`errors.go`) — splits the old `ErrPackageNotFound` into two behavioral categories: not-found (user typo, exit 1) vs unavailable (system fault, exit 75).
 
-5. **Registry error classification** (`npm.go`) — new `classifyRegistryError` helper: 404/410 → `ErrPackageNotFound`, everything else → `ErrRegistryUnavailable`. Both wrap status code + package name for diagnostics.
+5. **Registry error classification** (`pnpm.go`) — new `classifyRegistryError` helper: 404/410 → `ErrPackageNotFound`, everything else → `ErrRegistryUnavailable`. Both wrap status code + package name for diagnostics.
 
-6. **Disambiguated duplicate messages** (`npm.go`) — request-build failure now says `"build registry request for %q"`, request-send failure says `"send registry request for %q"` (were both identical `"package information retrieval failed"`).
+6. **Disambiguated duplicate messages** (`pnpm.go`) — request-build failure now says `"build registry request for %q"`, request-send failure says `"send registry request for %q"` (were both identical `"package information retrieval failed"`).
 
 7. **Engine error population** (`engine.go`) — three error paths in `resolveSpecVersion` + `applyOne` that previously set `StateError` and discarded the cause now populate `spec.Err`:
-   - Fetch failure → raw fetch error (contextualized by `npm.go`)
+   - Fetch failure → raw fetch error (contextualized by `pnpm.go`)
    - Version resolution failure → `"resolve version for %q: %w"`
    - Byte-splice write failure → `"write %q in %q: %w"`
 
@@ -106,9 +106,9 @@
 
 24. **No `-v`/`--verbose` flag for debug-level error detail** — the `spec.Err` detail block is always shown when errors exist. No way to get MORE detail (e.g. full chain) or LESS (just the count).
 
-25. **`VersionKeys()` still silently returns nil on parse failure** (`npm.go:122`) — documented in the design doc as "acceptable best-effort" but never discussed with the user.
+25. **`VersionKeys()` still silently returns nil on parse failure** (`pnpm.go:122`) — documented in the design doc as "acceptable best-effort" but never discussed with the user.
 
-26. **`GreatestVersion` silently skips unparseable versions** (`npm.go:99`) — same as above.
+26. **`GreatestVersion` silently skips unparseable versions** (`pnpm.go:99`) — same as above.
 
 27. **No `--fail-on-error` flag** — a run that updates 3 packages and fails 2 still exits 0. Design doc recommends this as a future flag.
 
@@ -120,7 +120,7 @@
 
 29. **First pass was incomplete — "across the board" meant everywhere.** The user asked for "SUPERB error handling across the board." I fixed 6 gaps in the fetch pipeline and declared success. I completely missed 3 more gaps in `packagejson.go` and `manifest.go` where errors were silently swallowed. The user had to push me with "???" to get me to look deeper. A truly across-the-board audit should have found these on the first pass — they were the most obvious silent-swallowing patterns in the codebase.
 
-30. **Introduced a syntax error in `npm.go`** — when adding `classifyRegistryError`, I wrote `return &Packument{raw: data, len(data), nil` (missing closing brace and comma). Caught by build immediately, but it showed carelessness in the edit.
+30. **Introduced a syntax error in `pnpm.go`** — when adding `classifyRegistryError`, I wrote `return &Packument{raw: data, len(data), nil` (missing closing brace and comma). Caught by build immediately, but it showed carelessness in the edit.
 
 31. **Multiple lint round-trips** — needed 3 golangci-lint iterations to clear all wsl_v5/errcheck/nlreturn issues. I should know the project's style rules (blank lines after declarations, before control structures) from reading existing code. Each round-trip was avoidable.
 

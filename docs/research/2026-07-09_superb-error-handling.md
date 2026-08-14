@@ -14,19 +14,19 @@ We are **not** adopting go-error-family / bridge / samber-oops — none solve a 
 
 ## 1. The audit — nine gaps in the status quo
 
-A full read of every error site (`errors.go`, `npm.go`, `packagejson.go`, `engine.go`, `config.go`, `manifest.go`, `render.go`, `cmd/upd/main.go`) across two passes found these weaknesses, ordered by impact:
+A full read of every error site (`errors.go`, `pnpm.go`, `packagejson.go`, `engine.go`, `config.go`, `manifest.go`, `render.go`, `cmd/upd/main.go`) across two passes found these weaknesses, ordered by impact:
 
 | #   | Gap                                                                                                                                                                                                                             | Where                  | Severity                      |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ----------------------------- |
 | 1   | **Per-package errors were invisible.** `FetchResult.err` was captured but its message discarded in `resolveSpecVersion`; write errors in `applyOne` were counted and dropped. The user saw "2 errors" with zero clue _why_.     | `engine.go`            | **Critical**                  |
-| 2   | **Registry errors were misclassified.** Every non-200 response (including 500/502/503 outages) was wrapped as `ErrPackageNotFound`. A typo and a registry outage produced the same error.                                       | `npm.go:59`            | **High**                      |
+| 2   | **Registry errors were misclassified.** Every non-200 response (including 500/502/503 outages) was wrapped as `ErrPackageNotFound`. A typo and a registry outage produced the same error.                                       | `pnpm.go:59`            | **High**                      |
 | 3   | **One exit code for everything.** `os.Exit(1)` hardcoded in `main()`. CI could not distinguish "fix your config" from "the registry was down, retry".                                                                           | `cmd/upd/main.go`      | Medium                        |
-| 4   | **Two identical wrapping messages.** Request-build failure and request-send failure both said `"package information retrieval failed"` — impossible to tell which step broke.                                                   | `npm.go:46,54`         | Medium                        |
+| 4   | **Two identical wrapping messages.** Request-build failure and request-send failure both said `"package information retrieval failed"` — impossible to tell which step broke.                                                   | `pnpm.go:46,54`         | Medium                        |
 | 5   | **`GetDependencySection` silently returned empty on malformed sections.** If `"dependencies": 42` (number instead of object), the tool returned `{}` and reported "all up-to-date" — skipping all dependencies without warning. | `packagejson.go:51,58` | **High**                      |
 | 6   | **`GetUpdArgs` silently returned nil on parse failure.** Malformed embedded `"upd"` config was invisibly ignored — the user's intended patterns never applied.                                                                  | `packagejson.go:72`    | Medium                        |
 | 7   | **Invalid glob patterns silently dropped.** `splitPatterns` used `continue` on `glob.Compile` errors — the user's filter was invisibly ignored.                                                                                 | `manifest.go:174`      | Medium                        |
 | 8   | **No structured error rendering.** The terminal table showed `error` as a state label but no diagnostic detail.                                                                                                                 | `render.go`            | Medium                        |
-| 9   | **Silently swallowed parse errors.** `VersionKeys()` returns `nil` on unmarshal failure with no signal; `GreatestVersion` skips unparseable versions silently.                                                                  | `npm.go:122,99`        | Low (best-effort, acceptable) |
+| 9   | **Silently swallowed parse errors.** `VersionKeys()` returns `nil` on unmarshal failure with no signal; `GreatestVersion` skips unparseable versions silently.                                                                  | `pnpm.go:122,99`        | Low (best-effort, acceptable) |
 
 ---
 
@@ -56,7 +56,7 @@ Splits the old single `ErrPackageNotFound` into two behavioral categories: not-f
 
 Added an `Err` field to `Spec`. Every spec that ends in `StateError` now carries the concrete error that caused it. This is the single highest-impact change: it is what makes gap #1 fixable.
 
-### `npm.go` — accurate classification + distinct messages
+### `pnpm.go` — accurate classification + distinct messages
 
 - `classifyRegistryError(status, name)` helper: `404`/`410` → `ErrPackageNotFound`; everything else → `ErrRegistryUnavailable`. Both still wrap the status code and package name for diagnostics.
 - Request-build failure: `"build registry request for %q"` (was: generic "package information retrieval failed").
@@ -68,7 +68,7 @@ Three error paths in `resolveSpecVersion` + `applyOne` that previously set `Stat
 
 | Path                        | `spec.Err` value                                         |
 | --------------------------- | -------------------------------------------------------- |
-| fetch failed (no packument) | the raw fetch error (already contextualized by `npm.go`) |
+| fetch failed (no packument) | the raw fetch error (already contextualized by `pnpm.go`) |
 | version resolution failed   | `fmt.Errorf("resolve version for %q: %w", name, err)`    |
 | byte-splice write failed    | `fmt.Errorf("write %q in %q: %w", name, section, err)`   |
 

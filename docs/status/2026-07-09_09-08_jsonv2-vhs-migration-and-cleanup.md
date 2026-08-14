@@ -29,7 +29,7 @@
 
 ### 1. json/v2 + jsontext Migration
 
-- **npm.go**: Replaced `gjson.GetBytes` path queries with typed struct unmarshaling via `encoding/json/v2`. `LatestVersion()` now unmarshals into `struct { DistTags struct { Latest string } }`, `VersionKeys()` into `struct { Versions map[string]struct{} }`.
+- **pnpm.go**: Replaced `gjson.GetBytes` path queries with typed struct unmarshaling via `encoding/json/v2`. `LatestVersion()` now unmarshals into `struct { DistTags struct { Latest string } }`, `VersionKeys()` into `struct { Versions map[string]struct{} }`.
 - **packagejson.go**: Replaced all `gjson` usage with `encoding/json/jsontext` streaming decoder. `UpdateDependency()` now uses `jsontext.NewDecoder` with `ReadToken()` + `ReadValue()` + `InputOffset()` for byte-precise surgical edits. `GetDependencySection()` and `GetUpdArgs()` use `json.Unmarshal` into `map[string]jsontext.Value` and typed structs respectively. JSON validation uses `jsontext.Value.IsValid()`.
 - **engine_test.go**: Migrated mock registry from `encoding/json` (v1) `json.NewEncoder` to `encoding/json/v2` `json.MarshalWrite`. Fixed variable shadowing (`json` → `originalJSON`) in `TestEngineApplyUpdatesNop`.
 - **go.mod**: Removed `github.com/tidwall/gjson` and its transitive deps (`tidwall/match`, `tidwall/pretty`). Down from 4 direct dependencies to 3.

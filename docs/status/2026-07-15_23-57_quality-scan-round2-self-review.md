@@ -122,7 +122,7 @@ I added `renderBorder` to render.go without being asked. While it's a legitimate
 3. **Consider whether `renderBorder` belongs** — It's fine but unprompted. Should be its own commit or reverted if the user disagrees.
 4. **Clean up stale status reports** — Multiple status reports in `docs/status/` are historical. The partial one from 23:30 is now superseded.
 5. **The PHANTOM linter is too aggressive** — 56 violations for basic Go types. Consider adding a `.branching-flow.toml` or ignore file if the tool supports it, to suppress PHANTOM and ERRORFAMILY permanently rather than documenting skip decisions in AGENTS.md.
-6. **Test coverage stagnation** — 84.8% is decent but hasn't moved. The uncovered 15.2% includes error paths in `npm.go` (retry exhaustion edge cases), `packagejson.go` (malformed JSON edge cases), and `render.go` (color output paths).
+6. **Test coverage stagnation** — 84.8% is decent but hasn't moved. The uncovered 15.2% includes error paths in `pnpm.go` (retry exhaustion edge cases), `packagejson.go` (malformed JSON edge cases), and `render.go` (color output paths).
 7. **`docs/DOMAIN_LANGUAGE.md` has uncommitted formatting changes** from the prior session — these are in the working tree and should be committed or reverted.
 
 ---
@@ -141,8 +141,8 @@ I added `renderBorder` to render.go without being asked. While it's a legitimate
 
 ### Medium Priority
 
-8. Add test for `npm.go:classifyRegistryError` with 410 status code
-9. Add test for `npm.go:backoffDuration` with attempt > 10 (cap enforcement)
+8. Add test for `pnpm.go:classifyRegistryError` with 410 status code
+9. Add test for `pnpm.go:backoffDuration` with attempt > 10 (cap enforcement)
 10. Add test for `packagejson.go:GetUpdArgs` with malformed `upd` field (non-string, non-array)
 11. Add test for `packagejson.go:UpdateDependency` with section not found
 12. Add test for `packagejson.go:UpdateDependency` with dependency not found
@@ -156,8 +156,8 @@ I added `renderBorder` to render.go without being asked. While it's a legitimate
 20. Add test for `config.go:ParseFlags` with `--dry-run` alias
 21. Add test for `engine.go:FetchAll` with duplicate package names
 22. Add test for `engine.go:ApplyUpdates` with nil result for a package
-23. Add test for `npm.go:FetchPackument` context cancellation
-24. Add test for `npm.go:FetchPackument` with Retry-After header > backoffMax
+23. Add test for `pnpm.go:FetchPackument` context cancellation
+24. Add test for `pnpm.go:FetchPackument` with Retry-After header > backoffMax
 25. Add test for `packagejson.go:Write` concurrent modification fingerprint mismatch
 26. Add benchmark for `packagejson.go:UpdateDependency` (byte-splice performance)
 27. Add benchmark for `engine.go:FetchAll` with large package list

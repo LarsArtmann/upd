@@ -99,7 +99,7 @@ Moving exit-code tests to the `upd` package improved that package's coverage but
 2. **Add cmd/upd integration tests** — `run()` is the main entry point and has 3.9% coverage. Need tests that exercise the full pipeline with mock registries.
 3. **Add errorfamily.HandleError integration test** — verify that the full HandleError path produces correct stderr output + exit codes for each family.
 4. **Consider using errorfamily.Registry for test isolation** — currently using DefaultRegistry globally; tests could use scoped registries.
-5. **The retryableError type in npm.go** could potentially implement the errorfamily.Retryable interface instead of being a separate wrapper type. This would let errorfamily.Classify automatically detect retryability.
+5. **The retryableError type in pnpm.go** could potentially implement the errorfamily.Retryable interface instead of being a separate wrapper type. This would let errorfamily.Classify automatically detect retryability.
 6. **Add error codes to the --json output** — currently JSON output has `state` and `error` strings, but not the machine-readable `code` or `family`. CI consumers would benefit from structured error codes.
 7. **Render errorfamily context in --verbose mode** — `errorfamily.Error.Format(f, '+')` produces verbose output with context keys. The `--verbose` flag could leverage this.
 8. **Context-loss issues (branching-flow)** — 12 MEDIUM issues remain. Most are for complex types (manifest, decoder) but some could be addressed by adding `.WithContext()` calls.
@@ -168,7 +168,7 @@ Moving exit-code tests to the `upd` package improved that package's coverage but
 47. **Add test for errors.Is across WithContext cloning** — verify identity preservation
 48. _*Add test for errors.Is across Wrap* functions_* — verify chain traversal
 49. **Consider adding errorfamily.HTTPHandler** if upd ever gets an HTTP API
-50. **Consider adding errorfamily.RetryPolicy integration** with npm.go retry loop
+50. **Consider adding errorfamily.RetryPolicy integration** with pnpm.go retry loop
 
 ---
 
@@ -176,7 +176,7 @@ Moving exit-code tests to the `upd` package improved that package's coverage but
 
 ### 1. Should `retryableError` be replaced by errorfamily's classification system?
 
-Currently `npm.go` has a custom `retryableError` struct that wraps transient errors with a `retryAfter` duration. The retry loop checks `errors.As(err, &retryErr)` to decide whether to retry. With errorfamily, `Family.IsRetryable()` already signals retryability — but it doesn't carry the `retryAfter` duration from the `Retry-After` HTTP header. Should I:
+Currently `pnpm.go` has a custom `retryableError` struct that wraps transient errors with a `retryAfter` duration. The retry loop checks `errors.As(err, &retryErr)` to decide whether to retry. With errorfamily, `Family.IsRetryable()` already signals retryability — but it doesn't carry the `retryAfter` duration from the `Retry-After` HTTP header. Should I:
 
 - **(a)** Keep `retryableError` as-is (it carries extra data errorfamily doesn't model), or
 - **(b)** Make it implement `errorfamily.Retryable` and `errorfamily.Classified` interfaces, or

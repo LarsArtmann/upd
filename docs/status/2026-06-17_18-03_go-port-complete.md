@@ -39,7 +39,7 @@
 The `upd` CLI — a tool for upgrading NPM package dependencies in `package.json`
 while preserving JSON formatting — has been **fully ported from JavaScript to Go**.
 
-The original was 414 lines of JS across 1 file with 15 npm dependencies.
+The original was 414 lines of JS across 1 file with 15 pnpm dependencies.
 The Go port is ~900 lines across 9 source files with **3 Go dependencies**.
 
 Build passes, vet passes, 22 tests pass, and the binary was verified end-to-end
@@ -205,7 +205,7 @@ already shaped for it. This is a product direction decision I can't make alone.
 | ----------------- | ----------------- | ------------------------------------ |
 | Source files      | 1 (`upd.js`)      | 9 (`.go` source) + 3 test files      |
 | Source lines      | 414               | ~900                                 |
-| Dependencies      | 15 npm packages   | 3 Go modules                         |
+| Dependencies      | 15 pnpm packages   | 3 Go modules                         |
 | Binary size       | N/A (runtime)     | 6.6 MB (static, stripped)            |
 | Startup time      | ~300ms (Node.js)  | ~2ms (native)                        |
 | Test count        | 0                 | 22                                   |

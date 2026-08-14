@@ -45,7 +45,7 @@ _Nothing yet._
 
 - **TOCTOU-safe atomic writes** — package.json is written via a temp file,
   fsync, fingerprint verification, and atomic rename. If another process
-  (npm install, IDE formatter) modifies the file during upd's network-fetch
+  (pnpm install, IDE formatter) modifies the file during upd's network-fetch
   window, the write is aborted with `ErrConcurrentModification` and the file
   is left untouched. Powered by `go-atomic-write` v0.2.0.
 - **`--pinLatest` / `-P` flag** — pins dependencies using the bare `latest`

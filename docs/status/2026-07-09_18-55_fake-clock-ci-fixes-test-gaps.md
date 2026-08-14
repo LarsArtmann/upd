@@ -32,7 +32,7 @@ This session addressed the self-critique items from the prior mass-implementatio
 - **Production code:** `NewRegistryClient` sets `sleep: sleepWithContext` (the real timer)
 - **Test code:** `newTestEngine` sets `sleep: func(_, _) bool { return true }` (instant no-op)
 - **New capability:** Tests can capture delays to assert exact backoff timing without any real waiting
-- **Files:** `npm.go` (type + field + wiring), `engine_test.go` (no-op injection), `npm_test.go` (all 3 retry tests + 2 new timing-assertion tests)
+- **Files:** `pnpm.go` (type + field + wiring), `engine_test.go` (no-op injection), `npm_test.go` (all 3 retry tests + 2 new timing-assertion tests)
 - **Impact:** Retry tests went from 6 real seconds to 0ms. Full suite: 6.0s → 0.4s.
 
 ### 4. New backoff timing tests
@@ -233,7 +233,7 @@ The `usetesting` linter flags `os.Setenv` inside `t.Cleanup`. I worked around th
 45. Add exit code for "no updates needed" (currently exit 0, could be distinct)
 46. Add `upd init` command to create `.updrc` or add `upd` field to package.json
 47. Add `upd doctor` command to diagnose registry connectivity
-48. Add `upd outdated` command (like `npm outdated`) — check without writing
+48. Add `upd outdated` command (like `pnpm outdated`) — check without writing
 49. Add checksum verification for downloaded packuments
 50. Add `--dry-run` output that shows what _would_ change (currently `-n` is silent)
 
@@ -273,7 +273,7 @@ I lean toward **A** until there's a real library user, but this is a product dir
 | File                       | Lines  | What                                                   |
 | -------------------------- | ------ | ------------------------------------------------------ |
 | `.github/workflows/ci.yml` | +4/-2  | `version: latest`, `continue-on-error: true`           |
-| `npm.go`                   | +12/-3 | `sleeper` type, `RegistryClient.sleep` field, wiring   |
+| `pnpm.go`                   | +12/-3 | `sleeper` type, `RegistryClient.sleep` field, wiring   |
 | `npm_test.go`              | +50/-3 | Fake sleeper in 3 tests, 2 new timing tests            |
 | `engine_test.go`           | +2/-0  | No-op sleeper in `newTestEngine`, `time` import        |
 | `render.go`                | +1/-1  | `RenderJSON` signature: removed `errCount` param       |

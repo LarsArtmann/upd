@@ -40,7 +40,7 @@ Two tasks were requested and executed:
 ### Task 1: README Origin Attribution
 
 - Added a prominent blockquote at the top of `README.md` linking directly to `https://github.com/rse/upd`
-- Rewrote the **Origin** section with explicit links to the GitHub repo and npm package
+- Rewrote the **Origin** section with explicit links to the GitHub repo and pnpm package
 - Uses the word "rewrite" (not vague "port") and names both authors with links
 
 ### Task 2: `--pinLatest` Feature Migration

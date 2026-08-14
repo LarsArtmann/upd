@@ -31,7 +31,7 @@ number inside each constraint string changes. Nothing else is touched.
   quoting style are never touched.
 - **TOCTOU-safe atomic writes** — stages a temp file, fsyncs it, verifies
   the on-disk fingerprint hasn't changed since read, then atomically renames.
-  If another process (npm install, IDE formatter) edited `package.json`
+  If another process (pnpm install, IDE formatter) edited `package.json`
   during the network-fetch window, the write is aborted and your file is
   left untouched.
 - **Concurrent registry queries** — fetches packuments in parallel with a
@@ -275,11 +275,11 @@ re-run `upd` after a few seconds. If using a private registry, verify it's
 running and accessible. Use `--retries` to increase the number of retry attempts.
 
 **`ERROR: package configuration file was modified concurrently`**
-Another process (npm install, IDE auto-save, formatter) edited `package.json`
+Another process (pnpm install, IDE auto-save, formatter) edited `package.json`
 while `upd` was fetching versions. Your file was not changed. Simply re-run `upd`.
 
 **`ERROR: invalid JSON in package configuration file`**
-Your `package.json` has malformed JSON. Run `npx jsonlint package.json` or
+Your `package.json` has malformed JSON. Run `pnpm dlx jsonlint package.json` or
 `node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"` to
 find the syntax error.
 
@@ -324,7 +324,7 @@ nix run .#demo -- --publish # render + upload to vhs.charm.sh cloud
 ## Origin
 
 - **Original:** [`rse/upd`](https://github.com/rse/upd) — an
-  [npm](https://www.npmjs.com/package/upd) package written in
+  [pnpm](https://www.npmjs.com/package/upd) package written in
   JavaScript/Node.js by
   [Dr. Ralf S. Engelschall](https://engelschall.com/).
 - **This project:** a complete [Go](https://go.dev/) rewrite by

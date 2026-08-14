@@ -15,8 +15,8 @@
 | #   | Feature                                                                                                                    | Files Changed                             | Tests                     |
 | --- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------- |
 | D24 | Consolidated quiet/non-quiet fetch+apply duplication into single code path                                                 | `cmd/upd/main.go`                         | Existing tests still pass |
-| D28 | HTTP retry logic: exponential backoff (1s base, 30s cap), `Retry-After` header parsing, 429/5xx retryable, 404 not retried | `npm.go` (rewritten), `npm_test.go` (new) | 6 tests                   |
-| D29 | `--registry`/`-r` flag for custom/private NPM registry                                                                     | `config.go`, `npm.go`                     | 2 tests                   |
+| D28 | HTTP retry logic: exponential backoff (1s base, 30s cap), `Retry-After` header parsing, 429/5xx retryable, 404 not retried | `pnpm.go` (rewritten), `npm_test.go` (new) | 6 tests                   |
+| D29 | `--registry`/`-r` flag for custom/private NPM registry                                                                     | `config.go`, `pnpm.go`                     | 2 tests                   |
 | D30 | Signal-aware context (`signal.NotifyContext` for SIGINT/SIGTERM) — cancels fetch phase gracefully                          | `cmd/upd/main.go`                         | Manual verification       |
 | D31 | Auto color detection: `NO_COLOR` env var + non-TTY stdout check                                                            | `config.go` (`ShouldDisableColor`)        | Manual verification       |
 | D32 | `--dry-run` alias for `--nop`                                                                                              | `config.go`                               | 2 tests                   |
@@ -25,7 +25,7 @@
 | D39 | Quiet mode (`-q`) now suppresses warnings too                                                                              | `cmd/upd/main.go`                         | Manual verification       |
 | D40 | `--verbose` flag: shows `%+v` error chains in error detail block                                                           | `config.go`, `render.go`                  | Manual verification       |
 | D42 | Terminal width detection via `COLUMNS` env var for progress bar clearing                                                   | `progress.go`                             | Manual verification       |
-| D43 | HTTP transport tuning: MaxIdleConns=100, MaxIdleConnsPerHost=16, IdleConnTimeout=90s                                       | `npm.go`                                  | Manual verification       |
+| D43 | HTTP transport tuning: MaxIdleConns=100, MaxIdleConnsPerHost=16, IdleConnTimeout=90s                                       | `pnpm.go`                                  | Manual verification       |
 | D44 | Meta descriptions on all nix apps (build, test, lint, run, demo)                                                           | `flake.nix`                               | `nix flake check`         |
 | D46 | golangci-lint + govulncheck added to nix devShell                                                                          | `flake.nix`                               | Manual verification       |
 
@@ -220,7 +220,7 @@ I hardcoded `version: v2.0.2` in the GitHub Action. The locally installed versio
 35. **Config file support** — `~/.config/upd/config.json` for persistent settings
 36. **`--filter-state updated|kept|skipped|error`** — show only certain states in table
 37. **Diff exit code** — `--check` mode that exits non-zero if updates available (like `terraform plan`)
-38. **Pre/post update hooks** — run `npm install` or tests after updating
+38. **Pre/post update hooks** — run `pnpm install` or tests after updating
 39. **Multi-file support** — update multiple `package.json` files in monorepo
 40. **Workspace support** — detect and update `pnpm-workspace.yaml` package files
 41. **Backup file option** — `--backup` creates `.bak` before writing

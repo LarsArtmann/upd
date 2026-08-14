@@ -19,13 +19,13 @@ func registerFileAndJSONTemplates() {
 		},
 		"file.concurrent_modification": {
 			What:   "The package configuration file was modified by another process while upd was running.",
-			Why:    "Another tool (npm install, IDE formatter, etc.) changed the file during upd's network fetch window.",
+			Why:    "Another tool (pnpm install, IDE formatter, etc.) changed the file during upd's network fetch window.",
 			Fix:    "Your file was not changed. Re-run upd to try again.",
 			WayOut: "If this keeps happening, close other tools that watch package.json before running upd.",
 		},
 		"json.invalid": {
 			What: "The package configuration file contains invalid JSON.",
-			Fix:  "Validate the JSON syntax (e.g. run 'npx jsonlint package.json').",
+			Fix:  "Validate the JSON syntax (e.g. run 'pnpm dlx jsonlint package.json').",
 		},
 		"json.section_not_object": {
 			What: "Section {section} is {kind}, expected a JSON object.",

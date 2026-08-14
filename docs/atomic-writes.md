@@ -8,7 +8,7 @@ cross-platform file locking, atomic rename, and fsync for crash durability.
 ## The Problem
 
 During the network-fetch window (which can last several seconds for large
-dependency trees), another process — `npm install`, an IDE formatter, a
+dependency trees), another process — `pnpm install`, an IDE formatter, a
 git hook — may modify `package.json`. If `upd` simply wrote its in-memory
 copy back to disk, those external changes would be silently overwritten.
 

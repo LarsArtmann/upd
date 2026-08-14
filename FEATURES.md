@@ -25,7 +25,7 @@
 | `--dry-run` alias         | 🟢 `FULLY_FUNCTIONAL` | Alias for `--nop`. Tested: `TestParseFlagsDryRunAlias`.                                                                                                                                   |
 | `-C` / `--noColor`        | 🟢 `FULLY_FUNCTIONAL` | Disables ANSI colors. Auto-detected via `NO_COLOR` env var and non-TTY check.                                                                                                             |
 | `-f` / `--file`           | 🟢 `FULLY_FUNCTIONAL` | Custom package.json path. Default: `package.json`.                                                                                                                                        |
-| `-r` / `--registry`       | 🟢 `FULLY_FUNCTIONAL` | Custom/private NPM registry URL. `npm.go:NewRegistryClient`. Tested: `TestParseFlagsRegistryFlag`.                                                                                        |
+| `-r` / `--registry`       | 🟢 `FULLY_FUNCTIONAL` | Custom/private NPM registry URL. `pnpm.go:NewRegistryClient`. Tested: `TestParseFlagsRegistryFlag`.                                                                                        |
 | `-g` / `--greatest`       | 🟢 `FULLY_FUNCTIONAL` | Uses highest semver across all versions instead of `dist-tags.latest`.                                                                                                                    |
 | `-a` / `--all`            | 🟢 `FULLY_FUNCTIONAL` | Shows all packages in table, not just updated ones.                                                                                                                                       |
 | `-c` / `--concurrency`    | 🟢 `FULLY_FUNCTIONAL` | Configures semaphore-bounded parallel fetch (default 8).                                                                                                                                  |
@@ -40,7 +40,7 @@
 
 | Feature                       | Status                | Notes                                                                                                                                          |
 | ----------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dist-tags.latest` resolution | 🟢 `FULLY_FUNCTIONAL` | Default mode. `npm.go`. Tested in engine + integration tests.                                                                                  |
+| `dist-tags.latest` resolution | 🟢 `FULLY_FUNCTIONAL` | Default mode. `pnpm.go`. Tested in engine + integration tests.                                                                                  |
 | Greatest semver resolution    | 🟢 `FULLY_FUNCTIONAL` | `-g` mode. Iterates all versions, picks highest via `semver.GreaterThan`.                                                                      |
 | Semver downgrade guard        | 🟢 `FULLY_FUNCTIONAL` | Won't downgrade: `versionIsGreater` check. Specs become `kept` not `updated`.                                                                  |
 | All four dependency sections  | 🟢 `FULLY_FUNCTIONAL` | `dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies`.                                                                 |
@@ -66,12 +66,12 @@
 | ----------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Sentinel error taxonomy       | 🟢 `FULLY_FUNCTIONAL` | 13 sentinels in `errors.go` via `errorfamily.New*` constructors. All wrapping uses `errorfamily.Wrap*` or `sentinel.WithContext()`. Exit codes from `Family.ExitCode()`. |
 | `Spec.Err` — per-spec error   | 🟢 `FULLY_FUNCTIONAL` | Errored specs carry concrete error reason. Tested: `TestApplyUpdatesPopulatesSpecErr`.                                                                                   |
-| Registry error classification | 🟢 `FULLY_FUNCTIONAL` | 404/410 → `ErrPackageNotFound` (user typo); 5xx → `ErrRegistryUnavailable` (system fault). `npm.go:classifyRegistryError`.                                               |
+| Registry error classification | 🟢 `FULLY_FUNCTIONAL` | 404/410 → `ErrPackageNotFound` (user typo); 5xx → `ErrRegistryUnavailable` (system fault). `pnpm.go:classifyRegistryError`.                                               |
 | Exit code differentiation     | 🟢 `FULLY_FUNCTIONAL` | `ErrRegistryUnavailable` → 75 (EX_TEMPFAIL); `ErrPartialFailure` → 1; all others → 1. Documented in `--help` output. 6 exit-code tests in `cmd/upd/main_test.go`.        |
 | Error detail block in table   | 🟢 `FULLY_FUNCTIONAL` | `Errors (n):` block below table with per-package error reasons. `--verbose` shows `%+v` formatting.                                                                      |
 | Warnings pipeline             | 🟢 `FULLY_FUNCTIONAL` | `BuildManifest` returns `[]string` warnings for malformed sections/patterns. Suppressed in quiet mode.                                                                   |
 | Partial failure exit code     | 🟢 `FULLY_FUNCTIONAL` | Non-zero exit (1) when any package fails to resolve. File still written for successful updates.                                                                          |
-| HTTP retry logic              | 🟢 `FULLY_FUNCTIONAL` | 429/5xx retried with exponential backoff (1s base, 30s cap). `Retry-After` header honored. `npm.go:FetchPackument`. Tested: 6 tests in `npm_test.go`.                    |
+| HTTP retry logic              | 🟢 `FULLY_FUNCTIONAL` | 429/5xx retried with exponential backoff (1s base, 30s cap). `Retry-After` header honored. `pnpm.go:FetchPackument`. Tested: 6 tests in `npm_test.go`.                    |
 
 ## Output & Rendering
 

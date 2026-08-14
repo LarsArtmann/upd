@@ -98,7 +98,7 @@ The scan paste only showed the tail end of `branching-flow` output (ERRORFAMILY_
 
 ### Error Handling
 
-8. Review all `fmt.Errorf` calls in `npm.go` for proper error wrapping (`%w` vs `%v`)
+8. Review all `fmt.Errorf` calls in `pnpm.go` for proper error wrapping (`%w` vs `%v`)
 9. Review all `fmt.Errorf` calls in `packagejson.go` for proper error wrapping
 10. Review all `fmt.Errorf` calls in `render.go` for proper error wrapping
 11. Consider whether `retryableError` should implement `Is()`/`As()` for cleaner error matching
