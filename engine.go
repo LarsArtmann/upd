@@ -32,6 +32,8 @@ type Engine struct {
 }
 
 func NewEngine(cfg *Config) *Engine {
+	cfg.Validate()
+
 	return &Engine{
 		cfg:      cfg,
 		registry: NewRegistryClient(cfg),
@@ -60,7 +62,12 @@ func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*Fetch
 
 	var mu sync.Mutex
 
-	sem := make(chan struct{}, e.cfg.Concurrency)
+	concurrency := e.cfg.Concurrency
+	if concurrency <= 0 {
+		concurrency = defaultConcurrency
+	}
+
+	sem := make(chan struct{}, concurrency)
 
 	var (
 		wg         sync.WaitGroup
@@ -70,7 +77,12 @@ func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*Fetch
 	for _, name := range names {
 		wg.Add(1)
 
-		sem <- struct{}{}
+		select {
+		case sem <- struct{}{}:
+		case <-ctx.Done():
+			wg.Wait()
+			return results
+		}
 
 		go func(pkgName string) {
 			defer wg.Done()

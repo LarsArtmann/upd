@@ -91,6 +91,29 @@ func (c *Config) UserAgent() string {
 	return ProgramName + "/" + ProgramVersion
 }
 
+// Validate clamps zero or negative values to safe defaults so the engine
+// cannot deadlock or hang on misconfigured callers. It mutates the receiver
+// in place and returns it for chaining.
+func (c *Config) Validate() *Config {
+	if c.Concurrency <= 0 {
+		c.Concurrency = defaultConcurrency
+	}
+
+	if c.Retries < 0 {
+		c.Retries = defaultRetries
+	}
+
+	if c.Timeout <= 0 {
+		c.Timeout = defaultTimeout
+	}
+
+	if c.Registry == "" {
+		c.Registry = defaultRegistryURL
+	}
+
+	return c
+}
+
 // ShouldDisableColor returns true if ANSI color codes should be suppressed.
 // It honors the NO_COLOR environment variable (https://no-color.org/) and
 // detects non-TTY writers (e.g. piped or redirected output).

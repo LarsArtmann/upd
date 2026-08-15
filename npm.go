@@ -34,12 +34,17 @@ type RegistryClient struct {
 }
 
 func NewRegistryClient(cfg *Config) *RegistryClient {
+	timeout := cfg.Timeout
+	if timeout <= 0 {
+		timeout = defaultTimeout
+	}
+
 	return &RegistryClient{
 		baseURL:    cfg.Registry,
 		userAgent:  cfg.UserAgent(),
 		maxRetries: cfg.Retries,
 		http: &http.Client{
-			Timeout: cfg.Timeout,
+			Timeout: timeout,
 			Transport: &http.Transport{
 				MaxIdleConns:        transportMaxIdle,
 				MaxIdleConnsPerHost: transportIdleHost,

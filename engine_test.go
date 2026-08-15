@@ -351,3 +351,96 @@ func TestApplyUpdatesPopulatesSpecErr(t *testing.T) {
 		t.Errorf("spec.Err should wrap ErrPackageNotFound, got: %v", spec.Err)
 	}
 }
+
+func TestFetchAll_ZeroConcurrencyDoesNotDeadlock(t *testing.T) {
+	registry := mockRegistry(map[string]map[string]any{
+		"react": packageVersion("19.0.0", "19.0.0"),
+	})
+	defer registry.Close()
+
+	cfg := &Config{Concurrency: 0, Timeout: 5 * time.Second, Retries: 0}
+	engine := newTestEngine(t, registry, cfg)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	done := make(chan struct{})
+
+	go func() {
+		results := engine.FetchAll(ctx, []string{"react"})
+		if len(results) != 1 {
+			t.Errorf("expected 1 result, got %d", len(results))
+		}
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-ctx.Done():
+		t.Fatal("FetchAll deadlocked with Concurrency=0 (did not return within 3s)")
+	}
+}
+
+func TestFetchAll_ContextCancellationStopsWaiting(t *testing.T) {
+	registry := mockRegistry(map[string]map[string]any{
+		"react": packageVersion("19.0.0", "19.0.0"),
+	})
+	defer registry.Close()
+
+	cfg := DefaultConfig()
+	engine := newTestEngine(t, registry, cfg)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+
+	done := make(chan struct{})
+
+	go func() {
+		engine.FetchAll(ctx, []string{"react"})
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("FetchAll did not return after context cancellation within 2s")
+	}
+}
+
+func TestConfigValidate_ClampsZeroValues(t *testing.T) {
+	cfg := &Config{Concurrency: 0, Retries: -1, Timeout: 0, Registry: ""}
+	cfg.Validate()
+
+	if cfg.Concurrency != defaultConcurrency {
+		t.Errorf("Concurrency = %d, want %d", cfg.Concurrency, defaultConcurrency)
+	}
+
+	if cfg.Retries != defaultRetries {
+		t.Errorf("Retries = %d, want %d", cfg.Retries, defaultRetries)
+	}
+
+	if cfg.Timeout != defaultTimeout {
+		t.Errorf("Timeout = %v, want %v", cfg.Timeout, defaultTimeout)
+	}
+
+	if cfg.Registry != defaultRegistryURL {
+		t.Errorf("Registry = %q, want %q", cfg.Registry, defaultRegistryURL)
+	}
+}
+
+func TestNewEngine_ValidatesConfig(t *testing.T) {
+	cfg := &Config{Concurrency: 0, Timeout: 0}
+	engine := NewEngine(cfg)
+
+	if engine.cfg.Concurrency != defaultConcurrency {
+		t.Errorf("Concurrency = %d, want %d after NewEngine", engine.cfg.Concurrency, defaultConcurrency)
+	}
+
+	if engine.cfg.Timeout != defaultTimeout {
+		t.Errorf("Timeout = %v, want %v after NewEngine", engine.cfg.Timeout, defaultTimeout)
+	}
+}
