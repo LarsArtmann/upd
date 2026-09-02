@@ -65,14 +65,14 @@
 
         /* --- Type stacks (system only — zero external fonts) --- */
         --font-heading:
-          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif;
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         --font-body:
-          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif;
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         --font-mono:
-          ui-monospace, "Cascadia Code", "Source Code Pro", "JetBrains Mono", Menlo, Consolas,
-          monospace;
+          ui-monospace, "Cascadia Code", "Source Code Pro", "JetBrains Mono",
+          Menlo, Consolas, monospace;
       }
 
       * {
@@ -281,15 +281,27 @@
       }
       .card-problem {
         border-left-color: var(--problem);
-        background: color-mix(in srgb, var(--problem) 8%, var(--surface-raised));
+        background: color-mix(
+          in srgb,
+          var(--problem) 8%,
+          var(--surface-raised)
+        );
       }
       .card-solution {
         border-left-color: var(--solution);
-        background: color-mix(in srgb, var(--solution) 8%, var(--surface-raised));
+        background: color-mix(
+          in srgb,
+          var(--solution) 8%,
+          var(--surface-raised)
+        );
       }
       .card-warning {
         border-left-color: var(--warning);
-        background: color-mix(in srgb, var(--warning) 8%, var(--surface-raised));
+        background: color-mix(
+          in srgb,
+          var(--warning) 8%,
+          var(--surface-raised)
+        );
       }
 
       .issue {
@@ -301,15 +313,27 @@
       }
       .issue-critical {
         border-left-color: var(--problem);
-        background: color-mix(in srgb, var(--problem) 8%, var(--surface-raised));
+        background: color-mix(
+          in srgb,
+          var(--problem) 8%,
+          var(--surface-raised)
+        );
       }
       .issue-important {
         border-left-color: var(--warning);
-        background: color-mix(in srgb, var(--warning) 8%, var(--surface-raised));
+        background: color-mix(
+          in srgb,
+          var(--warning) 8%,
+          var(--surface-raised)
+        );
       }
       .issue-nice {
         border-left-color: var(--solution);
-        background: color-mix(in srgb, var(--solution) 8%, var(--surface-raised));
+        background: color-mix(
+          in srgb,
+          var(--solution) 8%,
+          var(--surface-raised)
+        );
       }
       .issue h3 {
         margin-bottom: 0.3rem;
@@ -812,19 +836,23 @@
             <div class="square"></div>
             <div class="tri"></div>
           </div>
-          <div class="hero-badge">Status Snapshot — 2026-06-28 (historical)</div>
+          <div class="hero-badge">
+            Status Snapshot — 2026-06-28 (historical)
+          </div>
           <h1>UPD Project Status</h1>
           <p class="hero-subtitle">
             <strong>Current status (reviewed 2026-07-09):</strong>
-            Historical snapshot from the atomic-write upgrade checkpoint. Atomic writes are DONE and
-            remain in use (<code>go-atomic-write</code> v0.2.0). The 3 <code>makezero</code> linter
-            warnings have been RESOLVED. The CI version-injection misconfiguration has been FIXED.
-            <code>tidwall/gjson</code> was REPLACED with <code>encoding/json/v2</code>.
-            <code>--pinLatest</code> was ADDED. Error handling was OVERHAULED
-            (<code>Spec.Err</code>, <code>ErrRegistryUnavailable</code>, exit code 75, warnings
-            pipeline). Open items from this snapshot that remain: golangci-lint in CI, retry logic,
-            auto color detection on non-TTY, <code>--registry</code> flag, and govulncheck/gosec
-            scanning.
+            Historical snapshot from the atomic-write upgrade checkpoint. Atomic
+            writes are DONE and remain in use (<code>go-atomic-write</code>
+            v0.2.0). The 3 <code>makezero</code> linter warnings have been
+            RESOLVED. The CI version-injection misconfiguration has been FIXED.
+            <code>tidwall/gjson</code> was REPLACED with
+            <code>encoding/json/v2</code>. <code>--pinLatest</code> was ADDED.
+            Error handling was OVERHAULED (<code>Spec.Err</code>,
+            <code>ErrRegistryUnavailable</code>, exit code 75, warnings
+            pipeline). Open items from this snapshot that remain: golangci-lint
+            in CI, retry logic, auto color detection on non-TTY,
+            <code>--registry</code> flag, and govulncheck/gosec scanning.
           </p>
         </div>
 
@@ -866,18 +894,21 @@
           <div class="card card-solution">
             <h4>Recent Win</h4>
             <p>
-              Upgraded <code>github.com/larsartmann/go-atomic-write</code> to v0.2.0, giving the CLI
-              a true single-rename atomic write with file and directory fsync. The old two-rename
-              <code>.bak</code> workaround has been removed; no artifacts are left behind.
+              Upgraded <code>github.com/larsartmann/go-atomic-write</code> to
+              v0.2.0, giving the CLI a true single-rename atomic write with file
+              and directory fsync. The old two-rename
+              <code>.bak</code> workaround has been removed; no artifacts are
+              left behind.
             </p>
           </div>
           <div class="card card-problem">
             <h4>Immediate Risk</h4>
             <p>
               GitHub Actions CI injects the version via
-              <code>github.com/LarsArtmann/upd/internal.ProgramVersion</code>, but the actual
-              variable is at <code>github.com/LarsArtmann/upd.ProgramVersion</code>. Every CI build
-              reports <code>dev</code> instead of <code>ci</code>.
+              <code>github.com/LarsArtmann/upd/internal.ProgramVersion</code>,
+              but the actual variable is at
+              <code>github.com/LarsArtmann/upd.ProgramVersion</code>. Every CI
+              build reports <code>dev</code> instead of <code>ci</code>.
             </p>
           </div>
         </div>
@@ -887,8 +918,13 @@
           <div class="strength">
             <div class="check">+</div>
             <div class="text">
-              <strong>Complete Go port of the original JavaScript upd CLI</strong>
-              <span>v1.0.0 shipped 2026-06-18 with all core behaviors preserved.</span>
+              <strong
+                >Complete Go port of the original JavaScript upd CLI</strong
+              >
+              <span
+                >v1.0.0 shipped 2026-06-18 with all core behaviors
+                preserved.</span
+              >
             </div>
           </div>
           <div class="strength">
@@ -896,8 +932,8 @@
             <div class="text">
               <strong>NPM registry integration</strong>
               <span
-                >Concurrent packument fetches, configurable semaphore, lower-cased package
-                names.</span
+                >Concurrent packument fetches, configurable semaphore,
+                lower-cased package names.</span
               >
             </div>
           </div>
@@ -906,7 +942,8 @@
             <div class="text">
               <strong>Formatting-preserving package.json edits</strong>
               <span
-                >Byte-level gjson surgery keeps whitespace, key order, and quote style intact.</span
+                >Byte-level gjson surgery keeps whitespace, key order, and quote
+                style intact.</span
               >
             </div>
           </div>
@@ -924,28 +961,40 @@
             <div class="check">+</div>
             <div class="text">
               <strong>All four NPM dependency sections</strong>
-              <span>dependencies, devDependencies, peerDependencies, optionalDependencies.</span>
+              <span
+                >dependencies, devDependencies, peerDependencies,
+                optionalDependencies.</span
+              >
             </div>
           </div>
           <div class="strength">
             <div class="check">+</div>
             <div class="text">
               <strong>Glob pattern filtering with exclusions</strong>
-              <span>Positive patterns plus <code>!</code>-prefixed negative patterns.</span>
+              <span
+                >Positive patterns plus <code>!</code>-prefixed negative
+                patterns.</span
+              >
             </div>
           </div>
           <div class="strength">
             <div class="check">+</div>
             <div class="text">
               <strong>Embedded <code>upd</code> field in package.json</strong>
-              <span>Project-level default arguments prepended to CLI patterns.</span>
+              <span
+                >Project-level default arguments prepended to CLI
+                patterns.</span
+              >
             </div>
           </div>
           <div class="strength">
             <div class="check">+</div>
             <div class="text">
               <strong>Progress bar and ANSI diff rendering</strong>
-              <span>Real-time registry progress + character-level version diff highlighting.</span>
+              <span
+                >Real-time registry progress + character-level version diff
+                highlighting.</span
+              >
             </div>
           </div>
           <div class="strength">
@@ -953,8 +1002,8 @@
             <div class="text">
               <strong>Atomic, durable file writes</strong>
               <span
-                >v0.2.0 of go-atomic-write provides fsync + single-rename atomicity + TOCTOU
-                fingerprint verification.</span
+                >v0.2.0 of go-atomic-write provides fsync + single-rename
+                atomicity + TOCTOU fingerprint verification.</span
               >
             </div>
           </div>
@@ -962,7 +1011,10 @@
             <div class="check">+</div>
             <div class="text">
               <strong>Nix flake</strong>
-              <span>buildGoModule package, devShell, and apps for build/test/lint/run.</span>
+              <span
+                >buildGoModule package, devShell, and apps for
+                build/test/lint/run.</span
+              >
             </div>
           </div>
           <div class="strength">
@@ -976,7 +1028,10 @@
             <div class="check">+</div>
             <div class="text">
               <strong>AGENTS.md maintained</strong>
-              <span>Agent context is current with atomic-write behavior and dependency list.</span>
+              <span
+                >Agent context is current with atomic-write behavior and
+                dependency list.</span
+              >
             </div>
           </div>
         </div>
@@ -989,14 +1044,18 @@
           <div class="where">.github/workflows/ci.yml:25</div>
           <p>
             The workflow sets
-            <code>-ldflags="-X github.com/LarsArtmann/upd/internal.ProgramVersion=ci"</code>, but
-            <code>ProgramVersion</code> is declared in package <code>upd</code> at the repo root
-            (<code>config.go:24</code>). The correct path is
+            <code
+              >-ldflags="-X
+              github.com/LarsArtmann/upd/internal.ProgramVersion=ci"</code
+            >, but <code>ProgramVersion</code> is declared in package
+            <code>upd</code> at the repo root (<code>config.go:24</code>). The
+            correct path is
             <code>github.com/LarsArtmann/upd.ProgramVersion</code>.
           </p>
           <div class="callout callout-solution">
             <strong>Fix</strong>
-            Change the CI ldflags path to <code>github.com/LarsArtmann/upd.ProgramVersion</code>.
+            Change the CI ldflags path to
+            <code>github.com/LarsArtmann/upd.ProgramVersion</code>.
           </div>
         </div>
 
@@ -1005,9 +1064,10 @@
           <h3>README lags behind project tooling</h3>
           <div class="where">README.md</div>
           <p>
-            README only documents plain <code>go build</code>/<code>go test</code>. It does not
-            mention the Nix flake, atomic-write behavior, or the <code>upd</code> embedded-args
-            field.
+            README only documents plain <code>go build</code>/<code
+              >go test</code
+            >. It does not mention the Nix flake, atomic-write behavior, or the
+            <code>upd</code> embedded-args field.
           </p>
         </div>
 
@@ -1016,7 +1076,8 @@
           <h3>Test coverage gap in cmd/upd</h3>
           <div class="where">cmd/upd/main.go</div>
           <p>
-            The main package has no tests and 0.0% coverage. The quiet/normal branches and
+            The main package has no tests and 0.0% coverage. The quiet/normal
+            branches and
             <code>finalizeRun</code> error paths are exercised only manually.
           </p>
         </div>
@@ -1026,8 +1087,9 @@
           <h3>CHANGELOG Unreleased section is empty</h3>
           <div class="where">CHANGELOG.md</div>
           <p>
-            The two atomic-write commits (<code>4ed6cb2</code>, <code>71b2392</code>) are not yet
-            reflected under <code>[Unreleased]</code>, even though they are user-facing changes.
+            The two atomic-write commits (<code>4ed6cb2</code>,
+            <code>71b2392</code>) are not yet reflected under
+            <code>[Unreleased]</code>, even though they are user-facing changes.
           </p>
         </div>
 
@@ -1036,8 +1098,9 @@
           <h3>DOMAIN_LANGUAGE.md is still a placeholder</h3>
           <div class="where">docs/DOMAIN_LANGUAGE.md</div>
           <p>
-            The DDD glossary contains only template text. Terms like Packument, Manifest, Spec, and
-            State from AGENTS.md should be formally defined here.
+            The DDD glossary contains only template text. Terms like Packument,
+            Manifest, Spec, and State from AGENTS.md should be formally defined
+            here.
           </p>
         </div>
 
@@ -1102,14 +1165,15 @@
           <p>
             There is no <code>internal</code> package and no
             <code>internal.ProgramVersion</code> symbol. The real variable is
-            <code>github.com/LarsArtmann/upd.ProgramVersion</code>. Go silently ignores the
-            <code>-X</code> assignment to a missing symbol, so CI binaries report
-            <code>upd/dev</code> instead of <code>upd/ci</code>.
+            <code>github.com/LarsArtmann/upd.ProgramVersion</code>. Go silently
+            ignores the <code>-X</code> assignment to a missing symbol, so CI
+            binaries report <code>upd/dev</code> instead of <code>upd/ci</code>.
           </p>
           <div class="callout callout-solution">
             <strong>Fix</strong>
-            Replace <code>internal.ProgramVersion</code> with <code>ProgramVersion</code> in the CI
-            ldflags string. Validate by running the produced binary with <code>--version</code>.
+            Replace <code>internal.ProgramVersion</code> with
+            <code>ProgramVersion</code> in the CI ldflags string. Validate by
+            running the produced binary with <code>--version</code>.
           </div>
         </div>
 
@@ -1118,9 +1182,10 @@
           <h3>Three pre-existing makezero linter failures</h3>
           <div class="where">diff.go:40, diff.go:42, render.go:167</div>
           <p>
-            golangci-lint reports that slices are allocated with <code>make(..., len)</code> but
-            immediately indexed without initializing each element. This is a real style/strictness
-            issue that blocks a fully clean lint run.
+            golangci-lint reports that slices are allocated with
+            <code>make(..., len)</code> but immediately indexed without
+            initializing each element. This is a real style/strictness issue
+            that blocks a fully clean lint run.
           </p>
           <pre><code><span class="tok-comment">// diff.go:40</span>
 <span class="tok-type">lcs</span> := <span class="tok-builtin">make</span>([][]<span class="tok-type">int</span>, oldLen+1)
@@ -1132,8 +1197,9 @@
 <span class="tok-type">segments</span> := <span class="tok-builtin">make</span>([]<span class="tok-type">string</span>, <span class="tok-builtin">len</span>(widths))</code></pre>
           <div class="callout callout-solution">
             <strong>Fix</strong>
-            Either initialize every element explicitly, switch to append-only construction, or add
-            targeted <code>//nolint:makezero</code> annotations with rationale.
+            Either initialize every element explicitly, switch to append-only
+            construction, or add targeted
+            <code>//nolint:makezero</code> annotations with rationale.
           </div>
         </div>
 
@@ -1143,37 +1209,41 @@
           <div class="card card-warning">
             <h4>Docs parity</h4>
             <p>
-              README should mention Nix usage, atomic-write safety, and the embedded
-              <code>upd</code> field. DOMAIN_LANGUAGE.md should define the real domain terms.
+              README should mention Nix usage, atomic-write safety, and the
+              embedded
+              <code>upd</code> field. DOMAIN_LANGUAGE.md should define the real
+              domain terms.
             </p>
           </div>
           <div class="card card-warning">
             <h4>CI coverage</h4>
             <p>
-              Add golangci-lint and govulncheck to CI. Fix the version-injection path so CI builds
-              are identifiable.
+              Add golangci-lint and govulncheck to CI. Fix the version-injection
+              path so CI builds are identifiable.
             </p>
           </div>
           <div class="card card-warning">
             <h4>Test surface</h4>
             <p>
-              Add cmd/upd table tests, registry mock E2E tests, and at least one concurrent-write
-              race test for the atomic path.
+              Add cmd/upd table tests, registry mock E2E tests, and at least one
+              concurrent-write race test for the atomic path.
             </p>
           </div>
           <div class="card card-warning">
             <h4>Changelog hygiene</h4>
             <p>
-              Populate <code>[Unreleased]</code> as work lands so releases don't require
-              archaeology.
+              Populate <code>[Unreleased]</code> as work lands so releases don't
+              require archaeology.
             </p>
           </div>
         </div>
 
-        <h2 id="next"><span class="num">06</span>Top 25 Things To Get Done Next</h2>
+        <h2 id="next">
+          <span class="num">06</span>Top 25 Things To Get Done Next
+        </h2>
         <p>
-          Sorted by a rough Pareto ranking: safety → correctness → developer experience →
-          distribution.
+          Sorted by a rough Pareto ranking: safety → correctness → developer
+          experience → distribution.
         </p>
         <div class="table-wrap">
           <table>
@@ -1366,24 +1436,33 @@
           </table>
         </div>
 
-        <h2 id="question"><span class="num">07</span>Top Question I Cannot Figure Out Myself</h2>
+        <h2 id="question">
+          <span class="num">07</span>Top Question I Cannot Figure Out Myself
+        </h2>
         <div class="card card-problem">
-          <h4>Was the <code>internal.ProgramVersion</code> path in CI intentional or stale?</h4>
+          <h4>
+            Was the <code>internal.ProgramVersion</code> path in CI intentional
+            or stale?
+          </h4>
           <p>
             The CI workflow references
-            <code>github.com/LarsArtmann/upd/internal.ProgramVersion</code>, but the actual variable
-            lives at <code>github.com/LarsArtmann/upd.ProgramVersion</code> in
-            <code>config.go</code>. I cannot determine from the repository history whether this was
-            a planned move into an <code>internal/</code> package that was abandoned, or simply a
-            stale copy-paste from another project. The fix is trivial once the intent is known:
-            either create the intended <code>internal/version</code> package and update both
-            flake.nix and config.go, or correct the CI path to match the current variable location.
+            <code>github.com/LarsArtmann/upd/internal.ProgramVersion</code>, but
+            the actual variable lives at
+            <code>github.com/LarsArtmann/upd.ProgramVersion</code> in
+            <code>config.go</code>. I cannot determine from the repository
+            history whether this was a planned move into an
+            <code>internal/</code> package that was abandoned, or simply a stale
+            copy-paste from another project. The fix is trivial once the intent
+            is known: either create the intended
+            <code>internal/version</code> package and update both flake.nix and
+            config.go, or correct the CI path to match the current variable
+            location.
           </p>
         </div>
 
         <footer class="footer">
-          Generated 2026-06-28 04:14 CEST &middot; Verified against git commit 71b2392 &middot; go
-          version go1.26.4 linux/amd64
+          Generated 2026-06-28 04:14 CEST &middot; Verified against git commit
+          71b2392 &middot; go version go1.26.4 linux/amd64
         </footer>
       </main>
     </div>

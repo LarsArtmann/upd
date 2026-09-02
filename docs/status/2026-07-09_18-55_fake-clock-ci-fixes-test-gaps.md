@@ -273,7 +273,7 @@ I lean toward **A** until there's a real library user, but this is a product dir
 | File                       | Lines  | What                                                   |
 | -------------------------- | ------ | ------------------------------------------------------ |
 | `.github/workflows/ci.yml` | +4/-2  | `version: latest`, `continue-on-error: true`           |
-| `pnpm.go`                   | +12/-3 | `sleeper` type, `RegistryClient.sleep` field, wiring   |
+| `pnpm.go`                  | +12/-3 | `sleeper` type, `RegistryClient.sleep` field, wiring   |
 | `npm_test.go`              | +50/-3 | Fake sleeper in 3 tests, 2 new timing tests            |
 | `engine_test.go`           | +2/-0  | No-op sleeper in `newTestEngine`, `time` import        |
 | `render.go`                | +1/-1  | `RenderJSON` signature: removed `errCount` param       |

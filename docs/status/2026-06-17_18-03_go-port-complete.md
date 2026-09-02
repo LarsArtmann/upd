@@ -148,33 +148,33 @@ diff output) — caught and fixed by tests before any commit.
 
 ## f) Top 25 Things to Get Done Next
 
-| #   | Task                                                        | Impact | Effort | Category       |
-| --- | ----------------------------------------------------------- | ------ | ------ | -------------- |
-| 1   | Fix gopls hints: use `min()` builtin, tagged switch         | Low    | 5 min  | Code quality   |
-| 2   | Extract shared helper in `main.go` to remove duplication    | Medium | 15 min | Code quality   |
-| 3   | Add integration test with mock HTTP registry server         | High   | 1 hour | Testing        |
-| 4   | Share `http.Client` across goroutines in engine             | Medium | 15 min | Performance    |
-| 5   | Add `-g` (greatest) end-to-end manual test                  | Low    | 5 min  | Testing        |
-| 6   | Write `flake.nix` for dev/build/test/lint                   | High   | 30 min | DevOps         |
-| 7   | Write project `AGENTS.md` with architecture decisions       | High   | 20 min | Documentation  |
-| 8   | Auto-detect non-TTY and disable colors                      | Medium | 10 min | UX             |
-| 9   | Add retry logic for transient registry errors (429, 5xx)    | Medium | 30 min | Reliability    |
-| 10  | Add overall context timeout for fetch phase                 | Medium | 15 min | Reliability    |
-| 11  | Add bench tests for diff and glob                           | Low    | 20 min | Testing        |
-| 12  | Inject version via `-ldflags` from git tag                  | Low    | 10 min | Release        |
-| 13  | Create GitHub Actions CI (build, test, vet, lint)           | High   | 30 min | DevOps         |
-| 14  | Run `gosec` and `govulncheck` and fix findings              | Medium | 20 min | Security       |
-| 15  | Write `Dockerfile` for Go (multi-stage, scratch/distroless) | Medium | 20 min | DevOps         |
-| 16  | Verify scoped package URL encoding against live registry    | Medium | 15 min | Correctness    |
-| 16  | Add `.npmrc` parsing for custom registry support            | Medium | 30 min | Feature parity |
-| 18  | Add `FEATURES.md` with feature inventory                    | Low    | 15 min | Documentation  |
-| 15  | Add `TODO_LIST.md` with short-term tasks                    | Low    | 15 min | Documentation  |
-| 20  | Generate shell completions (bash/zsh/fish)                  | Low    | 20 min | UX             |
-| 21  | Add `--registry <url>` flag for custom registry             | Medium | 15 min | Feature parity |
-| 22  | Add JSON output mode (`--json`) for CI/scripting            | Medium | 30 min | Feature        |
-| 23  | Add `--dry-run` as alias for `--nop`                        | Low    | 5 min  | UX             |
-| 24  | Add timeout flag (`--timeout <seconds>`)                    | Low    | 10 min | UX             |
-| 25  | Add Go module vulnerabilities badge to README               | Low    | 5 min  | Documentation  |
+| #  | Task                                                        | Impact | Effort | Category       |
+| -- | ----------------------------------------------------------- | ------ | ------ | -------------- |
+| 1  | Fix gopls hints: use `min()` builtin, tagged switch         | Low    | 5 min  | Code quality   |
+| 2  | Extract shared helper in `main.go` to remove duplication    | Medium | 15 min | Code quality   |
+| 3  | Add integration test with mock HTTP registry server         | High   | 1 hour | Testing        |
+| 4  | Share `http.Client` across goroutines in engine             | Medium | 15 min | Performance    |
+| 5  | Add `-g` (greatest) end-to-end manual test                  | Low    | 5 min  | Testing        |
+| 6  | Write `flake.nix` for dev/build/test/lint                   | High   | 30 min | DevOps         |
+| 7  | Write project `AGENTS.md` with architecture decisions       | High   | 20 min | Documentation  |
+| 8  | Auto-detect non-TTY and disable colors                      | Medium | 10 min | UX             |
+| 9  | Add retry logic for transient registry errors (429, 5xx)    | Medium | 30 min | Reliability    |
+| 10 | Add overall context timeout for fetch phase                 | Medium | 15 min | Reliability    |
+| 11 | Add bench tests for diff and glob                           | Low    | 20 min | Testing        |
+| 12 | Inject version via `-ldflags` from git tag                  | Low    | 10 min | Release        |
+| 13 | Create GitHub Actions CI (build, test, vet, lint)           | High   | 30 min | DevOps         |
+| 14 | Run `gosec` and `govulncheck` and fix findings              | Medium | 20 min | Security       |
+| 15 | Write `Dockerfile` for Go (multi-stage, scratch/distroless) | Medium | 20 min | DevOps         |
+| 16 | Verify scoped package URL encoding against live registry    | Medium | 15 min | Correctness    |
+| 16 | Add `.npmrc` parsing for custom registry support            | Medium | 30 min | Feature parity |
+| 18 | Add `FEATURES.md` with feature inventory                    | Low    | 15 min | Documentation  |
+| 15 | Add `TODO_LIST.md` with short-term tasks                    | Low    | 15 min | Documentation  |
+| 20 | Generate shell completions (bash/zsh/fish)                  | Low    | 20 min | UX             |
+| 21 | Add `--registry <url>` flag for custom registry             | Medium | 15 min | Feature parity |
+| 22 | Add JSON output mode (`--json`) for CI/scripting            | Medium | 30 min | Feature        |
+| 23 | Add `--dry-run` as alias for `--nop`                        | Low    | 5 min  | UX             |
+| 24 | Add timeout flag (`--timeout <seconds>`)                    | Low    | 10 min | UX             |
+| 25 | Add Go module vulnerabilities badge to README               | Low    | 5 min  | Documentation  |
 
 ---
 
@@ -205,7 +205,7 @@ already shaped for it. This is a product direction decision I can't make alone.
 | ----------------- | ----------------- | ------------------------------------ |
 | Source files      | 1 (`upd.js`)      | 9 (`.go` source) + 3 test files      |
 | Source lines      | 414               | ~900                                 |
-| Dependencies      | 15 pnpm packages   | 3 Go modules                         |
+| Dependencies      | 15 pnpm packages  | 3 Go modules                         |
 | Binary size       | N/A (runtime)     | 6.6 MB (static, stripped)            |
 | Startup time      | ~300ms (Node.js)  | ~2ms (native)                        |
 | Test count        | 0                 | 22                                   |

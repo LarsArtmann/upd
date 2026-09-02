@@ -166,7 +166,7 @@ Moving exit-code tests to the `upd` package improved that package's coverage but
 45. **Review if `Spec.Err` should be `*errorfamily.Error`** instead of bare `error`
 46. **Consider adding `Spec.Code()` and `Spec.Family()` methods** for structured access
 47. **Add test for errors.Is across WithContext cloning** — verify identity preservation
-48. _*Add test for errors.Is across Wrap* functions_* — verify chain traversal
+48. __Add test for errors.Is across Wrap_ functions_* — verify chain traversal
 49. **Consider adding errorfamily.HTTPHandler** if upd ever gets an HTTP API
 50. **Consider adding errorfamily.RetryPolicy integration** with pnpm.go retry loop
 

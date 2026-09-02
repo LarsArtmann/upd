@@ -7,7 +7,7 @@
   };
 
   outputs =
-    inputs@{ self, nixpkgs, flake-parts, ... }:
+    inputs@{ flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [
         "x86_64-linux"
@@ -30,7 +30,7 @@
               pname = "upd";
               inherit version;
               src = ./.;
-              vendorHash = "sha256-C81qQkQ3f0teLJg3kbkkp/ZCD0pOtc4YuomcPt0yxnE=";
+              vendorHash = "sha256-LNDpdCywUXjdvh8FoFffVKjYhp3Y5m05JPdC8oQssjI=";
               subPackages = [ "cmd/upd" ];
               env.GOEXPERIMENT = goExperiment;
               ldflags = [

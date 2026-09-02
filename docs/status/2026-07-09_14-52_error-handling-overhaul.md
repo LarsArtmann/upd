@@ -130,7 +130,7 @@
 
 32. **Verify claims against source before stating them.** The "3 deps principle" fabrication would have been caught by a 5-second `grep "3 dep\|three dep\|only.*dep" AGENTS.md`. Every factual claim about project policy must be sourced.
 
-33. **Exhaustive first-pass audit.** When asked for "across the board," grep for ALL error-swallowing patterns (`return nil$`, `return make(`, `_ = `, `continue` on error) before writing any code. The second-pass audit found these immediately — they should have been in the first pass.
+33. **Exhaustive first-pass audit.** When asked for "across the board," grep for ALL error-swallowing patterns (`return nil$`, `return make(`, `_ =`, `continue` on error) before writing any code. The second-pass audit found these immediately — they should have been in the first pass.
 
 34. **Update documentation examples when changing signatures.** `doc.go` is a compile-checked example — changing public API without updating it is a breakage. Always `grep` for changed function names across ALL files including `.go` docs.
 

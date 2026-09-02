@@ -12,22 +12,22 @@
 
 ### Core Features Implemented
 
-| #   | Feature                                                                                                                    | Files Changed                             | Tests                     |
-| --- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------- |
-| D24 | Consolidated quiet/non-quiet fetch+apply duplication into single code path                                                 | `cmd/upd/main.go`                         | Existing tests still pass |
+| #   | Feature                                                                                                                    | Files Changed                              | Tests                     |
+| --- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------- |
+| D24 | Consolidated quiet/non-quiet fetch+apply duplication into single code path                                                 | `cmd/upd/main.go`                          | Existing tests still pass |
 | D28 | HTTP retry logic: exponential backoff (1s base, 30s cap), `Retry-After` header parsing, 429/5xx retryable, 404 not retried | `pnpm.go` (rewritten), `npm_test.go` (new) | 6 tests                   |
 | D29 | `--registry`/`-r` flag for custom/private NPM registry                                                                     | `config.go`, `pnpm.go`                     | 2 tests                   |
-| D30 | Signal-aware context (`signal.NotifyContext` for SIGINT/SIGTERM) — cancels fetch phase gracefully                          | `cmd/upd/main.go`                         | Manual verification       |
-| D31 | Auto color detection: `NO_COLOR` env var + non-TTY stdout check                                                            | `config.go` (`ShouldDisableColor`)        | Manual verification       |
-| D32 | `--dry-run` alias for `--nop`                                                                                              | `config.go`                               | 2 tests                   |
-| D33 | `--timeout`/`-t` flag (replaces hardcoded 20s)                                                                             | `config.go`                               | 2 tests                   |
-| D34 | `--json` output mode: structured JSON to stdout with summary, packages, errors                                             | `render.go` (`RenderJSON`)                | 3 tests                   |
-| D39 | Quiet mode (`-q`) now suppresses warnings too                                                                              | `cmd/upd/main.go`                         | Manual verification       |
-| D40 | `--verbose` flag: shows `%+v` error chains in error detail block                                                           | `config.go`, `render.go`                  | Manual verification       |
-| D42 | Terminal width detection via `COLUMNS` env var for progress bar clearing                                                   | `progress.go`                             | Manual verification       |
+| D30 | Signal-aware context (`signal.NotifyContext` for SIGINT/SIGTERM) — cancels fetch phase gracefully                          | `cmd/upd/main.go`                          | Manual verification       |
+| D31 | Auto color detection: `NO_COLOR` env var + non-TTY stdout check                                                            | `config.go` (`ShouldDisableColor`)         | Manual verification       |
+| D32 | `--dry-run` alias for `--nop`                                                                                              | `config.go`                                | 2 tests                   |
+| D33 | `--timeout`/`-t` flag (replaces hardcoded 20s)                                                                             | `config.go`                                | 2 tests                   |
+| D34 | `--json` output mode: structured JSON to stdout with summary, packages, errors                                             | `render.go` (`RenderJSON`)                 | 3 tests                   |
+| D39 | Quiet mode (`-q`) now suppresses warnings too                                                                              | `cmd/upd/main.go`                          | Manual verification       |
+| D40 | `--verbose` flag: shows `%+v` error chains in error detail block                                                           | `config.go`, `render.go`                   | Manual verification       |
+| D42 | Terminal width detection via `COLUMNS` env var for progress bar clearing                                                   | `progress.go`                              | Manual verification       |
 | D43 | HTTP transport tuning: MaxIdleConns=100, MaxIdleConnsPerHost=16, IdleConnTimeout=90s                                       | `pnpm.go`                                  | Manual verification       |
-| D44 | Meta descriptions on all nix apps (build, test, lint, run, demo)                                                           | `flake.nix`                               | `nix flake check`         |
-| D46 | golangci-lint + govulncheck added to nix devShell                                                                          | `flake.nix`                               | Manual verification       |
+| D44 | Meta descriptions on all nix apps (build, test, lint, run, demo)                                                           | `flake.nix`                                | `nix flake check`         |
+| D46 | golangci-lint + govulncheck added to nix devShell                                                                          | `flake.nix`                                | Manual verification       |
 
 ### Infrastructure Changes
 
@@ -86,23 +86,23 @@
 
 ## C) NOT STARTED (remaining TODO items, renumbered 47-61)
 
-| #   | Task                                                       | Priority | Notes                                                       |
-| --- | ---------------------------------------------------------- | -------- | ----------------------------------------------------------- |
-| 47  | `.npmrc` parsing                                           | Medium   | `--registry` covers the URL; `.npmrc` would add auth tokens |
-| 48  | Release automation (GoReleaser)                            | Medium   | No release workflow                                         |
-| 49  | Renovate/Dependabot config                                 | Low      | No dependency automation                                    |
-| 50  | `nix flake check` in CI                                    | Low      | Not in CI                                                   |
-| 51  | Coverage threshold in CI                                   | Low      | Not in CI                                                   |
-| 52  | Shell completions (bash/zsh/fish)                          | Low      | Not implemented                                             |
-| 53  | Man page (`man/upd.1`)                                     | Low      | Not implemented                                             |
-| 54  | Property-based tests for regex                             | Low      | Not implemented                                             |
-| 55  | Go doc examples with `// Output:`                          | Low      | Example exists but not compile-tested                       |
-| 56  | `errors.Join` for multi-error aggregation                  | Low      | Currently N separate warnings                               |
-| 57  | Focused demo tapes (pin-latest, greatest)                  | Low      | Only one tape exists                                        |
-| 58  | Integration test hitting real NPM registry                 | Low      | All tests use mocks                                         |
-| 59  | Issue/PR templates in `.github/`                           | Low      | Not implemented                                             |
-| 60  | Error message quality audit (What/Reassure/Why/Fix/Escape) | Medium   | Not audited                                                 |
-| 61  | `slog` structured logging                                  | Low      | No logging stack                                            |
+| #  | Task                                                       | Priority | Notes                                                       |
+| -- | ---------------------------------------------------------- | -------- | ----------------------------------------------------------- |
+| 47 | `.npmrc` parsing                                           | Medium   | `--registry` covers the URL; `.npmrc` would add auth tokens |
+| 48 | Release automation (GoReleaser)                            | Medium   | No release workflow                                         |
+| 49 | Renovate/Dependabot config                                 | Low      | No dependency automation                                    |
+| 50 | `nix flake check` in CI                                    | Low      | Not in CI                                                   |
+| 51 | Coverage threshold in CI                                   | Low      | Not in CI                                                   |
+| 52 | Shell completions (bash/zsh/fish)                          | Low      | Not implemented                                             |
+| 53 | Man page (`man/upd.1`)                                     | Low      | Not implemented                                             |
+| 54 | Property-based tests for regex                             | Low      | Not implemented                                             |
+| 55 | Go doc examples with `// Output:`                          | Low      | Example exists but not compile-tested                       |
+| 56 | `errors.Join` for multi-error aggregation                  | Low      | Currently N separate warnings                               |
+| 57 | Focused demo tapes (pin-latest, greatest)                  | Low      | Only one tape exists                                        |
+| 58 | Integration test hitting real NPM registry                 | Low      | All tests use mocks                                         |
+| 59 | Issue/PR templates in `.github/`                           | Low      | Not implemented                                             |
+| 60 | Error message quality audit (What/Reassure/Why/Fix/Escape) | Medium   | Not audited                                                 |
+| 61 | `slog` structured logging                                  | Low      | No logging stack                                            |
 
 ---
 

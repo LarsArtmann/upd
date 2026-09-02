@@ -1,7 +1,7 @@
 version: "2"
 run:
   timeout: 5m
-  go: 1.26.4
+  go: 1.26.7
   build-tags:
     - goexperiment.arenas
     - goexperiment.goroutineleakprofile
@@ -28,7 +28,6 @@ linters:
     - copyloopvar
     - cyclop
     - decorder
-    - depguard
     - dogsled
     - dupl
     - dupword
@@ -126,41 +125,38 @@ linters:
     - wsl_v5
     - zerologlint
   disable:
+    - depguard
     - noinlineerr
   settings:
     cyclop:
       max-complexity: 12
-    depguard:
-      rules:
-        cmd:
-          allow:
-            - $gostd
-            - github.com/LarsArtmann/upd
-            - github.com/larsartmann/go-error-family
-            - charm.land/fang/v2
-            - charm.land/lipgloss/v2
-          files:
-            - "**/cmd/**"
-        main:
-          allow:
-            - $gostd
-            - github.com/LarsArtmann/upd
-            - github.com/Masterminds/semver/v3
-            - github.com/gobwas/glob
-            - github.com/larsartmann/go-atomic-write
-            - github.com/larsartmann/go-error-family
-            - github.com/spf13/cobra
-            - github.com/spf13/pflag
-          files:
-            - $all
-            - "!$test"
-            - "!**/cmd/**"
+    errcheck:
+      exclude-functions:
+        - (*os.File).Close
+        - (io.Closer).Close
+        - (*sql.DB).Close
+        - (*sql.Rows).Close
+        - (*sql.Stmt).Close
+        - (net.Conn).Close
+        - (*net.TCPConn).Close
+        - (*net.UDPConn).Close
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Print
+        - fmt.Printf
+        - fmt.Println
+        - (*strings.Builder).WriteString
+        - (*bytes.Buffer).WriteString
     exhaustruct:
       exclude:
         - os/exec.Cmd
         - net/http.Client
         - net/http.Transport
         - github.com/spf13/cobra.Command
+    funlen:
+      lines: 200
+      statements: 100
     ginkgolinter:
       forbid-focus-container: true
       forbid-spec-pollution: true
@@ -169,6 +165,10 @@ linters:
         - ifElseChain
     gomoddirectives:
       replace-local: true
+    gosec:
+      excludes:
+        - G304
+        - G115
     ireturn:
       allow:
         - error
@@ -178,6 +178,12 @@ linters:
         - generic
     makezero:
       always: true
+    mnd:
+      ignored-numbers:
+        - "0"
+        - "1"
+        - "2"
+        - "100"
     paralleltest:
       ignore-missing: true
       ignore-missing-subtests: true

@@ -1,8 +1,8 @@
 # Status Report: fang/Cobra CLI Migration
 
-**Date:** 2026-07-16 05:30 CEST  
-**Branch:** `master` (working tree dirty)  
-**Reporter:** Current AI session  
+**Date:** 2026-07-16 05:30 CEST\
+**Branch:** `master` (working tree dirty)\
+**Reporter:** Current AI session\
 **Scope:** Migration of `upd` CLI layer from stdlib `flag` to `charm.land/fang/v2` + Cobra.
 
 ---
@@ -220,18 +220,18 @@ The follow-up work was executed and verified:
 ### Files Changed in Follow-up
 
 ```
- M .golangci.yml           # added charm.land/lipgloss/v2 to cmd depguard allowlist
- M AGENTS.md              # updated pipeline, gotchas, dependency count
- M CHANGELOG.md           # Unreleased entry for migration and follow-up
- M README.md              # styled help, env vars, shell completions
- M cmd/upd/main.go        # pass ColorSchemeFunc to fang.Execute
- A cmd/upd/theme.go       # color scheme helpers
- M config.go              # env-var support + constants
- M config_test.go         # env-var and NewCommand tests
- M cmd/upd/main_test.go   # CLI regression tests
- M docs/status/2026-07-16_05-30_fang-cobra-cli-migration.md
- M go.mod                 # lipgloss now direct
- M go.sum                 # updated by go mod tidy
+M .golangci.yml           # added charm.land/lipgloss/v2 to cmd depguard allowlist
+M AGENTS.md              # updated pipeline, gotchas, dependency count
+M CHANGELOG.md           # Unreleased entry for migration and follow-up
+M README.md              # styled help, env vars, shell completions
+M cmd/upd/main.go        # pass ColorSchemeFunc to fang.Execute
+A cmd/upd/theme.go       # color scheme helpers
+M config.go              # env-var support + constants
+M config_test.go         # env-var and NewCommand tests
+M cmd/upd/main_test.go   # CLI regression tests
+M docs/status/2026-07-16_05-30_fang-cobra-cli-migration.md
+M go.mod                 # lipgloss now direct
+M go.sum                 # updated by go mod tidy
 ```
 
 ### Verification (Follow-up)
@@ -261,15 +261,15 @@ The follow-up work was executed and verified:
 ## Files Modified This Session
 
 ```
- M .golangci.yml
- M AGENTS.md
- M cmd/upd/main.go
- M config.go
- M config_test.go
- M docs/pro-contra-cmdguard-adoption.md
- M flake.nix
- M go.mod
- M go.sum
+M .golangci.yml
+M AGENTS.md
+M cmd/upd/main.go
+M config.go
+M config_test.go
+M docs/pro-contra-cmdguard-adoption.md
+M flake.nix
+M go.mod
+M go.sum
 ```
 
 Also updated outside the `upd` repo:

@@ -37,15 +37,15 @@ Audited every `errors.` / `fmt.Errorf` call in the repo (74 matches across 11 fi
 
 ### How the 11 sentinels would map to Families (hypothetical)
 
-| Sentinel                             | Natural Family               | Exit code today | Exit code go-error-family would give |
-| ------------------------------------ | ---------------------------- | --------------- | ------------------------------------ |
-| `ErrFileNotFound`                    | Rejection                    | 1               | 1 (same)                             |
-| `ErrInvalidJSON`                     | Corruption                   | 1               | 65 (EX_DATAERR)                      |
-| `ErrConcurrentModification`          | Conflict                     | 1               | 1 (same)                             |
-| `ErrPackageNotFound`                 | Rejection                    | 1               | 1 (same)                             |
-| `ErrVersionParse`                    | Rejection                    | 1               | 1 (same)                             |
+| Sentinel                              | Natural Family               | Exit code today | Exit code go-error-family would give |
+| ------------------------------------- | ---------------------------- | --------------- | ------------------------------------ |
+| `ErrFileNotFound`                     | Rejection                    | 1               | 1 (same)                             |
+| `ErrInvalidJSON`                      | Corruption                   | 1               | 65 (EX_DATAERR)                      |
+| `ErrConcurrentModification`           | Conflict                     | 1               | 1 (same)                             |
+| `ErrPackageNotFound`                  | Rejection                    | 1               | 1 (same)                             |
+| `ErrVersionParse`                     | Rejection                    | 1               | 1 (same)                             |
 | Network / registry failures (pnpm.go) | Transient                    | 1               | **75 (EX_TEMPFAIL)**                 |
-| `ErrHelp` / `ErrVersion`             | _(control flow, not errors)_ | 0               | N/A                                  |
+| `ErrHelp` / `ErrVersion`              | _(control flow, not errors)_ | 0               | N/A                                  |
 
 The **only** exit-code change that would be genuinely user-visible and useful: a Transient network failure (NPM registry timeout / 5xx) getting exit code 75 instead of 1, so a CI wrapper script could `&& retry` on 75 but fail-fast on 1.
 
@@ -57,25 +57,25 @@ The **only** exit-code change that would be genuinely user-visible and useful: a
 
 #### PRO
 
-| #   | Argument                                                                                                                                                                               | Weight for `upd`                                                                          |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| P1  | **Exit-code differentiation**: Transient registry failures → exit 75 lets CI distinguish "retry me" from "fix your config". This is the single strongest argument.                     | Medium — real but narrow value                                                            |
-| P2  | **`HandleError(err)` replaces manual stderr formatting**: `os.Exit(errorfamily.HandleError(err))` is cleaner than the current `fmt.Fprintf + os.Exit(1)`. Saves ~5 lines in `main.go`. | Low — the current code is 3 lines and already clear                                       |
-| P3  | **Structured What/Why/Fix/WayOut messages**: richer user-facing errors than raw `err.Error()`.                                                                                         | Low — `upd`'s user is a developer who benefits from the raw error, not a softened message |
-| P4  | **Zero dependencies** — root module is stdlib-only, consistent with `upd`'s minimalism.                                                                                                | Medium — doesn't violate the "small dep tree" principle at the transitive level           |
-| P5  | **Classification of pnpm registry responses**: a 404 is Rejection (typo), a 500/timeout is Transient (retry). Currently both are indistinguishable to the caller.                       | Low — `upd` doesn't retry, so the classification has no consumer                          |
-| P6  | **Future-proofing**: if `upd` ever adds a `--retry` flag, `IsRetryable(err)` is already there.                                                                                         | Low — YAGNI until the flag exists                                                         |
+| #  | Argument                                                                                                                                                                               | Weight for `upd`                                                                          |
+| -- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| P1 | **Exit-code differentiation**: Transient registry failures → exit 75 lets CI distinguish "retry me" from "fix your config". This is the single strongest argument.                     | Medium — real but narrow value                                                            |
+| P2 | **`HandleError(err)` replaces manual stderr formatting**: `os.Exit(errorfamily.HandleError(err))` is cleaner than the current `fmt.Fprintf + os.Exit(1)`. Saves ~5 lines in `main.go`. | Low — the current code is 3 lines and already clear                                       |
+| P3 | **Structured What/Why/Fix/WayOut messages**: richer user-facing errors than raw `err.Error()`.                                                                                         | Low — `upd`'s user is a developer who benefits from the raw error, not a softened message |
+| P4 | **Zero dependencies** — root module is stdlib-only, consistent with `upd`'s minimalism.                                                                                                | Medium — doesn't violate the "small dep tree" principle at the transitive level           |
+| P5 | **Classification of pnpm registry responses**: a 404 is Rejection (typo), a 500/timeout is Transient (retry). Currently both are indistinguishable to the caller.                      | Low — `upd` doesn't retry, so the classification has no consumer                          |
+| P6 | **Future-proofing**: if `upd` ever adds a `--retry` flag, `IsRetryable(err)` is already there.                                                                                         | Low — YAGNI until the flag exists                                                         |
 
 #### CONTRA
 
-| #   | Argument                                                                                                                                                                                                                                                                                               | Weight                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
-| C1  | **Depguard allowlist must be edited** (two rules: `main` and `cmd`) for each new import. Not a blocker — just a mechanical step — but it means the dependency choice is a deliberate one, not a freebie.                                                                                               | Low                     |
-| C2  | **The library is v0.x, 0 stars, 2 months old, single-author.** No battle-testing, no community, no third-party usage reports. Adopting it in a tool meant to be stable and trustworthy is premature.                                                                                                   | **High**                |
-| C3  | **Go 1.26 requirement (`errors.AsType`).** `upd` is on `go 1.26.4` so this is _currently_ satisfied, but it pins the floor higher than the 3 existing deps require, reducing portability for contributors on older toolchains.                                                                         | Low — already satisfied |
-| C4  | **Invasive migration for thin value.** To get _any_ classification benefit, all 11 sentinels must either implement `ErrorFamily()` or be registered via `RegisterClassification`. That's 11 code changes + an `init()` block, for a tool whose entire error surface is ~6 wrapping sites in `main.go`. | **High**                |
-| C5  | **Not sanctioned by the how-to-golang skill.** The skill's canonical error stack is `cockroachdb/errors + uniflow`. go-error-family is neither blessed nor banned, but it's a lateral move from the recommended path with no clear upside over the recommended stack.                                  | Medium                  |
-| C6  | **The `HandleError` pipeline (templates, diagnostics, AI agent) is 95% unused.** `upd` needs none of: message templates, diagnostic rules, HTTP middleware, slog logging, AI debug agent. Adopting the library pulls in conceptual surface area that will never be exercised.                          | Medium                  |
+| #  | Argument                                                                                                                                                                                                                                                                                               | Weight                  |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| C1 | **Depguard allowlist must be edited** (two rules: `main` and `cmd`) for each new import. Not a blocker — just a mechanical step — but it means the dependency choice is a deliberate one, not a freebie.                                                                                               | Low                     |
+| C2 | **The library is v0.x, 0 stars, 2 months old, single-author.** No battle-testing, no community, no third-party usage reports. Adopting it in a tool meant to be stable and trustworthy is premature.                                                                                                   | **High**                |
+| C3 | **Go 1.26 requirement (`errors.AsType`).** `upd` is on `go 1.26.4` so this is _currently_ satisfied, but it pins the floor higher than the 3 existing deps require, reducing portability for contributors on older toolchains.                                                                         | Low — already satisfied |
+| C4 | **Invasive migration for thin value.** To get _any_ classification benefit, all 11 sentinels must either implement `ErrorFamily()` or be registered via `RegisterClassification`. That's 11 code changes + an `init()` block, for a tool whose entire error surface is ~6 wrapping sites in `main.go`. | **High**                |
+| C5 | **Not sanctioned by the how-to-golang skill.** The skill's canonical error stack is `cockroachdb/errors + uniflow`. go-error-family is neither blessed nor banned, but it's a lateral move from the recommended path with no clear upside over the recommended stack.                                  | Medium                  |
+| C6 | **The `HandleError` pipeline (templates, diagnostics, AI agent) is 95% unused.** `upd` needs none of: message templates, diagnostic rules, HTTP middleware, slog logging, AI debug agent. Adopting the library pulls in conceptual surface area that will never be exercised.                          | Medium                  |
 
 #### Verdict: go-error-family
 
@@ -87,22 +87,22 @@ The **only** exit-code change that would be genuinely user-visible and useful: a
 
 #### PRO
 
-| #   | Argument                                                                                                       | Weight for `upd`                                                                                                          |
-| --- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| P1  | **Stack traces** for debugging: when `packagejson.go` fails to parse a key, `oops` shows the exact call chain. | Low — the error messages already include `"read dependency key: %w"` style context; the file is 213 lines with clear flow |
-| P2  | **Structured context fields** (`.With("package", name).With("section", section)`).                             | Low — `upd` already embeds this context in the error _message string_ via `fmt.Errorf("... %q: %w", name, err)`           |
-| P3  | **Mature, stable (v1), 969 stars, active maintenance, zero deps.**                                             | Medium — if any of the three were adopted, this is the safest bet                                                         |
-| P4  | **slog integration** — structured logging ready if `upd` adds observability.                                   | Low — no logging stack exists or is planned                                                                               |
+| #  | Argument                                                                                                       | Weight for `upd`                                                                                                          |
+| -- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| P1 | **Stack traces** for debugging: when `packagejson.go` fails to parse a key, `oops` shows the exact call chain. | Low — the error messages already include `"read dependency key: %w"` style context; the file is 213 lines with clear flow |
+| P2 | **Structured context fields** (`.With("package", name).With("section", section)`).                             | Low — `upd` already embeds this context in the error _message string_ via `fmt.Errorf("... %q: %w", name, err)`           |
+| P3 | **Mature, stable (v1), 969 stars, active maintenance, zero deps.**                                             | Medium — if any of the three were adopted, this is the safest bet                                                         |
+| P4 | **slog integration** — structured logging ready if `upd` adds observability.                                   | Low — no logging stack exists or is planned                                                                               |
 
 #### CONTRA
 
-| #   | Argument                                                                                                                                                                                                          | Weight   |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| C1  | **`upd` is a CLI, not a long-running service.** Stack traces and trace IDs are for Sentry / distributed tracing / log aggregation. A CLI that runs in 2 seconds and exits has no consumer for this enrichment.    | **High** |
-| C2  | **The builder-chain style (`oops.In("...").Tags("...").With("...", v).Wrapf(err, "...")`) is heavier than `fmt.Errorf("...: %w", err)`.** For 6 call sites in a focused tool, this adds ceremony without clarity. | **High** |
-| C3  | **Same depguard allowlist edit as go-error-family** (C1 above).                                                                                                                                                   | Low      |
-| C4  | **`wrapcheck` linter is enabled** — it already enforces wrapping at every boundary. Replacing `fmt.Errorf` with `oops.Wrapf` satisfies the linter equally but adds a dependency to do the same job.               | Medium   |
-| C5  | **`errorlint` linter is enabled** — it checks `%w` usage. oops's `Wrapf` uses a custom format that sidesteps this check, potentially masking issues the linter would catch.                                       | Low      |
+| #  | Argument                                                                                                                                                                                                          | Weight   |
+| -- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| C1 | **`upd` is a CLI, not a long-running service.** Stack traces and trace IDs are for Sentry / distributed tracing / log aggregation. A CLI that runs in 2 seconds and exits has no consumer for this enrichment.    | **High** |
+| C2 | **The builder-chain style (`oops.In("...").Tags("...").With("...", v).Wrapf(err, "...")`) is heavier than `fmt.Errorf("...: %w", err)`.** For 6 call sites in a focused tool, this adds ceremony without clarity. | **High** |
+| C3 | **Same depguard allowlist edit as go-error-family** (C1 above).                                                                                                                                                   | Low      |
+| C4 | **`wrapcheck` linter is enabled** — it already enforces wrapping at every boundary. Replacing `fmt.Errorf` with `oops.Wrapf` satisfies the linter equally but adds a dependency to do the same job.               | Medium   |
+| C5 | **`errorlint` linter is enabled** — it checks `%w` usage. oops's `Wrapf` uses a custom format that sidesteps this check, potentially masking issues the linter would catch.                                       | Low      |
 
 #### Verdict: samber/oops
 
@@ -114,17 +114,17 @@ The **only** exit-code change that would be genuinely user-visible and useful: a
 
 #### PRO
 
-| #   | Argument                                                                                                    | Weight                                  |
-| --- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| P1  | **Only module that lets you use classification + enrichment together** without losing metadata from either. | N/A — moot if neither parent is adopted |
+| #  | Argument                                                                                                    | Weight                                  |
+| -- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| P1 | **Only module that lets you use classification + enrichment together** without losing metadata from either. | N/A — moot if neither parent is adopted |
 
 #### CONTRA
 
-| #   | Argument                                                                                                                                                      | Weight    |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| C1  | **Only useful if you adopt BOTH go-error-family AND oops.** Since the recommendation is to adopt neither, the bridge has no reason to exist in this codebase. | **Fatal** |
-| C2  | **Pulls in two dependencies** (the heaviest option of all three candidates).                                                                                  | **High**  |
-| C3  | **v0.x experimental submodule** — the least mature of all three options.                                                                                      | **High**  |
+| #  | Argument                                                                                                                                                      | Weight    |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| C1 | **Only useful if you adopt BOTH go-error-family AND oops.** Since the recommendation is to adopt neither, the bridge has no reason to exist in this codebase. | **Fatal** |
+| C2 | **Pulls in two dependencies** (the heaviest option of all three candidates).                                                                                  | **High**  |
+| C3 | **v0.x experimental submodule** — the least mature of all three options.                                                                                      | **High**  |
 
 #### Verdict: bridge
 

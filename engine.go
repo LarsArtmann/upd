@@ -81,6 +81,7 @@ func (e *Engine) FetchAll(ctx context.Context, names []string) map[string]*Fetch
 		case sem <- struct{}{}:
 		case <-ctx.Done():
 			wg.Wait()
+
 			return results
 		}
 

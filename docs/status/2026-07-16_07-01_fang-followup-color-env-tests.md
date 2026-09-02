@@ -1,8 +1,8 @@
 # Status Report: fang/Cobra Follow-up — Color, Env Vars, and CLI Tests
 
-**Date:** 2026-07-16 07:01 CEST  
-**Branch:** `master` (working tree dirty)  
-**Reporter:** Current AI session  
+**Date:** 2026-07-16 07:01 CEST\
+**Branch:** `master` (working tree dirty)\
+**Reporter:** Current AI session\
 **Scope:** Follow-up to the fang/Cobra CLI migration: unified color override, env-var support, CLI regression tests, and documentation updates.
 
 ---

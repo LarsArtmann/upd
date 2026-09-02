@@ -19,7 +19,6 @@ type PackageFile struct {
 }
 
 func ReadPackageFile(path string) (*PackageFile, error) {
-	//nolint:gosec // path is supplied by the operator via -f/--file; not attacker-controlled.
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
