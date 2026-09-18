@@ -66,33 +66,33 @@
           apps = {
             build = {
               type = "app";
-              program = pkgs.writeShellApplication {
+              program = pkgs.lib.getExe (pkgs.writeShellApplication {
                 name = "build";
                 runtimeInputs = [ pkgs.go ];
                 text = ''
                   export GOEXPERIMENT=${goExperiment}
                   go build -trimpath -ldflags='-s -w -X github.com/LarsArtmann/upd.ProgramVersion=${version}' -o bin/upd ./cmd/upd
                 '';
-              };
+              });
               meta.description = "Build upd to bin/upd";
             };
 
             test = {
               type = "app";
-              program = pkgs.writeShellApplication {
+              program = pkgs.lib.getExe (pkgs.writeShellApplication {
                 name = "test";
                 runtimeInputs = [ pkgs.go ];
                 text = ''
                   export GOEXPERIMENT=${goExperiment}
                   go test ./... -v -count=1
                 '';
-              };
+              });
               meta.description = "Run all tests with verbose output";
             };
 
             lint = {
               type = "app";
-              program = pkgs.writeShellApplication {
+              program = pkgs.lib.getExe (pkgs.writeShellApplication {
                 name = "lint";
                 runtimeInputs = with pkgs; [ go golangci-lint ];
                 text = ''
@@ -101,26 +101,26 @@
                   go build ./... && echo "build OK"
                   golangci-lint run ./... && echo "lint OK"
                 '';
-              };
+              });
               meta.description = "Run go vet, build check, and golangci-lint";
             };
 
             run = {
               type = "app";
-              program = pkgs.writeShellApplication {
+              program = pkgs.lib.getExe (pkgs.writeShellApplication {
                 name = "run";
                 runtimeInputs = [ pkgs.go ];
                 text = ''
                   export GOEXPERIMENT=${goExperiment}
                   go run ./cmd/upd "$@"
                 '';
-              };
+              });
               meta.description = "Run upd from source with arguments";
             };
 
             demo = {
               type = "app";
-              program = pkgs.writeShellApplication {
+              program = pkgs.lib.getExe (pkgs.writeShellApplication {
                 name = "demo";
                 runtimeInputs = with pkgs; [ go vhs ttyd ffmpeg git ];
                 text = ''
@@ -152,7 +152,7 @@
                     echo "To publish to vhs.charm.sh: nix run .#demo -- --publish"
                   fi
                 '';
-              };
+              });
               meta.description = "Render VHS demo GIFs locally or publish to vhs.charm.sh";
             };
           };
