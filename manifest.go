@@ -136,8 +136,8 @@ func (m Manifest) SortedNames() []string {
 }
 
 type compiledPatterns struct {
-	positive []glob.Glob
-	negative []glob.Glob
+	positive []*glob.Pattern
+	negative []*glob.Pattern
 }
 
 func matchesPatterns(name string, patterns compiledPatterns) bool {
