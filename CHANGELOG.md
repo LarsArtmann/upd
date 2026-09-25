@@ -17,6 +17,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 _Nothing yet._
 
+### Changed
+
+- **CI supply-chain hardening** — all GitHub Actions pinned to full commit SHAs;
+  golangci-lint pinned to v2.12.2; depguard disabled; funlen widened; gosec
+  G304/G115 excluded; Go sources formatted with dprint (`e13492e`).
+- **Dependency refresh** — `go-atomic-write` v0.5.1, `go-error-family` v0.10.1,
+  `lipgloss` v2.0.6, `xo/terminfo` v1.2.0; `.github/dependabot.yml` added
+  (`a98c59a`, `7a1e31f`).
+
+### Fixed
+
+- **Build break from the `gobwas/glob` v1.0.0 bump** — `a98c59a` upgraded
+  `gobwas/glob` v0.2.3 → v1.0.0 without updating the code for the upstream API
+  rename (`glob.Glob` interface → `*glob.Pattern`), leaving master
+  uncompilable from 2026-09-15 until 2026-09-25. `manifest.go` updated to the
+  `*Pattern` API.
+
 ## [1.3.0] - 2026-08-16
 
 ### Fixed
@@ -33,19 +50,13 @@ _Nothing yet._
 
 ### Changed
 
-- **Dependency and toolchain refresh** — `go-atomic-write` v0.5.1,
-  `go-error-family` v0.10.1, fang v2.0.1, lipgloss v2.0.6; Go directive
-  bumped to 1.26.7; nixpkgs and flake inputs refreshed (`b6110bf`, `4e1c074`,
-  `9cb5944`, `ebd9b1b`, `f020505`).
-- **`errors.AsType` migration** — registry retry-error matching in `npm.go`
-  moved to Go 1.26+ generic `errors.AsType` (`b6110bf`).
+- **Dependency refresh** — `go-atomic-write` v0.4.1 plus Charm-stack transitive
+  bumps (ultraviolet, charmtone, go-colorful) and nixpkgs/flake input refresh
+  (`4e1c074`, `9cb5944`, `ebd9b1b`, `f020505`).
 - **Documentation pass** — registry-client references renamed to `pnpm.go`
   across docs and user-facing examples switched from `npm` to `pnpm` CLI
   invocations (`7402f06`). Note: the source file itself remains `npm.go` —
   that commit renamed references only.
-- **CI supply-chain hardening** — all GitHub Actions pinned to full commit
-  SHAs; golangci-lint pinned to v2.12.2; depguard disabled; funlen widened;
-  gosec G304/G115 excluded; Go sources formatted with dprint (`e13492e`).
 
 ## [1.2.0] - 2026-07-26
 
@@ -134,6 +145,10 @@ _Nothing yet._
 - **README rewritten** — expanded usage, troubleshooting section, exit codes
   table, and atomic-writes documentation.
 - **Copyright year** updated to 2026.
+- **`errors.AsType` adoption** — registry retry-error matching in `npm.go`
+  moved to Go 1.26+ generic `errors.AsType` (`b6110bf`); nixpkgs/charmtone
+  bumps from `b6110bf`/`7343d0f` in the same window. Added retroactively —
+  omitted when v1.2.0 was cut (flagged by the release report, item f.24).
 - Direct dependency count reduced to 4 (semver, glob, go-atomic-write,
   go-error-family) — `tidwall/gjson` removed.
 
