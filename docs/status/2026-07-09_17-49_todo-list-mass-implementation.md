@@ -74,7 +74,7 @@
 ### govulncheck (D36/D45)
 
 - **Done:** CI vulncheck job added; runs `govulncheck ./...` on every push/PR
-- **Not done:** The actual vulnerability (GO-2026-5856 in `crypto/tls`) is a Go stdlib issue fixed in Go 1.26.5. The current toolchain is 1.26.4. Cannot fix without upgrading Go. The CI job will surface this until the toolchain is updated.
+- **Not done:** The actual vulnerability (GO-2026-5856 in `crypto/tls`) is a Go stdlib issue fixed in Go 1.26.5. The current toolchain is 1.26.4. Cannot fix without upgrading Go. The CI job will surface this until the toolchain is updated. → toolchain is now 1.26.7 (`e13492e` era); removing `continue-on-error` is tracked as TODO_LIST.md #6
 - **Impact:** Low — this is a TLS privacy leak in ECH, unlikely to affect upd's single registry endpoint use case.
 
 ### flake.nix vendorHash
@@ -88,21 +88,21 @@
 
 | #  | Task                                                       | Priority | Notes                                                       |
 | -- | ---------------------------------------------------------- | -------- | ----------------------------------------------------------- |
-| 47 | `.npmrc` parsing                                           | Medium   | `--registry` covers the URL; `.npmrc` would add auth tokens |
-| 48 | Release automation (GoReleaser)                            | Medium   | No release workflow                                         |
-| 49 | Renovate/Dependabot config                                 | Low      | No dependency automation                                    |
-| 50 | `nix flake check` in CI                                    | Low      | Not in CI                                                   |
-| 51 | Coverage threshold in CI                                   | Low      | Not in CI                                                   |
-| 52 | Shell completions (bash/zsh/fish)                          | Low      | Not implemented                                             |
-| 53 | Man page (`man/upd.1`)                                     | Low      | Not implemented                                             |
-| 54 | Property-based tests for regex                             | Low      | Not implemented                                             |
-| 55 | Go doc examples with `// Output:`                          | Low      | Example exists but not compile-tested                       |
-| 56 | `errors.Join` for multi-error aggregation                  | Low      | Currently N separate warnings                               |
-| 57 | Focused demo tapes (pin-latest, greatest)                  | Low      | Only one tape exists                                        |
-| 58 | Integration test hitting real NPM registry                 | Low      | All tests use mocks                                         |
-| 59 | Issue/PR templates in `.github/`                           | Low      | Not implemented                                             |
-| 60 | Error message quality audit (What/Reassure/Why/Fix/Escape) | Medium   | Not audited                                                 |
-| 61 | `slog` structured logging                                  | Low      | No logging stack                                            |
+| 47 | ~~`.npmrc` parsing~~ → TODO_LIST.md #12                                                                                                                                                                                                                                                                 | Medium   | `--registry` covers the URL; `.npmrc` would add auth tokens |
+| 48 | ~~Release automation (GoReleaser)~~ → TODO_LIST.md #3                                                                                                                                                                                                                                                       | Medium   | No release workflow                                         |
+| 49 | ~~Renovate/Dependabot config~~ done — `.github/dependabot.yml` exists (verified 2026-09-25)                                                                                                                                                                                                              | Low      | No dependency automation                                    |
+| 50 | ~~`nix flake check` in CI~~ → TODO_LIST.md #2                                                                                                                                                                                                                                                               | Low      | Not in CI                                                   |
+| 51 | ~~Coverage threshold in CI~~ → TODO_LIST.md #18                                                                                                                                                                                                                                                             | Low      | Not in CI                                                   |
+| 52 | ~~Shell completions (bash/zsh/fish)~~ done at `81d8c44` (Cobra)                                                                                                                                                                                                                                          | Low      | Not implemented                                             |
+| 53 | ~~Man page (`man/upd.1`)~~ done at `81d8c44` (`upd man` via fang/mango)                                                                                                                                                                                                                                  | Low      | Not implemented                                             |
+| 54 | ~~Property-based tests for regex~~ → TODO_LIST.md #16                                                                                                                                                                                                                                                       | Low      | Not implemented                                             |
+| 55 | ~~Go doc examples with `// Output:`~~ → TODO_LIST.md #17                                                                                                                                                                                                                                                    | Low      | Example exists but not compile-tested                       |
+| 56 | ~~`errors.Join` for multi-error aggregation~~ → TODO_LIST.md #24                                                                                                                                                                                                                                            | Low      | Currently N separate warnings                               |
+| 57 | ~~Focused demo tapes (pin-latest, greatest)~~ → TODO_LIST.md #25                                                                                                                                                                                                                                            | Low      | Only one tape exists                                        |
+| 58 | ~~Integration test hitting real NPM registry~~ → TODO_LIST.md #26                                                                                                                                                                                                                                           | Low      | All tests use mocks                                         |
+| 59 | ~~Issue/PR templates in `.github/`~~ → TODO_LIST.md #23                                                                                                                                                                                                                                                     | Low      | Not implemented                                             |
+| 60 | ~~Error message quality audit (What/Reassure/Why/Fix/Escape)~~ done at `3cd313e` — `messages.go` registers What/Why/Fix/WayOut templates for all 13 error codes                                                                                                                                              | Medium   | Not audited                                                 |
+| 61 | ~~`slog` structured logging~~ → TODO_LIST.md #27                                                                                                                                                                                                                                                            | Low      | No logging stack                                            |
 
 ---
 
@@ -136,7 +136,7 @@ The `signal.NotifyContext` in main.go is untested. If SIGINT arrives during a lo
 
 `jsonSummary` has `Errors` field that gets set from `errCount` parameter AND from `len(jsonErrors)`. These could diverge — `errCount` is passed from `ApplyUpdates` which counts per-spec errors, but `jsonErrors` only includes specs with `spec.Err != nil`. If there's a spec in `StateError` without `spec.Err` set, the counts will mismatch.
 
-### 8. flake.nix CI golangci-lint version pinned to v2.0.2
+### 8. ~~flake.nix CI golangci-lint version pinned to v2.0.2~~ done at `e64d3a7` (switched to `latest`), then pinned to v2.12.2 in `e13492e`
 
 I hardcoded `version: v2.0.2` in the GitHub Action. The locally installed version is `v2.12.2`. This version mismatch could cause different lint results locally vs CI. Should use `latest` or match the local version.
 

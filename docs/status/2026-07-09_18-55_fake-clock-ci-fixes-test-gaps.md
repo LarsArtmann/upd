@@ -78,12 +78,12 @@ This session addressed the self-critique items from the prior mass-implementatio
 - **NOT tested.** Testing this properly requires either:
   - Sending a real signal to the test process (fragile, platform-specific)
   - Extracting the context creation into an injectable function
-- The fake clock we added helps with backoff cancellation but not with signal delivery itself.
+- The fake clock we added helps with backoff cancellation but not with signal delivery itself. → still open — moved to TODO_LIST.md #15
 
 ### Quiet-mode warning suppression
 
 - Code exists: `if !cfg.Quiet { printWarnings(...) }` in `cmd/upd/main.go:70`
-- **NOT directly tested** through the `run()` function. The `printWarnings` function itself is tested (in `main_test.go`), but the quiet-mode suppression gate is not exercised end-to-end.
+- **NOT directly tested** through the `run()` function. The `printWarnings` function itself is tested (in `main_test.go`), but the quiet-mode suppression gate is not exercised end-to-end. → still open — owned by TODO_LIST.md #14
 
 ---
 
@@ -91,21 +91,21 @@ This session addressed the self-critique items from the prior mass-implementatio
 
 These are the remaining 15 lower-priority TODO items. None were touched this session:
 
-1. **#47 .npmrc parsing** — read registry/auth config from `.npmrc`
-2. **#48 Release automation** — GitHub Releases, changelog generation
-3. **#49 Shell completions** — bash/zsh/fish completion scripts
-4. **#50 Man page** — Unix manual page generation
-5. **#51 slog structured logging** — replace fmt.Fprintf with slog
-6. **#52 Configuration file** — `.updrc` or similar for persistent settings
-7. **#53 Monorepo workspace support** — detect and handle workspaces
-8. **#54 Lockfile awareness** — read/write `package-lock.json`
-9. **#55 Yarn/pnpm support** — beyond NPM
-10. **#56 Batch update mode** — update across multiple package.json files
-11. **#57 Custom reporter plugins** — pluggable output formats
-12. **#58 Offline mode** — cache packuments for air-gapped use
-13. **#59 Update notifications** — check if upd itself is outdated
-14. **#60 Version range expansion** — smarter constraint solving
-15. **#61 HTTP/2 support** — connection multiplexing tuning
+1. ~~**#47 .npmrc parsing** — read registry/auth config from `.npmrc`~~ moved to TODO_LIST.md #12
+2. ~~**#48 Release automation** — GitHub Releases, changelog generation~~ moved to TODO_LIST.md #3
+3. ~~**#49 Shell completions** — bash/zsh/fish completion scripts~~ done at `81d8c44` (Cobra)
+4. ~~**#50 Man page** — Unix manual page generation~~ done at `81d8c44` (fang/mango, `upd man`)
+5. ~~**#51 slog structured logging** — replace fmt.Fprintf with slog~~ moved to TODO_LIST.md #27
+6. ~~**#52 Configuration file** — `.updrc` or similar for persistent settings~~ moved to ROADMAP.md theme 2
+7. ~~**#53 Monorepo workspace support** — detect and handle workspaces~~ moved to ROADMAP.md theme 3
+8. ~~**#54 Lockfile awareness** — read/write `package-lock.json`~~ moved to ROADMAP.md theme 3
+9. ~~**#55 Yarn/pnpm support** — beyond NPM~~ moved to ROADMAP.md theme 3
+10. ~~**#56 Batch update mode** — update across multiple package.json files~~ moved to ROADMAP.md theme 3
+11. **#57 Custom reporter plugins** — pluggable output formats ← open
+12. ~~**#58 Offline mode** — cache packuments for air-gapped use~~ moved to ROADMAP.md theme 3
+13. ~~**#59 Update notifications** — check if upd itself is outdated~~ Won't implement — Go binaries don't self-update (see TODO_LIST R10)
+14. **#60 Version range expansion** — smarter constraint solving ← open
+15. **#61 HTTP/2 support** — connection multiplexing tuning ← open
 
 ---
 
@@ -133,7 +133,7 @@ The `usetesting` linter flags `os.Setenv` inside `t.Cleanup`. I worked around th
 
 4. **`finalizeRun` does too much** — It handles rendering (table/JSON), file writing, and error classification all in one function. This makes it hard to test the individual concerns. Splitting into `renderOutput`, `writeIfChanged`, and `classifyExit` would improve testability.
 
-5. **No integration test for the full `run()` function** — All tests test individual stages. An end-to-end test that calls `run([]string{})` with a temp `package.json` and mock registry would catch wiring bugs.
+5. ~~**No integration test for the full `run()` function** — All tests test individual stages. An end-to-end test that calls `run([]string{})` with a temp `package.json` and mock registry would catch wiring bugs.~~ moved to TODO_LIST.md #14
 
 6. **Retry backoff constants are unexported** — `backoffBase`, `backoffMax`, `backoffShiftCap` can't be configured by library users. For a CLI this is fine, but the tests asserting `[1s, 2s]` will break if someone changes `backoffBase` without updating the test.
 
@@ -159,15 +159,14 @@ The `usetesting` linter flags `os.Setenv` inside `t.Cleanup`. I worked around th
 
 15. **govulncheck `continue-on-error` hides real vulns** — Once Go 1.26.5 ships and the stdlib vuln is fixed, someone needs to remember to remove `continue-on-error`. There's no tracking issue for this.
 
-16. **No CI badge in README** — The CI workflow runs but there's no visible status badge.
-
-17. **CI test step doesn't use `-timeout`** — If a test hangs (e.g., a network call slips through), CI runs until GitHub's job timeout (6 hours). Should add `-timeout 120s`.
+16. ~~**No CI badge in README** — The CI workflow runs but there's no visible status badge.~~ done — README has CI, Go Report Card, pkg.go.dev, and license badges
+17. ~~**CI test step doesn't use `-timeout`** — If a test hangs (e.g., a network call slips through), CI runs until GitHub's job timeout (6 hours). Should add `-timeout 120s`.~~ moved to TODO_LIST.md #22
 
 ### Documentation
 
 18. **AGENTS.md gotcha updated but doc.go not updated** — `doc.go` still shows old `RenderJSON` signature in its example. Actually, checking: doc.go doesn't reference RenderJSON. But the Config example may be stale.
 
-19. **No CONTRIBUTING.md** — External contributors have no guide for the nix-first workflow, the GOEXPERIMENT requirement, or the testing patterns.
+19. ~~**No CONTRIBUTING.md** — External contributors have no guide for the nix-first workflow, the GOEXPERIMENT requirement, or the testing patterns.~~ done — rewritten in `32c208b`; linked from README (docs-health pass 2026-09-25)
 
 20. **VHS demos not updated** — New flags (`--json`, `--verbose`, `--retries`, `--timeout`, `--dry-run`) aren't shown in any demo tape.
 

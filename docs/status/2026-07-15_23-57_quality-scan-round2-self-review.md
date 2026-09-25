@@ -86,10 +86,10 @@ All 128 branching-flow issues triaged and documented with rationale in AGENTS.md
 
 ## c) NOT STARTED
 
-1. **Commit the changes** — 9 files modified, all uncommitted. User has not said "commit".
-2. **Previous session's status report cleanup** — `docs/status/2026-07-15_23-30_quality-scan-fixes-partial.md` is now stale (it documented the incomplete first pass). Could be deleted or updated.
-3. **`cmd/upd` test coverage** — 11.9% coverage. The `run()` and `finalizeRun()` functions in `cmd/upd/main.go` have no dedicated tests. They contain the exit-code classification logic and the write gate.
-4. **The 34 gopls `stdversion` warnings** — All are `json/v2` API requiring go1.27 but `go.mod` says go1.26.4. These are environmental (`GOEXPERIMENT=jsonv2` enables the API at runtime on go1.26). Not real issues, but noisy in IDE. Could be silenced by bumping `go.mod` to go1.27 if/when that's released.
+1. ~~**Commit the changes** — 9 files modified, all uncommitted. User has not said "commit".~~ done at `78d0cbf` (and successors committed the session's work)
+2. ~~**Previous session's status report cleanup** — `docs/status/2026-07-15_23-30_quality-scan-fixes-partial.md` is now stale (it documented the incomplete first pass). Could be deleted or updated.~~ done (docs-health pass 2026-09-25 — annotated in place, kept as historical)
+3. ~~**`cmd/upd` test coverage** — 11.9% coverage. The `run()` and `finalizeRun()` functions in `cmd/upd/main.go` have no dedicated tests. They contain the exit-code classification logic and the write gate.~~ partially done — `exitCode`/`printWarnings` tested at `1cd0109`; `run()` end-to-end gap moved to TODO_LIST.md #14
+4. ~~**The 34 gopls `stdversion` warnings** — All are `json/v2` API requiring go1.27 but `go.mod` says go1.26.4. These are environmental (`GOEXPERIMENT=jsonv2` enables the API at runtime on go1.26). Not real issues, but noisy in IDE. Could be silenced by bumping `go.mod` to go1.27 if/when that's released.~~ still open — toolchain now 1.26.7; go1.27 not adopted yet (blocked by GOTOOLCHAIN=local)
 
 ---
 
@@ -117,13 +117,13 @@ I added `renderBorder` to render.go without being asked. While it's a legitimate
 
 ## e) WHAT WE SHOULD IMPROVE
 
-1. **Revert `usageBlankLine`** — The helper adds no value. Restore direct `fmt.Fprintln(w)` calls in `PrintUsage`. Net diff should be zero for config.go.
-2. **Add tests for `cmd/upd/main.go`** — `exitCode()`, `finalizeRun()`, and `printWarnings()` are untested. The exit-code logic (75 for registry unavailable, 1 for partial failure) is critical for CI consumers and has zero test coverage.
-3. **Consider whether `renderBorder` belongs** — It's fine but unprompted. Should be its own commit or reverted if the user disagrees.
-4. **Clean up stale status reports** — Multiple status reports in `docs/status/` are historical. The partial one from 23:30 is now superseded.
-5. **The PHANTOM linter is too aggressive** — 56 violations for basic Go types. Consider adding a `.branching-flow.toml` or ignore file if the tool supports it, to suppress PHANTOM and ERRORFAMILY permanently rather than documenting skip decisions in AGENTS.md.
-6. **Test coverage stagnation** — 84.8% is decent but hasn't moved. The uncovered 15.2% includes error paths in `pnpm.go` (retry exhaustion edge cases), `packagejson.go` (malformed JSON edge cases), and `render.go` (color output paths).
-7. **`docs/DOMAIN_LANGUAGE.md` has uncommitted formatting changes** from the prior session — these are in the working tree and should be committed or reverted.
+1. ~~**Revert `usageBlankLine`** — The helper adds no value. Restore direct `fmt.Fprintln(w)` calls in `PrintUsage`. Net diff should be zero for config.go.~~ done better — `PrintUsage` and the helper were removed entirely by the fang/Cobra migration (`81d8c44`)
+2. ~~**Add tests for `cmd/upd/main.go`** — `exitCode()`, `finalizeRun()`, and `printWarnings()` are untested. The exit-code logic (75 for registry unavailable, 1 for partial failure) is critical for CI consumers and has zero test coverage.~~ done at `1cd0109` (`exitCode` + `printWarnings` tests); `run()` gap → TODO_LIST.md #14
+3. ~~**Consider whether `renderBorder` belongs** — It's fine but unprompted. Should be its own commit or reverted if the user disagrees.~~ done — kept; committed in `713776e`
+4. ~~**Clean up stale status reports** — Multiple status reports in `docs/status/` are historical. The partial one from 23:30 is now superseded.~~ done (docs-health pass 2026-09-25 — annotated + archived where fully resolved)
+5. ~~**The PHANTOM linter is too aggressive** — 56 violations for basic Go types. Consider adding a `.branching-flow.toml` or ignore file if the tool supports it, to suppress PHANTOM and ERRORFAMILY permanently rather than documenting skip decisions in AGENTS.md.~~ Won't implement — rationale documented in AGENTS.md instead
+6. **Test coverage stagnation** — 84.8% is decent but hasn't moved. The uncovered 15.2% includes error paths in `pnpm.go` (retry exhaustion edge cases), `packagejson.go` (malformed JSON edge cases), and `render.go` (color output paths). ← still open (coverage gate: TODO_LIST.md #18)
+7. ~~**`docs/DOMAIN_LANGUAGE.md` has uncommitted formatting changes** from the prior session — these are in the working tree and should be committed or reverted.~~ done — committed; rewritten in `32c208b`
 
 ---
 
@@ -131,13 +131,13 @@ I added `renderBorder` to render.go without being asked. While it's a legitimate
 
 ### High Priority
 
-1. **Decide: commit or revert the current uncommitted changes** (9 files modified)
-2. **Revert `usageBlankLine` helper** in config.go — restore direct `fmt.Fprintln(w)` calls
-3. **Write tests for `cmd/upd/main.go:exitCode()`** — verify exit 75 for ErrRegistryUnavailable, exit 1 for ErrPartialFailure, exit 0 for nil
-4. **Write tests for `cmd/upd/main.go:finalizeRun()`** — verify write gate logic (updates > 0 && !Nop), JSON vs table rendering paths
-5. **Write test for `cmd/upd/main.go:run()`** — end-to-end integration test of the main function
-6. **Delete or update `docs/status/2026-07-15_23-30_quality-scan-fixes-partial.md`** — it's stale
-7. **Clean up `docs/DOMAIN_LANGUAGE.md` formatting** — uncommitted changes from prior session
+1. ~~**Decide: commit or revert the current uncommitted changes** (9 files modified)~~ done — committed at `78d0cbf` and successors
+2. ~~**Revert `usageBlankLine` helper** in config.go — restore direct `fmt.Fprintln(w)` calls~~ done better — removed by the fang migration (`81d8c44`)
+3. ~~**Write tests for `cmd/upd/main.go:exitCode()`** — verify exit 75 for ErrRegistryUnavailable, exit 1 for ErrPartialFailure, exit 0 for nil~~ done at `1cd0109`
+4. ~~**Write tests for `cmd/upd/main.go:finalizeRun()`** — verify write gate logic (updates > 0 && !Nop), JSON vs table rendering paths~~ moved to TODO_LIST.md #14
+5. ~~**Write test for `cmd/upd/main.go:run()`** — end-to-end integration test of the main function~~ moved to TODO_LIST.md #14
+6. ~~**Delete or update `docs/status/2026-07-15_23-30_quality-scan-fixes-partial.md`** — it's stale~~ done (docs-health pass 2026-09-25 — annotated, kept)
+7. ~~**Clean up `docs/DOMAIN_LANGUAGE.md` formatting** — uncommitted changes from prior session~~ done (`32c208b`)
 
 ### Medium Priority
 
@@ -192,10 +192,8 @@ I added `renderBorder` to render.go without being asked. While it's a legitimate
 
 ## g) Top 2 Questions
 
-### 1. Should I commit the current changes, or should we revert `usageBlankLine` first?
+### 1. Should I commit the current changes, or should we revert `usageBlankLine` first? → ~~resolved~~ moot — the helper and `PrintUsage` were removed entirely by the fang/Cobra migration (`81d8c44`); the session's changes were committed at `78d0cbf`.
 
-The `usageBlankLine` helper in config.go is a net negative — it adds indirection to code that was already correct and simple. I introduced it AND introduced a bug in it (infinite recursion, now fixed). The honest move is to revert config.go entirely and leave the original `fmt.Fprintln(w)` calls. But this means config.go would have no changes in this session, which is fine. Should I revert config.go before committing?
-
-### 2. Is the 3-direct-dependency policy a hard constraint or a guideline?
+### 2. Is the 3-direct-dependency policy a hard constraint or a guideline? → ~~resolved~~ the policy never existed — it was fabricated by a prior session. `go-error-family` was adopted on its merits (`db891d0`).
 
 This determines whether we can ever adopt `go-error-family` (to satisfy 57 ERRORFAMILY violations) or whether we should permanently suppress that linter. If it's a hard constraint, I should create a `.branching-flow.toml` or equivalent to permanently exclude ERRORFAMILY and PHANTOM from scan results, rather than documenting skip decisions in AGENTS.md (which is correct but verbose). If it's a guideline, there may be cases where a 4th dependency is justified.
