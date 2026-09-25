@@ -62,6 +62,7 @@ Raw ideas:
 
 - release-please or an equivalent changelog/tag/bump automator
 - CI build injecting the git-describe version instead of the literal `"ci"` string
+- Performance benchmark run in CI to catch regressions in diff/glob/manifest hot paths
 - Release-smoke job: build on tag push, assert `upd --version` matches the tag
 - A documented deprecation policy (relevant once breaking changes are considered)
 - An announce-channel note (GitHub Releases only, or more)

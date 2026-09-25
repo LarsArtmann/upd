@@ -26,11 +26,11 @@
 > - Update notifier — **REJECTED**: Go binaries don't self-update.
 > - Shell completions — not done (YAGNI for current scope).
 >
-> **Still relevant:**
+> ~~**Still relevant:**~~ all three resolved since (docs-health pass 2026-09-25):
 >
-> - gosec / govulncheck — still not run.
-> - Bench tests — still not written.
-> - The quiet/non-quiet code duplication in `main.go` — still present.
+> - ~~gosec / govulncheck — still not run.~~ done — govulncheck CI job + gosec linter
+> - ~~Bench tests — still not written.~~ done at `e64d3a7` (`benchmark_test.go`)
+> - ~~The quiet/non-quiet code duplication in `main.go` — still present.~~ done at `e64d3a7` (D24)
 
 ---
 
@@ -86,7 +86,7 @@ preservation confirmed via diff).
 | Area                    | Status                           | Gap                                                                                                                                                                                                                                 |
 | ----------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **LSP warnings**        | Build/vet/test all pass clean    | golangci*lint_ls reports 3 stale-cache warnings (errcheck on `resp.Body.Close`, typecheck on `config.go` `PrintUsage`) — these are false positives from LSP cache not catching the `defer func() { * = ... }()`and`io.Writer` fixes |
-| **Progress bar polish** | Works but overwrites with spaces | The `Finish()` method uses a fixed 80-char clear which may not match terminal width on all terminals; original JS used the `progress` library which handled this                                                                    |
+| ~~**Progress bar polish**~~ | ~~Works but overwrites with spaces~~ done at `e64d3a7` — terminal width detection via `COLUMNS` (D42); the fixed 80-char clear remains the fallback | ~~The `Finish()` method uses a fixed 80-char clear which may not match terminal width on all terminals; original JS used the `progress` library which handled this~~                                    |
 
 ---
 
@@ -94,16 +94,16 @@ preservation confirmed via diff).
 
 | Area                                 | Notes                                                                                                                                        |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`-g` (greatest) integration test** | Unit tested `GreatestVersion()` but never ran the full CLI with `-g` against live registry                                                   |
-| **Docker**                           | Original had a Dockerfile; no Go-based Dockerfile created                                                                                    |
-| **CI/CD**                            | No GitHub Actions workflow                                                                                                                   |
-| **`flake.nix`**                      | No Nix flake for development/build (LarsArtmann projects use `flake.nix` per AGENTS.md)                                                      |
-| **gosec / govulncheck**              | No security scanning run                                                                                                                     |
-| ** Goreleaser / release automation** | No release pipeline                                                                                                                          |
-| **Shell completions**                | No bash/zsh/fish completion generation                                                                                                       |
-| **Update notifier**                  | Original JS had `update-notifier` to check for newer `upd` versions; not ported (intentionally — Go binaries don't self-update the same way) |
-| **`AGENTS.md`**                      | No project-specific AGENTS.md written yet                                                                                                    |
-| **`FEATURES.md` / `TODO_LIST.md`**   | Not created                                                                                                                                  |
+| ~~**`-g` (greatest) integration test**~~ | ~~Unit tested `GreatestVersion()` but never ran the full CLI with `-g` against live registry~~ done at `e64d3a7` (engine greatest-mode tests; live check → TODO_LIST.md #26) |
+| ~~**Docker**~~                           | ~~Original had a Dockerfile; no Go-based Dockerfile created~~ Won't implement — R1                                                       |
+| ~~**CI/CD**~~                            | ~~No GitHub Actions workflow~~ done — `.github/workflows/ci.yml`                                                  |
+| ~~**`flake.nix`**~~                      | ~~No Nix flake for development/build (LarsArtmann projects use `flake.nix` per AGENTS.md)~~ done                             |
+| ~~**gosec / govulncheck**~~              | ~~No security scanning run~~ done — govulncheck CI job + gosec linter                                     |
+| ~~** Goreleaser / release automation**~~ | ~~No release pipeline~~ moved to TODO_LIST.md #3                                     |
+| ~~**Shell completions**~~                | ~~No bash/zsh/fish completion generation~~ done at `81d8c44`                                          |
+| ~~**Update notifier**~~                  | ~~Original JS had `update-notifier` to check for newer `upd` versions; not ported (intentionally — Go binaries don't self-update the same way)~~ Won't implement — R10 |
+| ~~**`AGENTS.md`**~~                      | ~~No project-specific AGENTS.md written yet~~ done (kept current since)                            |
+| ~~**`FEATURES.md` / `TODO_LIST.md`**~~   | ~~Not created~~ done at `474f9dd`                                           |
 
 ---
 
