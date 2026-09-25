@@ -11,17 +11,17 @@
 > - `GetDependencySection` and `GetUpdArgs` now return errors (no more silent swallowing)
 > - `BuildManifest` now returns `(Manifest, []string)` with warnings
 >
-> **Still open from this report:**
+> **Still open from this report:** → all resolved or routed (docs-health pass 2026-09-25):
 >
-> - VHS demo was never actually rendered — infrastructure exists but unverified (#1 in section B)
-> - golangci-lint not in CI — still only `go vet` (#3 in section C)
-> - `nix run .#lint` still only runs `go vet`, not `golangci-lint` (#3 in section E)
-> - `CONTRIBUTING.md` has been updated with `GOEXPERIMENT=jsonv2` (#8 in section E)
-> - `BuildManifest` options struct — REJECTED (YAGNI) (#4 in section C)
+> - ~~VHS demo was never actually rendered — infrastructure exists but unverified (#1 in section B)~~ done — rendered and published to `vhs.charm.sh` (v1.1.0, `2332acb` era); README embeds the GIF. Re-render for the fang-styled CLI tracked as TODO_LIST.md #10
+> - ~~golangci-lint not in CI — still only `go vet` (#3 in section C)~~ done at `e64d3a7` (D25)
+> - ~~`nix run .#lint` still only runs `go vet`, not `golangci-lint` (#3 in section E)~~ done at `e64d3a7` (D26)
+> - ~~`CONTRIBUTING.md` has been updated with `GOEXPERIMENT=jsonv2` (#8 in section E)~~ done (`32c208b`)
+> - ~~`BuildManifest` options struct — REJECTED (YAGNI) (#4 in section C)~~ confirmed rejected (TODO_LIST R2)
 >
-> **Note:** `doc.go` example code has broken signatures again — the error-handling
+> ~~**Note:** `doc.go` example code has broken signatures again — the error-handling
 > overhaul changed `BuildManifest` and `GetUpdArgs` return types but `doc.go` was
-> not updated. This is tracked as a known issue.
+> not updated. This is tracked as a known issue.~~ resolved at `9ca148e`
 
 ---
 
@@ -64,13 +64,13 @@
 
 ## B. PARTIALLY DONE
 
-### 1. VHS Demo — Never Actually Rendered
+### 1. ~~VHS Demo — Never Actually Rendered~~ done
 
-The tape file, fixture, nix app, and documentation are all in place, but `nix run .#demo` was **never executed** during this session. VHS requires `ttyd` + `ffmpeg` + a running terminal environment that may not work headless. The tape syntax was not validated. The GIF was never produced. The cloud publish path was never tested. This is infrastructure-ready but unverified.
+The tape file, fixture, nix app, and documentation are all in place, but `nix run .#demo` was **never executed** during this session. VHS requires `ttyd` + `ffmpeg` + a running terminal environment that may not work headless. The tape syntax was not validated. The GIF was never produced. The cloud publish path was never tested. This is infrastructure-ready but unverified. → done — rendered + published (v1.1.0); current re-render need tracked as TODO_LIST.md #10
 
-### 2. Pre-existing Lint Warnings (3 `makezero`)
+### 2. ~~Pre-existing Lint Warnings (3 `makezero`)~~ done
 
-`diff.go:40`, `diff.go:42`, `render.go:167` have `makezero` warnings (slices declared with `make` but zero initial length where the linter wants pre-allocated capacity). These are **pre-existing** (not introduced this session) but remain unfixed. They would need to be addressed to get a fully clean `golangci-lint` run.
+`diff.go:40`, `diff.go:42`, `render.go:167` have `makezero` warnings (slices declared with `make` but zero initial length where the linter wants pre-allocated capacity). These are **pre-existing** (not introduced this session) but remain unfixed. They would need to be addressed to get a fully clean `golangci-lint` run. → resolved (noted in the round-2-era headers; lint is 0 issues since)
 
 ---
 
@@ -84,17 +84,17 @@ No `.github/workflows/vhs.yml` was created. The `charmbracelet/vhs-action@v2` Gi
 
 Only one tape (`demo.tape`) exists. Could add: `pin-latest.tape` (focused pinLatest demo), `greatest.tape` (`-g` flag demo), `patterns.tape` (glob filtering demo).
 
-### 3. `golangci-lint` Integration in CI
+### 3. ~~`golangci-lint` Integration in CI~~ done at `e64d3a7`
 
-CI runs only `go vet`. The project has a `.golangci.yml` with 100+ linters but `golangci-lint` is not run in CI or in `nix run .#lint`.
+CI runs only `go vet`. The project has a `.golangci.yml` with 100+ linters but `golangci-lint` is not run in CI or in `nix run .#lint`. → done — separate CI job + lint app (D25/D26); pinned v2.12.2 in `e13492e`
 
-### 4. `doc.go` Example Verification
+### 4. ~~`doc.go` Example Verification~~ partially done
 
-The doc.go example was updated to `BuildManifest(pkg, pkg.GetUpdArgs(), false)` but the example is not compiled or tested as part of the test suite (Go doc examples with `// Output:` comments would add compile-time verification).
+The doc.go example was updated to `BuildManifest(pkg, pkg.GetUpdArgs(), false)` but the example is not compiled or tested as part of the test suite (Go doc examples with `// Output:` comments would add compile-time verification). → example fixed at `9ca148e`; compile-verification tracked as TODO_LIST.md #17
 
-### 5. `BuildManifest` Options Struct Refactor
+### 5. ~~`BuildManifest` Options Struct Refactor~~ Won't implement
 
-`BuildManifest` takes `pinLatest bool` as a positional third arg. Every caller was updated, but the API would be cleaner with an options struct or functional options pattern. Flagged in prior session, never addressed.
+`BuildManifest` takes `pinLatest bool` as a positional third arg. Every caller was updated, but the API would be cleaner with an options struct or functional options pattern. Flagged in prior session, never addressed. → TODO_LIST R2 (YAGNI)
 
 ---
 
@@ -123,24 +123,24 @@ No regressions, no broken builds, no data loss. The one issue during this sessio
 
 ### High Priority (P0)
 
-1. **Render the VHS demo** — Run `nix run .#demo` at least once to verify it works
-2. **Publish the demo** — Run `nix run .#demo -- --publish` to get a real `vhs.charm.sh` URL
-3. **Embed the published GIF URL** in README.md once obtained
-4. **Review `flake.lock` diff** — Verify the 18-line change is intentional and not drift
-5. **Fix the 3 `makezero` warnings** in `diff.go` and `render.go` for a fully clean lint
+1. ~~**Render the VHS demo** — Run `nix run .#demo` at least once to verify it works~~ done (v1.1.0)
+2. ~~**Publish the demo** — Run `nix run .#demo -- --publish` to get a real `vhs.charm.sh` URL~~ done (v1.1.0)
+3. ~~**Embed the published GIF URL** in README.md once obtained~~ done — README Demo section
+4. ~~**Review `flake.lock` diff** — Verify the 18-line change is intentional and not drift~~ done — lockfile refreshed routinely since (`f020505` etc.)
+5. ~~**Fix the 3 `makezero` warnings** in `diff.go` and `render.go` for a fully clean lint~~ done — lint is 0 issues
 
 ### Medium Priority (P1)
 
-6. Add `golangci-lint` to CI workflow (`.github/workflows/ci.yml`)
-7. Add `golangci-lint` to `nix run .#lint`
-8. Create `.github/workflows/vhs.yml` with `charmbracelet/vhs-action@v2` for auto-rendering
-9. Update `CONTRIBUTING.md` with `GOEXPERIMENT=jsonv2` requirement
-10. Refactor `BuildManifest` to use an options struct (resolve Q1 from prior session)
-11. Add focused demo tapes: `pin-latest.tape`, `greatest.tape`, `patterns.tape`
-12. Add an integration test (build-tagged) hitting the real NPM registry
-13. Add Go doc examples with `// Output:` to `doc.go` for compile-time example verification
-14. Pin VHS version in `flake.nix` devShell (currently unpinned via nixpkgs)
-15. Add `meta.description` to all nix apps (flake check warns about this)
+6. ~~Add `golangci-lint` to CI workflow (`.github/workflows/ci.yml`)~~ done at `e64d3a7`
+7. ~~Add `golangci-lint` to `nix run .#lint`~~ done at `e64d3a7`
+8. Add `.github/workflows/vhs.yml` with `charmbracelet/vhs-action@v2` for auto-rendering ← open
+9. ~~Update `CONTRIBUTING.md` with `GOEXPERIMENT=jsonv2` requirement~~ done at `32c208b`
+10. ~~Refactor `BuildManifest` to use an options struct (resolve Q1 from prior session)~~ Won't implement — TODO_LIST R2
+11. ~~Add focused demo tapes: `pin-latest.tape`, `greatest.tape`, `patterns.tape`~~ moved to TODO_LIST.md #25
+12. ~~Add an integration test (build-tagged) hitting the real NPM registry~~ moved to TODO_LIST.md #26
+13. ~~Add Go doc examples with `// Output:` to `doc.go` for compile-time example verification~~ moved to TODO_LIST.md #17
+14. Pin VHS version in `flake.nix` devShell (currently unpinned via nixpkgs) ← open
+15. ~~Add `meta.description` to all nix apps (flake check warns about this)~~ done at `e64d3a7` (D44)
 
 ### Lower Priority (P2)
 

@@ -7,21 +7,21 @@
 > **Current Status (reviewed 2026-07-09):** Most recent status report. All code
 > changes in section (a) are DONE and shipping. 51 tests pass with race detector.
 >
-> **Known issues from this report that are STILL OPEN:**
+> ~~**Known issues from this report that are STILL OPEN:**~~ all five resolved since:
 >
-> - **`doc.go` example is BROKEN** (#18) — still uses old `BuildManifest(pkg, pkg.GetUpdArgs(), false)`
->   signatures. Needs updating to handle `(Manifest, []string)` and `([]string, error)` returns.
-> - **AGENTS.md not updated** (#22) — doesn't mention `Spec.Err`, `ErrRegistryUnavailable`,
->   exit code 75, warnings pipeline, or the new `BuildManifest`/`GetDependencySection`/`GetUpdArgs` signatures.
-> - **No `cmd/upd/main_test.go`** (#21) — `exitCode()` and `printWarnings()` have zero test coverage.
-> - **Quiet mode + warnings interaction undecided** (#23).
-> - **`--fail-on-error` flag** (#27) — not implemented.
+> - ~~**`doc.go` example is BROKEN** (#18) — still uses old `BuildManifest(pkg, pkg.GetUpdArgs(), false)`
+>   signatures. Needs updating to handle `(Manifest, []string)` and `([]string, error)` returns.~~ done at `9ca148e`
+> - ~~**AGENTS.md not updated** (#22) — doesn't mention `Spec.Err`, `ErrRegistryUnavailable`,
+>   exit code 75, warnings pipeline, or the new `BuildManifest`/`GetDependencySection`/`GetUpdArgs` signatures.~~ done at `0ba2f77` era and `64d174c`
+> - ~~**No `cmd/upd/main_test.go`** (#21) — `exitCode()` and `printWarnings()` have zero test coverage.~~ done at `1cd0109`
+> - ~~**Quiet mode + warnings interaction undecided** (#23).~~ done — decided at `e64d3a7` (D39): `-q` suppresses warnings
+> - ~~**`--fail-on-error` flag** (#27) — not implemented.~~ Won't implement — TODO_LIST R9 (`ErrPartialFailure` made non-zero exit the default, `077f325`)
 >
-> **Library research verdict:** `docs/research/2026-07-09_error-handling-libraries.md`
-> concludes: stay on stdlib. No adoption of go-error-family, bridge, or oops.
+> ~~**Library research verdict:** `docs/research/2026-07-09_error-handling-libraries.md`
+> concludes: stay on stdlib. No adoption of go-error-family, bridge, or oops.~~ superseded 2026-07-16: `go-error-family` was adopted (`db891d0`, `3cd313e`).
 >
-> **Design doc reference:** The report mentions `docs/research/2026-07-09_superb-error-handling.md`
-> as a follow-up — this file does NOT exist. The design details are captured in this status report instead.
+> ~~**Design doc reference:** The report mentions `docs/research/2026-07-09_superb-error-handling.md`
+> as a follow-up — this file does NOT exist. The design details are captured in this status report instead.~~ stale — the file exists now (created 2026-07-09).
 
 ---
 
@@ -88,29 +88,21 @@
 
 ## b) PARTIALLY DONE
 
-18. **`doc.go` example code is BROKEN** — line 14 still uses old signatures: `manifest := upd.BuildManifest(pkg, pkg.GetUpdArgs(), false)`. This will not compile for anyone copying the example. I changed the APIs but forgot to update the package-level documentation example. **This is a real breakage I caused.**
-
-19. **Exit code logic is untested** — the `exitCode()` function in `cmd/upd/main.go` has zero test coverage. It's the function that differentiates transient from permanent failures at the process boundary. The cmd/upd package has no test files at all.
-
-20. **Warnings pipeline is unit-tested but not integration-tested** — `compilePatterns` and `BuildManifest` warnings are tested in isolation, but there's no test that verifies the full flow from malformed input → `WARNING:` line on stderr.
+18. ~~**`doc.go` example code is BROKEN** — line 14 still uses old signatures: `manifest := upd.BuildManifest(pkg, pkg.GetUpdArgs(), false)`. This will not compile for anyone copying the example. I changed the APIs but forgot to update the package-level documentation example. **This is a real breakage I caused.**~~ done at `9ca148e`
+19. ~~**Exit code logic is untested** — the `exitCode()` function in `cmd/upd/main.go` has zero test coverage. It's the function that differentiates transient from permanent failures at the process boundary. The cmd/upd package has no test files at all.~~ done at `1cd0109`
+20. ~~**Warnings pipeline is unit-tested but not integration-tested** — `compilePatterns` and `BuildManifest` warnings are tested in isolation, but there's no test that verifies the full flow from malformed input → `WARNING:` line on stderr.~~ done at unit level (`0ba2f77` tests + `1cd0109` printWarnings capture helper); the full-run e2e remains owned by TODO_LIST.md #14
 
 ---
 
 ## c) NOT STARTED
 
-21. **No `cmd/upd/main_test.go`** — the exit code logic, warning output, and the duplicated fetch+apply branches (quiet vs non-quiet) are completely untested.
-
-22. **AGENTS.md not updated** — the "Execution Pipeline" section (step 4) still says `BuildManifest` returns `Manifest`, not `(Manifest, []string)`. The "Gotchas" section doesn't mention the new `Spec.Err` field or the warnings pipeline.
-
-23. **Quiet mode interaction with warnings** — `printWarnings` always prints to stderr regardless of `-q` flag. Should quiet mode suppress warnings too? Not decided, not tested.
-
-24. **No `-v`/`--verbose` flag for debug-level error detail** — the `spec.Err` detail block is always shown when errors exist. No way to get MORE detail (e.g. full chain) or LESS (just the count).
-
-25. **`VersionKeys()` still silently returns nil on parse failure** (`pnpm.go:122`) — documented in the design doc as "acceptable best-effort" but never discussed with the user.
-
-26. **`GreatestVersion` silently skips unparseable versions** (`pnpm.go:99`) — same as above.
-
-27. **No `--fail-on-error` flag** — a run that updates 3 packages and fails 2 still exits 0. Design doc recommends this as a future flag.
+21. ~~**No `cmd/upd/main_test.go`** — the exit code logic, warning output, and the duplicated fetch+apply branches (quiet vs non-quiet) are completely untested.~~ done — `cmd/upd/main_test.go` created at `1cd0109`/`ea6493d`; branch consolidation done at `e64d3a7` (D24)
+22. ~~**AGENTS.md not updated** — the "Execution Pipeline" section (step 4) still says `BuildManifest` returns `Manifest`, not `(Manifest, []string)`. The "Gotchas" section doesn't mention the new `Spec.Err` field or the warnings pipeline.~~ done at `0ba2f77` era
+23. ~~**Quiet mode interaction with warnings** — `printWarnings` always prints to stderr regardless of `-q` flag. Should quiet mode suppress warnings too? Not decided, not tested.~~ done — decided at `e64d3a7` (D39): quiet suppresses warnings
+24. ~~**No `-v`/`--verbose` flag for debug-level error detail** — the `spec.Err` detail block is always shown when errors exist. No way to get MORE detail (e.g. full chain) or LESS (just the count).~~ done at `e64d3a7` (D40 `--verbose`)
+25. ~~**`VersionKeys()` still silently returns nil on parse failure** (`pnpm.go:122`) — documented in the design doc as "acceptable best-effort" but never discussed with the user.~~ Won't implement — deliberate best-effort over registry data we don't control (design doc, non-change #3)
+26. ~~**`GreatestVersion` silently skips unparseable versions** (`pnpm.go:99`) — same as above.~~ Won't implement — same rationale; `ErrNoSemverVersions` covers the all-unparseable case
+27. ~~**No `--fail-on-error` flag** — a run that updates 3 packages and fails 2 still exits 0. Design doc recommends this as a future flag.~~ Won't implement — superseded by `ErrPartialFailure` (`077f325`): non-zero exit is now the default, no flag needed (TODO_LIST R9)
 
 ---
 
