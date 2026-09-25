@@ -157,7 +157,7 @@ Nothing was broken. No regressions. All 40 tests pass including race detector.
 30. Update README "Development" section to show `nix run` commands
 31. Add `CONTRIBUTING.md` note about `nix run .#lint` before submitting PRs
 32. Add architecture diagram (D2) to docs/
-33. Update `docs/DOMAIN_LANGUAGE.md` with `pinLatest` and `IsLatest` concepts
+33. ~~Update `docs/DOMAIN_LANGUAGE.md` with `pinLatest` and `IsLatest` concepts~~ done — glossary documents `pinLatest`, `IsLatest`, and the `shouldUpdate` short-circuit (verified 2026-09-25, lines 34/48/57)
 
 ### DevOps / CI
 

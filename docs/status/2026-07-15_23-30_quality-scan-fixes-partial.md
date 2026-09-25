@@ -24,8 +24,8 @@
 
 | Item                             | What was done                                                        | What remains                                                                                             |
 | -------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| ~~branching-flow scan (134 issues)~~ | Addressed 3 FLAG_PARAM issues + documented 57 ERRORFAMILY_ADOPT skip | ~~**74 issues unexamined** (see NOT STARTED)~~ done — all 128 triaged in the 23:57 round-2 report (`78d0cbf` era) |
-| ~~jscpd duplication~~            | Extracted helpers in 3 files; net -23 lines                          | ~~**Did not re-run jscpd to verify 0 clones**~~ done at `78d0cbf` — re-run confirmed 0 clones                             |
+| ~~branching-flow scan (134 issues)~~ | ~~Addressed 3 FLAG_PARAM issues + documented 57 ERRORFAMILY_ADOPT skip~~ | ~~**74 issues unexamined** (see NOT STARTED)~~ done — all 128 triaged in the 23:57 round-2 report (`78d0cbf` era) |
+| ~~jscpd duplication~~            | ~~Extracted helpers in 3 files; net -23 lines~~ | ~~**Did not re-run jscpd to verify 0 clones**~~ done at `78d0cbf` — re-run confirmed 0 clones                             |
 
 ---
 

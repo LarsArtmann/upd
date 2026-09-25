@@ -150,31 +150,31 @@ diff output) — caught and fixed by tests before any commit.
 
 | #  | Task                                                        | Impact | Effort | Category       |
 | -- | ----------------------------------------------------------- | ------ | ------ | -------------- |
-| 1  | ~~Fix gopls hints: use `min()` builtin, tagged switch~~ done at `e64d3a7` era | Low    | 5 min  | Code quality   |
-| 2  | ~~Extract shared helper in `main.go` to remove duplication~~ done at `e64d3a7` (D24) | Medium | 15 min | Code quality   |
-| 3  | ~~Add integration test with mock HTTP registry server~~ done at `e64d3a7` | High   | 1 hour | Testing        |
-| 4  | ~~Share `http.Client` across goroutines in engine~~ done (round-2 `RegistryClient`) | Medium | 15 min | Performance    |
-| 5  | ~~Add `-g` (greatest) end-to-end manual test~~ done (engine greatest-mode tests) | Low    | 5 min  | Testing        |
-| 6  | ~~Write `flake.nix` for dev/build/test/lint~~ done                      | High   | 30 min | DevOps         |
-| 7  | ~~Write project `AGENTS.md` with architecture decisions~~ done at `64d174c` (kept current) | High   | 20 min | Documentation  |
-| 8  | ~~Auto-detect non-TTY and disable colors~~ done at `e64d3a7` (D31)     | Medium | 10 min | UX             |
-| 9  | ~~Add retry logic for transient registry errors (429, 5xx)~~ done at `e64d3a7` (D28) | Medium | 30 min | Reliability    |
-| 10 | ~~Add overall context timeout for fetch phase~~ done at `e64d3a7` (D30)  | Medium | 15 min | Reliability    |
-| 11 | ~~Add bench tests for diff and glob~~ done at `e64d3a7`                | Low    | 20 min | Testing        |
-| 12 | ~~Inject version via `-ldflags` from git tag~~ done                     | Low    | 10 min | Release        |
-| 13 | ~~Create GitHub Actions CI (build, test, vet, lint)~~ done              | High   | 30 min | DevOps         |
-| 14 | ~~Run `gosec` and `govulncheck` and fix findings~~ done                 | Medium | 20 min | Security       |
-| 15 | ~~Write `Dockerfile` for Go (multi-stage, scratch/distroless)~~ Won't implement — R1 | Medium | 20 min | DevOps         |
-| 16 | ~~Verify scoped package URL encoding against live registry~~ done at `e64d3a7` (mock-verified; live check → TODO_LIST.md #26) | Medium | 15 min | Correctness    |
-| 16 | ~~Add `.npmrc` parsing for custom registry support~~ moved to TODO_LIST.md #12 | Medium | 30 min | Feature parity |
-| 18 | ~~Add `FEATURES.md` with feature inventory~~ done at `474f9dd`          | Low    | 15 min | Documentation  |
-| 15 | ~~Add `TODO_LIST.md` with short-term tasks~~ done at `474f9dd`          | Low    | 15 min | Documentation  |
-| 20 | ~~Generate shell completions (bash/zsh/fish)~~ done at `81d8c44`        | Low    | 20 min | UX             |
-| 21 | ~~Add `--registry <url>` flag for custom registry~~ done at `e64d3a7` (D29) | Medium | 15 min | Feature parity |
-| 22 | ~~Add JSON output mode (`--json`) for CI/scripting~~ done at `e64d3a7` (D34) | Medium | 30 min | Feature        |
-| 23 | ~~Add `--dry-run` as alias for `--nop`~~ done at `e64d3a7` (D32)        | Low    | 5 min  | UX             |
-| 24 | ~~Add timeout flag (`--timeout <seconds>`)~~ done at `e64d3a7` (D33)    | Low    | 10 min | UX             |
-| 25 | ~~Add Go module vulnerabilities badge to README~~ Won't implement — govulncheck CI job covers visibility | Low    | 5 min  | Documentation  |
+| ~~1~~ | ~~Fix gopls hints: use `min()` builtin, tagged switch~~ done at `e64d3a7` era | ~~Low~~ | ~~5 min~~ | ~~Code quality~~ |
+| ~~2~~ | ~~Extract shared helper in `main.go` to remove duplication~~ done at `e64d3a7` (D24) | ~~Medium~~ | ~~15 min~~ | ~~Code quality~~ |
+| ~~3~~ | ~~Add integration test with mock HTTP registry server~~ done at `e64d3a7` | ~~High~~ | ~~1 hour~~ | ~~Testing~~ |
+| ~~4~~ | ~~Share `http.Client` across goroutines in engine~~ done (round-2 `RegistryClient`) | ~~Medium~~ | ~~15 min~~ | ~~Performance~~ |
+| ~~5~~ | ~~Add `-g` (greatest) end-to-end manual test~~ done (engine greatest-mode tests) | ~~Low~~ | ~~5 min~~ | ~~Testing~~ |
+| ~~6~~ | ~~Write `flake.nix` for dev/build/test/lint~~ done                      | ~~High~~ | ~~30 min~~ | ~~DevOps~~ |
+| ~~7~~ | ~~Write project `AGENTS.md` with architecture decisions~~ done at `64d174c` (kept current) | ~~High~~ | ~~20 min~~ | ~~Documentation~~ |
+| ~~8~~ | ~~Auto-detect non-TTY and disable colors~~ done at `e64d3a7` (D31)     | ~~Medium~~ | ~~10 min~~ | ~~UX~~ |
+| ~~9~~ | ~~Add retry logic for transient registry errors (429, 5xx)~~ done at `e64d3a7` (D28) | ~~Medium~~ | ~~30 min~~ | ~~Reliability~~ |
+| ~~10~~ | ~~Add overall context timeout for fetch phase~~ done at `e64d3a7` (D30)  | ~~Medium~~ | ~~15 min~~ | ~~Reliability~~ |
+| ~~11~~ | ~~Add bench tests for diff and glob~~ done at `e64d3a7`                | ~~Low~~ | ~~20 min~~ | ~~Testing~~ |
+| ~~12~~ | ~~Inject version via `-ldflags` from git tag~~ done                     | ~~Low~~ | ~~10 min~~ | ~~Release~~ |
+| ~~13~~ | ~~Create GitHub Actions CI (build, test, vet, lint)~~ done              | ~~High~~ | ~~30 min~~ | ~~DevOps~~ |
+| ~~14~~ | ~~Run `gosec` and `govulncheck` and fix findings~~ done                 | ~~Medium~~ | ~~20 min~~ | ~~Security~~ |
+| ~~15~~ | ~~Write `Dockerfile` for Go (multi-stage, scratch/distroless)~~ Won't implement — R1 | ~~Medium~~ | ~~20 min~~ | ~~DevOps~~ |
+| ~~16~~ | ~~Verify scoped package URL encoding against live registry~~ done at `e64d3a7` (mock-verified; live check → TODO_LIST.md #26) | ~~Medium~~ | ~~15 min~~ | ~~Correctness~~ |
+| ~~16~~ | ~~Add `.npmrc` parsing for custom registry support~~ moved to TODO_LIST.md #12 | ~~Medium~~ | ~~30 min~~ | ~~Feature parity~~ |
+| ~~18~~ | ~~Add `FEATURES.md` with feature inventory~~ done at `474f9dd`          | ~~Low~~ | ~~15 min~~ | ~~Documentation~~ |
+| ~~15~~ | ~~Add `TODO_LIST.md` with short-term tasks~~ done at `474f9dd`          | ~~Low~~ | ~~15 min~~ | ~~Documentation~~ |
+| ~~20~~ | ~~Generate shell completions (bash/zsh/fish)~~ done at `81d8c44`        | ~~Low~~ | ~~20 min~~ | ~~UX~~ |
+| ~~21~~ | ~~Add `--registry <url>` flag for custom registry~~ done at `e64d3a7` (D29) | ~~Medium~~ | ~~15 min~~ | ~~Feature parity~~ |
+| ~~22~~ | ~~Add JSON output mode (`--json`) for CI/scripting~~ done at `e64d3a7` (D34) | ~~Medium~~ | ~~30 min~~ | ~~Feature~~ |
+| ~~23~~ | ~~Add `--dry-run` as alias for `--nop`~~ done at `e64d3a7` (D32)        | ~~Low~~ | ~~5 min~~ | ~~UX~~ |
+| ~~24~~ | ~~Add timeout flag (`--timeout <seconds>`)~~ done at `e64d3a7` (D33)    | ~~Low~~ | ~~10 min~~ | ~~UX~~ |
+| ~~25~~ | ~~Add Go module vulnerabilities badge to README~~ Won't implement — govulncheck CI job covers visibility | ~~Low~~ | ~~5 min~~ | ~~Documentation~~ |
 
 ---
 
