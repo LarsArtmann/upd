@@ -56,7 +56,8 @@ number inside each constraint string changes. Nothing else is touched.
 ## Quick Start
 
 ```bash
-# Install (requires Go 1.26+ with GOEXPERIMENT=jsonv2)
+# Install (requires Go 1.26.7+ with GOEXPERIMENT=jsonv2; the toolchain
+# auto-downloads if needed)
 GOEXPERIMENT=jsonv2 go install github.com/LarsArtmann/upd/cmd/upd@latest
 
 # Dry run — show what would change without writing
@@ -91,7 +92,8 @@ Example output (`upd -n -C`):
 GOEXPERIMENT=jsonv2 go install github.com/LarsArtmann/upd/cmd/upd@latest
 ```
 
-Requires Go 1.26+ with the `json/v2` experiment enabled.
+Requires Go 1.26.7+ (the toolchain auto-downloads if needed) with the
+`json/v2` experiment enabled.
 
 ### Nix
 
@@ -324,7 +326,7 @@ nix run .#demo -- --publish # render + upload to vhs.charm.sh cloud
 ## Origin
 
 - **Original:** [`rse/upd`](https://github.com/rse/upd) — an
-  [pnpm](https://www.npmjs.com/package/upd) package written in
+  [npm](https://www.npmjs.com/package/upd) package written in
   JavaScript/Node.js by
   [Dr. Ralf S. Engelschall](https://engelschall.com/).
 - **This project:** a complete [Go](https://go.dev/) rewrite by
