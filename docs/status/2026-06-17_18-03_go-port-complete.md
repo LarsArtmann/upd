@@ -121,28 +121,28 @@ diff output) — caught and fixed by tests before any commit.
 
 ### High Priority
 
-1. **`min`/`max` builtins** — `progress.go` uses custom `if` logic instead of Go 1.21+ `min()` builtin; gopls hints at this
-2. **Tagged switch in renderer** — `render.go:104` uses `switch` with cases on booleans instead of tagged switch on `spec.State`; gopls hints
-3. **`strings.Contains` everywhere** — test file had custom `contains`/`indexOf` helpers; cleaned up but should audit all files
-4. **No integration test** — No test that exercises the full pipeline (read → fetch → compare → write) with a mock registry
-5. **No bench tests** — No performance benchmarks for diff, glob, or manifest building
-6. **Duplicated main.go logic** — `run()` has two branches (quiet/non-quiet) that duplicate `FetchAll` + `ApplyUpdates` + `RenderTable` + `Write`; should extract a shared helper
+1. ~~**`min`/`max` builtins** — `progress.go` uses custom `if` logic instead of Go 1.21+ `min()` builtin; gopls hints at this~~ done at `e64d3a7` era (`progress.go:60-68`)
+2. ~~**Tagged switch in renderer** — `render.go:104` uses `switch` with cases on booleans instead of tagged switch on `spec.State`; gopls hints~~ done (`render.go:164`)
+3. ~~**`strings.Contains` everywhere** — test file had custom `contains`/`indexOf` helpers; cleaned up but should audit all files~~ done — helpers removed in round-2 ("Dead code removal")
+4. ~~**No integration test** — No test that exercises the full pipeline (read → fetch → compare → write) with a mock registry~~ done at `e64d3a7` (`integration_test.go`)
+5. ~~**No bench tests** — No performance benchmarks for diff, glob, or manifest building~~ done at `e64d3a7`
+6. ~~**Duplicated main.go logic** — `run()` has two branches (quiet/non-quiet) that duplicate `FetchAll` + `ApplyUpdates` + `RenderTable` + `Write`; should extract a shared helper~~ done at `e64d3a7` (D24)
 
 ### Medium Priority
 
-7. **Progress bar width** — Hardcoded 80-char clear; should detect terminal width or use `\r` + overwrite
-8. **HTTP client reuse** — `FetchPackument` creates a new `http.Client` per call; should share one client across all goroutines for connection pooling
-9. **Context timeout** — No overall deadline on the fetch phase; individual requests have 20s but 1000 deps × retries could take long
-10. **Retry logic** — No retries on transient registry errors (429, 5xx)
-11. **Registry config** — Hardcoded `registry.npmjs.org`; original used pacote which respects `.npmrc`
-12. **Scoped package encoding** — `url.PathEscape` may not match NPM's expected encoding for scoped packages (`@scope/name` → `@scope%2Fname`)
+7. ~~**Progress bar width** — Hardcoded 80-char clear; should detect terminal width or use `\r` + overwrite~~ done at `e64d3a7` (D42)
+8. ~~**HTTP client reuse** — `FetchPackument` creates a new `http.Client` per call; should share one client across all goroutines for connection pooling~~ done — `RegistryClient` shares one client (round-2)
+9. ~~**Context timeout** — No overall deadline on the fetch phase; individual requests have 20s but 1000 deps × retries could take long~~ done at `e64d3a7` (D30 signal-aware context)
+10. ~~**Retry logic** — No retries on transient registry errors (429, 5xx)~~ done at `e64d3a7` (D28)
+11. ~~**Registry config** — Hardcoded `registry.npmjs.org`; original used pacote which respects `.npmrc`~~ done for the URL (`--registry`, D29); `.npmrc` moved to TODO_LIST.md #12
+12. ~~**Scoped package encoding** — `url.PathEscape` may not match NPM's expected encoding for scoped packages (`@scope/name` → `@scope%2Fname`)~~ done at `e64d3a7` (`TestScopedPackageURLEncoding`)
 
 ### Low Priority
 
-13. **Color detection** — `--noColor` is manual flag; should also auto-detect non-TTY (pipe) and disable colors
-14. **Table column widths** — Hardcoded to match original JS; long package names (>37 chars) get truncated but not elegantly
-15. **Structured logging** — No `slog` logging; errors go to stderr only
-16. **Version string injection** — `ProgramVersion` is hardcoded `1.0.0`; should use `ldflags` injection from git tags
+13. ~~**Color detection** — `--noColor` is manual flag; should also auto-detect non-TTY (pipe) and disable colors~~ done at `e64d3a7` (D31)
+14. ~~**Table column widths** — Hardcoded to match original JS; long package names (>37 chars) get truncated but not elegantly~~ moved to ROADMAP.md theme 2 (terminal-width-aware layout)
+15. ~~**Structured logging** — No `slog` logging; errors go to stderr only~~ moved to TODO_LIST.md #27
+16. ~~**Version string injection** — `ProgramVersion` is hardcoded `1.0.0`; should use `ldflags` injection from git tags~~ done — ldflags injection from flake/CI
 
 ---
 
@@ -150,38 +150,39 @@ diff output) — caught and fixed by tests before any commit.
 
 | #  | Task                                                        | Impact | Effort | Category       |
 | -- | ----------------------------------------------------------- | ------ | ------ | -------------- |
-| 1  | Fix gopls hints: use `min()` builtin, tagged switch         | Low    | 5 min  | Code quality   |
-| 2  | Extract shared helper in `main.go` to remove duplication    | Medium | 15 min | Code quality   |
-| 3  | Add integration test with mock HTTP registry server         | High   | 1 hour | Testing        |
-| 4  | Share `http.Client` across goroutines in engine             | Medium | 15 min | Performance    |
-| 5  | Add `-g` (greatest) end-to-end manual test                  | Low    | 5 min  | Testing        |
-| 6  | Write `flake.nix` for dev/build/test/lint                   | High   | 30 min | DevOps         |
-| 7  | Write project `AGENTS.md` with architecture decisions       | High   | 20 min | Documentation  |
-| 8  | Auto-detect non-TTY and disable colors                      | Medium | 10 min | UX             |
-| 9  | Add retry logic for transient registry errors (429, 5xx)    | Medium | 30 min | Reliability    |
-| 10 | Add overall context timeout for fetch phase                 | Medium | 15 min | Reliability    |
-| 11 | Add bench tests for diff and glob                           | Low    | 20 min | Testing        |
-| 12 | Inject version via `-ldflags` from git tag                  | Low    | 10 min | Release        |
-| 13 | Create GitHub Actions CI (build, test, vet, lint)           | High   | 30 min | DevOps         |
-| 14 | Run `gosec` and `govulncheck` and fix findings              | Medium | 20 min | Security       |
-| 15 | Write `Dockerfile` for Go (multi-stage, scratch/distroless) | Medium | 20 min | DevOps         |
-| 16 | Verify scoped package URL encoding against live registry    | Medium | 15 min | Correctness    |
-| 16 | Add `.npmrc` parsing for custom registry support            | Medium | 30 min | Feature parity |
-| 18 | Add `FEATURES.md` with feature inventory                    | Low    | 15 min | Documentation  |
-| 15 | Add `TODO_LIST.md` with short-term tasks                    | Low    | 15 min | Documentation  |
-| 20 | Generate shell completions (bash/zsh/fish)                  | Low    | 20 min | UX             |
-| 21 | Add `--registry <url>` flag for custom registry             | Medium | 15 min | Feature parity |
-| 22 | Add JSON output mode (`--json`) for CI/scripting            | Medium | 30 min | Feature        |
-| 23 | Add `--dry-run` as alias for `--nop`                        | Low    | 5 min  | UX             |
-| 24 | Add timeout flag (`--timeout <seconds>`)                    | Low    | 10 min | UX             |
-| 25 | Add Go module vulnerabilities badge to README               | Low    | 5 min  | Documentation  |
+| 1  | ~~Fix gopls hints: use `min()` builtin, tagged switch~~ done at `e64d3a7` era | Low    | 5 min  | Code quality   |
+| 2  | ~~Extract shared helper in `main.go` to remove duplication~~ done at `e64d3a7` (D24) | Medium | 15 min | Code quality   |
+| 3  | ~~Add integration test with mock HTTP registry server~~ done at `e64d3a7` | High   | 1 hour | Testing        |
+| 4  | ~~Share `http.Client` across goroutines in engine~~ done (round-2 `RegistryClient`) | Medium | 15 min | Performance    |
+| 5  | ~~Add `-g` (greatest) end-to-end manual test~~ done (engine greatest-mode tests) | Low    | 5 min  | Testing        |
+| 6  | ~~Write `flake.nix` for dev/build/test/lint~~ done                      | High   | 30 min | DevOps         |
+| 7  | ~~Write project `AGENTS.md` with architecture decisions~~ done at `64d174c` (kept current) | High   | 20 min | Documentation  |
+| 8  | ~~Auto-detect non-TTY and disable colors~~ done at `e64d3a7` (D31)     | Medium | 10 min | UX             |
+| 9  | ~~Add retry logic for transient registry errors (429, 5xx)~~ done at `e64d3a7` (D28) | Medium | 30 min | Reliability    |
+| 10 | ~~Add overall context timeout for fetch phase~~ done at `e64d3a7` (D30)  | Medium | 15 min | Reliability    |
+| 11 | ~~Add bench tests for diff and glob~~ done at `e64d3a7`                | Low    | 20 min | Testing        |
+| 12 | ~~Inject version via `-ldflags` from git tag~~ done                     | Low    | 10 min | Release        |
+| 13 | ~~Create GitHub Actions CI (build, test, vet, lint)~~ done              | High   | 30 min | DevOps         |
+| 14 | ~~Run `gosec` and `govulncheck` and fix findings~~ done                 | Medium | 20 min | Security       |
+| 15 | ~~Write `Dockerfile` for Go (multi-stage, scratch/distroless)~~ Won't implement — R1 | Medium | 20 min | DevOps         |
+| 16 | ~~Verify scoped package URL encoding against live registry~~ done at `e64d3a7` (mock-verified; live check → TODO_LIST.md #26) | Medium | 15 min | Correctness    |
+| 16 | ~~Add `.npmrc` parsing for custom registry support~~ moved to TODO_LIST.md #12 | Medium | 30 min | Feature parity |
+| 18 | ~~Add `FEATURES.md` with feature inventory~~ done at `474f9dd`          | Low    | 15 min | Documentation  |
+| 15 | ~~Add `TODO_LIST.md` with short-term tasks~~ done at `474f9dd`          | Low    | 15 min | Documentation  |
+| 20 | ~~Generate shell completions (bash/zsh/fish)~~ done at `81d8c44`        | Low    | 20 min | UX             |
+| 21 | ~~Add `--registry <url>` flag for custom registry~~ done at `e64d3a7` (D29) | Medium | 15 min | Feature parity |
+| 22 | ~~Add JSON output mode (`--json`) for CI/scripting~~ done at `e64d3a7` (D34) | Medium | 30 min | Feature        |
+| 23 | ~~Add `--dry-run` as alias for `--nop`~~ done at `e64d3a7` (D32)        | Low    | 5 min  | UX             |
+| 24 | ~~Add timeout flag (`--timeout <seconds>`)~~ done at `e64d3a7` (D33)    | Low    | 10 min | UX             |
+| 25 | ~~Add Go module vulnerabilities badge to README~~ Won't implement — govulncheck CI job covers visibility | Low    | 5 min  | Documentation  |
 
 ---
 
 ## g) Top Question I Cannot Figure Out Myself
 
 **Should we keep this as a faithful 1:1 port of the original `upd`, or evolve it into
-a more general dependency updater?**
+a more general dependency updater?** → ~~answered by history~~: shipped as the faithful
+NPM-only port (option A); generalization lives in `ROADMAP.md` theme 3 as a raw idea.
 
 The original is NPM-specific. The Go architecture (manifest builder, glob filter,
 semver comparison, formatting-preserving writer) is general enough to support other

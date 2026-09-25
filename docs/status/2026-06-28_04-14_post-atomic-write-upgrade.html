@@ -850,9 +850,12 @@
             <code>encoding/json/v2</code>. <code>--pinLatest</code> was ADDED.
             Error handling was OVERHAULED (<code>Spec.Err</code>,
             <code>ErrRegistryUnavailable</code>, exit code 75, warnings
-            pipeline). Open items from this snapshot that remain: golangci-lint
+            pipeline). <s>Open items from this snapshot that remain: golangci-lint
             in CI, retry logic, auto color detection on non-TTY,
-            <code>--registry</code> flag, and govulncheck/gosec scanning.
+            <code>--registry</code> flag, and govulncheck/gosec scanning.</s>
+            All five resolved at <code>e64d3a7</code> and the CI security jobs (docs-health pass 2026-09-25): golangci-lint in CI (D25),
+            retry logic (D28), auto color detection (D31),
+            <code>--registry</code> flag (D29), govulncheck/gosec (CI + linter).
           </p>
         </div>
 

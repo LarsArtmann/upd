@@ -1,7 +1,7 @@
 # Superb Error Handling for `upd` — Design & Implementation
 
 **Date:** 2026-07-09
-**Status:** Implemented across two passes, verified (build + vet + race + golangci-lint, 0 issues)
+**Status:** Implemented across two passes, verified (build + vet + race + golangci-lint, 0 issues). → Note (added 2026-09-25): the library stance below ("not adopting go-error-family") was **overturned on 2026-07-16** — `go-error-family` was adopted on top of this work (`db891d0`, `3cd313e`); the nine stdlib fixes remain the foundation it wrapped. The "deliberate non-changes" #1 (exit code on partial failure) was later superseded by `ErrPartialFailure` (`077f325`).
 **Companion to:** `2026-07-09_error-handling-libraries.md` (the library-adoption report)
 
 ---

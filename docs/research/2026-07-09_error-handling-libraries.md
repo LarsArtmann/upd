@@ -1,8 +1,8 @@
 # Research: Should `upd` adopt go-error-family, its bridge module, and/or samber/oops?
 
 **Date:** 2026-07-09
-**Status:** Recommendation produced
-**Verdict (TL;DR):** Do **not** adopt any of the three right now. None of them solve a problem `upd` actually has today (no retry loop, no HTTP API, no observability stack). Revisit only if `upd` grows one of those. Full reasoning below.
+**Status:** ~~Recommendation produced~~ superseded 2026-07-16 — see below
+**Verdict (TL;DR):** ~~Do **not** adopt any of the three right now. None of them solve a problem `upd` actually has today (no retry loop, no HTTP API, no observability stack). Revisit only if `upd` grows one of those. Full reasoning below.~~ **OVERTURNED 2026-07-16:** `go-error-family` was adopted after all (`db891d0`, messages/templates at `3cd313e`), because the "3-dependency policy" this report leaned on was fabricated by a prior session and never a real constraint. The retry loop also materialized (`e64d3a7`), which was this report's own revisit trigger. `samber/oops` and the bridge remain rejected. Historical analysis below is kept for context; the contra arguments C2/C4 about adoption cost were accepted and paid.
 
 ---
 
@@ -148,6 +148,10 @@ The **only** exit-code change that would be genuinely user-visible and useful: a
 ## 5. Recommendation
 
 ### Primary: Stay on the stdlib
+
+> **Superseded 2026-07-16:** adoption happened (`db891d0`). The stdlib audit below
+> remains accurate as the pre-adoption state; the exit-code-75 snippet materialized
+> as `errorfamily.HandleError` + `Family.ExitCode()`.
 
 `upd`'s error handling is already idiomatic Go: sentinel errors, `%w` wrapping, `errors.Is`. The tool is too small and too focused to benefit from a classification protocol or an enrichment framework — none of the three libraries solve a problem the tool currently has.
 
