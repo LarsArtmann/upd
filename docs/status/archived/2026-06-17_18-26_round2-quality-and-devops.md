@@ -69,22 +69,22 @@ The project is now **production-ready** for its current feature scope.
 
 ## b) PARTIALLY DONE
 
-| ~~**LSP warnings**~~        | ~~Build/vet/test all pass~~ done — errcheck fix landed; the stale-cache warnings cleared | ~~golangci_lint_ls reports `errcheck` warnings on `fmt.Fprintln`/`fmt.Fprintf` in config.go — these are intentional (writing to help/version output where errors are meaningless)~~ (historical: `PrintUsage` itself was later removed by the fang migration) |
-| ~~**Progress bar**~~            | ~~Works functionally~~ done at `e64d3a7` — `COLUMNS` width detection (D42)      | ~~Hardcoded 80-char clear width; no terminal width detection~~ resolved (80 remains the fallback)                                                    |
-| ~~**Scoped package encoding**~~ | ~~`url.PathEscape` used~~ done at `e64d3a7` — `TestScopedPackageURLEncoding` (mock)   | ~~Not verified against live scoped packages (`@scope/name`)~~ live check → TODO_LIST.md #26                                                       |
+| ~~**LSP warnings**~~ | ~~Build/vet/test all pass~~ done — errcheck fix landed; the stale-cache warnings cleared | ~~golangci_lint_ls reports `errcheck` warnings on `fmt.Fprintln`/`fmt.Fprintf` in config.go — these are intentional (writing to help/version output where errors are meaningless)~~ (historical: `PrintUsage` itself was later removed by the fang migration) |
+| ~~**Progress bar**~~ | ~~Works functionally~~ done at `e64d3a7` — `COLUMNS` width detection (D42) | ~~Hardcoded 80-char clear width; no terminal width detection~~ resolved (80 remains the fallback) |
+| ~~**Scoped package encoding**~~ | ~~`url.PathEscape` used~~ done at `e64d3a7` — `TestScopedPackageURLEncoding` (mock) | ~~Not verified against live scoped packages (`@scope/name`)~~ live check → TODO_LIST.md #26 |
 
 ## c) NOT STARTED
 
-| Area                     | Notes                                                       |
-| ------------------------ | ----------------------------------------------------------- |
-| ~~**Docker**~~               | ~~No Dockerfile for the Go version~~ Won't implement — R1                            |
-| ~~**gosec / govulncheck**~~  | ~~No security scanning~~ done — govulncheck CI job + gosec linter                   |
-| ~~**Shell completions**~~    | ~~No bash/zsh/fish completions~~ done at `81d8c44` (Cobra)                          |
-| ~~**Retry logic**~~          | ~~No retries on transient registry errors (429, 5xx)~~ done at `e64d3a7`            |
-| ~~**`.npmrc` support**~~     | ~~No custom registry URL from `.npmrc` → moved to TODO_LIST.md #12~~ |
-| ~~**Auto color detection**~~ | ~~`--noColor` is manual only; doesn't auto-disable on non-TTY~~ done at `e64d3a7`   |
-| ~~**JSON output mode**~~     | ~~No `--json` flag for CI/scripting~~ done at `e64d3a7`                             |
-| ~~**Bench tests**~~          | ~~No performance benchmarks~~ done at `e64d3a7` (`benchmark_test.go`)               |
+| Area                         | Notes                                                                             |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| ~~**Docker**~~               | ~~No Dockerfile for the Go version~~ Won't implement — R1                         |
+| ~~**gosec / govulncheck**~~  | ~~No security scanning~~ done — govulncheck CI job + gosec linter                 |
+| ~~**Shell completions**~~    | ~~No bash/zsh/fish completions~~ done at `81d8c44` (Cobra)                        |
+| ~~**Retry logic**~~          | ~~No retries on transient registry errors (429, 5xx)~~ done at `e64d3a7`          |
+| ~~**`.npmrc` support**~~     | ~~No custom registry URL from `.npmrc` → moved to TODO_LIST.md #12~~              |
+| ~~**Auto color detection**~~ | ~~`--noColor` is manual only; doesn't auto-disable on non-TTY~~ done at `e64d3a7` |
+| ~~**JSON output mode**~~     | ~~No `--json` flag for CI/scripting~~ done at `e64d3a7`                           |
+| ~~**Bench tests**~~          | ~~No performance benchmarks~~ done at `e64d3a7` (`benchmark_test.go`)             |
 
 ## d) TOTALLY FUCKED UP
 
@@ -120,33 +120,33 @@ The project is now **production-ready** for its current feature scope.
 
 ## f) Top 25 Things to Get Done Next
 
-| #  | Task                                          | Impact | Effort | Category       |
-| -- | --------------------------------------------- | ------ | ------ | -------------- |
-| ~~1~~ | ~~Write project `AGENTS.md`~~ done                              | ~~High~~ | ~~20 min~~ | ~~Documentation~~ |
-| ~~2~~ | ~~Add golangci-lint to CI~~ done at `e64d3a7`                   | ~~High~~ | ~~15 min~~ | ~~DevOps~~ |
-| ~~3~~ | ~~Add retry logic for 429/5xx registry errors~~ done at `e64d3a7` | ~~High~~ | ~~30 min~~ | ~~Reliability~~ |
-| ~~4~~ | ~~Auto-detect non-TTY and disable colors~~ done at `e64d3a7`    | ~~Medium~~ | ~~10 min~~ | ~~UX~~ |
-| ~~5~~ | ~~Add `--registry <url>` flag~~ done at `e64d3a7`               | ~~Medium~~ | ~~15 min~~ | ~~Feature parity~~ |
-| ~~6~~ | ~~Type `Section` as enum instead of bare string~~ Won't implement — R3 | ~~Medium~~ | ~~20 min~~ | ~~Type safety~~ |
-| ~~7~~ | ~~Add context deadline for entire fetch phase~~ done at `e64d3a7` | ~~Medium~~ | ~~15 min~~ | ~~Reliability~~ |
-| ~~8~~ | ~~Write Dockerfile (multi-stage, distroless)~~ Won't implement — R1 | ~~Medium~~ | ~~20 min~~ | ~~DevOps~~ |
-| ~~9~~ | ~~Add bench tests for diff + glob~~ done at `e64d3a7`           | ~~Low~~ | ~~20 min~~ | ~~Testing~~ |
-| ~~10~~ | ~~Run `govulncheck` and fix findings~~ done                     | ~~Medium~~ | ~~15 min~~ | ~~Security~~ |
-| ~~11~~ | ~~Run `gosec` and fix findings~~ done (golangci config)         | ~~Medium~~ | ~~15 min~~ | ~~Security~~ |
-| ~~12~~ | ~~Add `--json` output mode~~ done at `e64d3a7`                  | ~~Medium~~ | ~~30 min~~ | ~~Feature~~ |
-| ~~13~~ | ~~Add GoReleaser config~~ moved to TODO_LIST.md #3             | ~~Medium~~ | ~~30 min~~ | ~~Release~~ |
-| ~~14~~ | ~~Verify scoped package URL encoding live~~ done at `e64d3a7` (mock-verified; live check → TODO_LIST.md #26) | ~~Medium~~ | ~~15 min~~ | ~~Correctness~~ |
-| ~~15~~ | ~~Add `--timeout` flag~~ done at `e64d3a7`                      | ~~Low~~ | ~~10 min~~ | ~~UX~~ |
-| ~~16~~ | ~~Tune HTTP transport (MaxIdleConns, etc.)~~ done at `e64d3a7`  | ~~Low~~ | ~~10 min~~ | ~~Performance~~ |
-| ~~17~~ | ~~Add `--dry-run` as alias for `--nop`~~ done at `e64d3a7`      | ~~Low~~ | ~~5 min~~ | ~~UX~~ |
-| ~~18~~ | ~~Extract `PackageName` branded type~~ Won't implement — R4     | ~~Low~~ | ~~15 min~~ | ~~Type safety~~ |
-| ~~19~~ | ~~Add `FEATURES.md`~~ done at `474f9dd`                         | ~~Low~~ | ~~15 min~~ | ~~Documentation~~ |
-| ~~20~~ | ~~Add `TODO_LIST.md`~~ done at `474f9dd`                        | ~~Low~~ | ~~15 min~~ | ~~Documentation~~ |
-| ~~21~~ | ~~Add shell completions~~ done at `81d8c44`                     | ~~Low~~ | ~~20 min~~ | ~~UX~~ |
-| ~~22~~ | ~~Add `.npmrc` parsing for registry config~~ moved to TODO_LIST.md #12 | ~~Medium~~ | ~~30 min~~ | ~~Feature parity~~ |
-| ~~23~~ | ~~Add coverage threshold to CI (fail if <80%)~~ moved to TODO_LIST.md #18 | ~~Low~~ | ~~5 min~~ | ~~DevOps~~ |
-| ~~24~~ | ~~Add dependabot/renovate config~~ done — `.github/dependabot.yml` | ~~Low~~ | ~~10 min~~ | ~~DevOps~~ |
-| ~~25~~ | ~~Add performance benchmark to CI~~ moved to ROADMAP.md theme 4 | ~~Low~~ | ~~15 min~~ | ~~DevOps~~ |
+| #      | Task                                                                                                         | Impact     | Effort     | Category           |
+| ------ | ------------------------------------------------------------------------------------------------------------ | ---------- | ---------- | ------------------ |
+| ~~1~~  | ~~Write project `AGENTS.md`~~ done                                                                           | ~~High~~   | ~~20 min~~ | ~~Documentation~~  |
+| ~~2~~  | ~~Add golangci-lint to CI~~ done at `e64d3a7`                                                                | ~~High~~   | ~~15 min~~ | ~~DevOps~~         |
+| ~~3~~  | ~~Add retry logic for 429/5xx registry errors~~ done at `e64d3a7`                                            | ~~High~~   | ~~30 min~~ | ~~Reliability~~    |
+| ~~4~~  | ~~Auto-detect non-TTY and disable colors~~ done at `e64d3a7`                                                 | ~~Medium~~ | ~~10 min~~ | ~~UX~~             |
+| ~~5~~  | ~~Add `--registry <url>` flag~~ done at `e64d3a7`                                                            | ~~Medium~~ | ~~15 min~~ | ~~Feature parity~~ |
+| ~~6~~  | ~~Type `Section` as enum instead of bare string~~ Won't implement — R3                                       | ~~Medium~~ | ~~20 min~~ | ~~Type safety~~    |
+| ~~7~~  | ~~Add context deadline for entire fetch phase~~ done at `e64d3a7`                                            | ~~Medium~~ | ~~15 min~~ | ~~Reliability~~    |
+| ~~8~~  | ~~Write Dockerfile (multi-stage, distroless)~~ Won't implement — R1                                          | ~~Medium~~ | ~~20 min~~ | ~~DevOps~~         |
+| ~~9~~  | ~~Add bench tests for diff + glob~~ done at `e64d3a7`                                                        | ~~Low~~    | ~~20 min~~ | ~~Testing~~        |
+| ~~10~~ | ~~Run `govulncheck` and fix findings~~ done                                                                  | ~~Medium~~ | ~~15 min~~ | ~~Security~~       |
+| ~~11~~ | ~~Run `gosec` and fix findings~~ done (golangci config)                                                      | ~~Medium~~ | ~~15 min~~ | ~~Security~~       |
+| ~~12~~ | ~~Add `--json` output mode~~ done at `e64d3a7`                                                               | ~~Medium~~ | ~~30 min~~ | ~~Feature~~        |
+| ~~13~~ | ~~Add GoReleaser config~~ moved to TODO_LIST.md #3                                                           | ~~Medium~~ | ~~30 min~~ | ~~Release~~        |
+| ~~14~~ | ~~Verify scoped package URL encoding live~~ done at `e64d3a7` (mock-verified; live check → TODO_LIST.md #26) | ~~Medium~~ | ~~15 min~~ | ~~Correctness~~    |
+| ~~15~~ | ~~Add `--timeout` flag~~ done at `e64d3a7`                                                                   | ~~Low~~    | ~~10 min~~ | ~~UX~~             |
+| ~~16~~ | ~~Tune HTTP transport (MaxIdleConns, etc.)~~ done at `e64d3a7`                                               | ~~Low~~    | ~~10 min~~ | ~~Performance~~    |
+| ~~17~~ | ~~Add `--dry-run` as alias for `--nop`~~ done at `e64d3a7`                                                   | ~~Low~~    | ~~5 min~~  | ~~UX~~             |
+| ~~18~~ | ~~Extract `PackageName` branded type~~ Won't implement — R4                                                  | ~~Low~~    | ~~15 min~~ | ~~Type safety~~    |
+| ~~19~~ | ~~Add `FEATURES.md`~~ done at `474f9dd`                                                                      | ~~Low~~    | ~~15 min~~ | ~~Documentation~~  |
+| ~~20~~ | ~~Add `TODO_LIST.md`~~ done at `474f9dd`                                                                     | ~~Low~~    | ~~15 min~~ | ~~Documentation~~  |
+| ~~21~~ | ~~Add shell completions~~ done at `81d8c44`                                                                  | ~~Low~~    | ~~20 min~~ | ~~UX~~             |
+| ~~22~~ | ~~Add `.npmrc` parsing for registry config~~ moved to TODO_LIST.md #12                                       | ~~Medium~~ | ~~30 min~~ | ~~Feature parity~~ |
+| ~~23~~ | ~~Add coverage threshold to CI (fail if <80%)~~ moved to TODO_LIST.md #18                                    | ~~Low~~    | ~~5 min~~  | ~~DevOps~~         |
+| ~~24~~ | ~~Add dependabot/renovate config~~ done — `.github/dependabot.yml`                                           | ~~Low~~    | ~~10 min~~ | ~~DevOps~~         |
+| ~~25~~ | ~~Add performance benchmark to CI~~ moved to ROADMAP.md theme 4                                              | ~~Low~~    | ~~15 min~~ | ~~DevOps~~         |
 
 ## g) Top Question I Cannot Figure Out Myself
 

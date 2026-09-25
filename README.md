@@ -116,8 +116,7 @@ nix run .#build    # or: GOEXPERIMENT=jsonv2 go build -o upd ./cmd/upd
 ### Releases
 
 Release notes for every version live in [CHANGELOG.md](CHANGELOG.md);
-published releases are on the [GitHub Releases
-page](https://github.com/LarsArtmann/upd/releases).
+published releases are on the [GitHub Releases page](https://github.com/LarsArtmann/upd/releases).
 
 ## Usage
 
