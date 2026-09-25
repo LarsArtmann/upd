@@ -113,6 +113,12 @@ cd upd
 nix run .#build    # or: GOEXPERIMENT=jsonv2 go build -o upd ./cmd/upd
 ```
 
+### Releases
+
+Release notes for every version live in [CHANGELOG.md](CHANGELOG.md);
+published releases are on the [GitHub Releases
+page](https://github.com/LarsArtmann/upd/releases).
+
 ## Usage
 
 ```
@@ -315,6 +321,9 @@ go build ./cmd/upd
 go test -race ./...
 go vet ./...
 ```
+
+Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md) for the nix-first
+workflow and conventions.
 
 ### Render the demo
 

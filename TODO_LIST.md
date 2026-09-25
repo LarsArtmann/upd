@@ -40,6 +40,7 @@
 | 18 | Coverage threshold gate in CI (fail if < 80%)                                                                                      | prior TODO #5                         |                                                                  |
 | 19 | Derive `updates` count from the manifest inside `RenderJSON` (drop the redundant param, like `errCount` was)                        | 2026-07-09_18-55 e.3, f.9             |                                                                  |
 | 20 | Migrate benchmarks from `b.N` to `b.Loop()`                                                                                        | 2026-07-09_18-55 e.11                 | Go 1.24+ pattern; gopls modernize hint.                           |
+| 28 | Include `-race` in `nix run .#test` (or add a `.#test-race` app) so the local gate matches CI                                        | 2026-07-26 report f.38                | CI runs `-race`; the local test app currently doesn't.             |
 
 ## Maintenance & CI
 
