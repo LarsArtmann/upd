@@ -54,13 +54,13 @@ However, several known limitations remain: the hidden `--noColor` alias still le
 
 ## b) PARTIALLY DONE
 
-- [ ] **Unified color override** — The `-C`/`--no-color` and `UPD_NO_COLOR` paths are verified via unit tests that inspect the returned `ColorScheme`. There is no end-to-end test that asserts the _rendered_ fang help output contains no ANSI color codes when `-C` is passed in a TTY context. The struct-based test is strong but not a full rendering test.
-- [ ] **`--noColor` alias deprecation** — The alias is hidden and still works, but there is no deprecation warning, no documented removal timeline, and no code comment explaining when it can be removed.
-- [ ] **Man page polish** — The generated roff still lists the hidden `--noColor` alias because `mango` does not honor Cobra's hidden-flag flag. Short flags are still rendered with `--` prefix (e.g., `--C --no-color`), a `mango-cobra` formatting quirk.
-- [ ] **Completion discoverability** — The `completion` command remains hidden from help, which is standard Cobra behavior but means users must discover it via docs or shell-setup guides.
-- [ ] **Error punctuation** — fang's `DefaultErrorHandler` appends a period to `err.Error()`. Some `errorfamily` messages already end with punctuation, so double periods remain possible in rare cases.
-- [ ] **Usage line accuracy** — Fang still renders `upd [flags]`; it could be clearer about positional `[pattern ...]` args.
-- [ ] **Invalid env var feedback** — Malformed env vars are silently ignored and the default is kept. This is user-friendly but can make debugging hard (e.g., `UPD_TIMEOUT=30` without a unit silently falls back to `20s` because `30` is not a valid `time.Duration`).
+- [ ] **Unified color override** — The `-C`/`--no-color` and `UPD_NO_COLOR` paths are verified via unit tests that inspect the returned `ColorScheme`. There is no end-to-end test that asserts the _rendered_ fang help output contains no ANSI color codes when `-C` is passed in a TTY context. The struct-based test is strong but not a full rendering test. ← still open
+- [ ] ~~**`--noColor` alias deprecation** — The alias is hidden and still works, but there is no deprecation warning, no documented removal timeline, and no code comment explaining when it can be removed.~~ moved to TODO_LIST.md #7 — still open
+- [ ] ~~**Man page polish** — The generated roff still lists the hidden `--noColor` alias because `mango` does not honor Cobra's hidden-flag flag. Short flags are still rendered with `--` prefix (e.g., `--C --no-color`), a `mango-cobra` formatting quirk.~~ moved to TODO_LIST.md #7 — still open
+- [ ] ~~**Completion discoverability** — The `completion` command remains hidden from help, which is standard Cobra behavior but means users must discover it via docs or shell-setup guides.~~ done (docs-health pass 2026-09-25 — README "Shell Completions" section documents it)
+- [ ] ~~**Error punctuation** — fang's `DefaultErrorHandler` appends a period to `err.Error()`. Some `errorfamily` messages already end with punctuation, so double periods remain possible in rare cases.~~ moved to ROADMAP.md theme 2 — still open
+- [ ] ~~**Usage line accuracy** — Fang still renders `upd [flags]`; it could be clearer about positional `[pattern ...]` args.~~ moved to ROADMAP.md theme 2 — still open
+- [ ] ~~**Invalid env var feedback** — Malformed env vars are silently ignored and the default is kept. This is user-friendly but can make debugging hard (e.g., `UPD_TIMEOUT=30` without a unit silently falls back to `20s` because `30` is not a valid `time.Duration`).~~ moved to TODO_LIST.md #8 — still open
 
 ---
 
@@ -68,43 +68,43 @@ However, several known limitations remain: the hidden `--noColor` alias still le
 
 ### Features & UX
 
-- [ ] Typo suggestions for unknown flags / subcommands (`did you mean --json?`).
-- [ ] Structured logging or `--debug` log level.
-- [ ] New subcommands: `check`, `doctor`, `init`, or `config`.
-- [ ] Config file support (`.updrc`, `upd.json`, etc.).
-- [ ] Human migration guide / blog post for the CLI change.
-- [ ] Benchmark comparing old vs new binary size, startup time, and build time.
-- [ ] Deprecation warning for `--noColor` and a documented removal timeline.
-- [ ] Re-render VHS demos (`nix run .#demo`) so published GIFs reflect the new fang-styled help.
-- [ ] Evaluate whether `--no-color` should imply `NO_COLOR` for child processes.
-- [ ] Consider a `--silent` alias for `--quiet` and `--update` alias for default behavior.
-- [ ] Consider a `--format` flag to select output format instead of separate `--json`.
+- [ ] ~~Typo suggestions for unknown flags / subcommands (`did you mean --json?`).~~ moved to TODO_LIST.md #9
+- [ ] ~~Structured logging or `--debug` log level.~~ moved to TODO_LIST.md #27 (slog) / ROADMAP.md theme 2
+- [ ] ~~New subcommands: `check`, `doctor`, `init`, or `config`.~~ moved to ROADMAP.md theme 2
+- [ ] ~~Config file support (`.updrc`, `upd.json`, etc.).~~ moved to ROADMAP.md theme 2
+- [ ] Human migration guide / blog post for the CLI change. ← open
+- [ ] Benchmark comparing old vs new binary size, startup time, and build time. ← open
+- [ ] ~~Deprecation warning for `--noColor` and a documented removal timeline.~~ moved to TODO_LIST.md #7
+- [ ] ~~Re-render VHS demos (`nix run .#demo`) so published GIFs reflect the new fang-styled help.~~ moved to TODO_LIST.md #10
+- [ ] Evaluate whether `--no-color` should imply `NO_COLOR` for child processes. ← open
+- [ ] ~~Consider a `--silent` alias for `--quiet` and `--update` alias for default behavior.~~ moved to TODO_LIST.md #11 (`--silent`; `--update` rejected R10-adjacent — default behavior IS update)
+- [ ] ~~Consider a `--format` flag to select output format instead of separate `--json`.~~ moved to TODO_LIST.md #11
 
 ### Tests
 
-- [ ] End-to-end test that rendered fang help contains no ANSI color codes when `-C` is passed.
-- [ ] Test for signal handling via fang (mock SIGINT/SIGTERM).
-- [ ] Test for `applyEnvFlags` that warns/logs on invalid env values.
-- [ ] Test for env-var precedence with boolean `false` values (e.g., `UPD_QUIET=false` with no CLI flag).
-- [ ] Test for env var plus CLI flag override for every flag type (string, int, duration, bool).
-- [ ] Test for `man` command not including `--noColor` in roff output.
-- [ ] Test for `completion` command being discoverable in `--help` if we decide to expose it.
-- [ ] Test for `fang.Execute` error handler rendering with `errorfamily` messages to catch double-period issues.
-- [ ] Test for `--version` and `-V` output format through `fang.Execute` (not just Cobra directly).
-- [ ] Integration test that runs the built binary end-to-end with a mock registry.
+- [x] End-to-end test that rendered fang help contains no ANSI color codes when `-C` is passed. ← still open
+- [ ] ~~Test for signal handling via fang (mock SIGINT/SIGTERM).~~ moved to TODO_LIST.md #15
+- [ ] ~~Test for `applyEnvFlags` that warns/logs on invalid env values.~~ owned by TODO_LIST.md #8
+- [x] ~~Test for env-var precedence with boolean `false` values (e.g., `UPD_QUIET=false` with no CLI flag).~~ done at `ea6493d` — `TestParseFlagsEnvVars` covers env application + CLI override + invalid fallback
+- [x] ~~Test for env var plus CLI flag override for every flag type (string, int, duration, bool).~~ done at `ea6493d` — same table covers string/int/duration/bool flags
+- [ ] Test for `man` command not including `--noColor` in roff output. ← still open (blocked on the mango leak)
+- [ ] Test for `completion` command being discoverable in `--help` if we decide to expose it. ← still open
+- [ ] Test for `fang.Execute` error handler rendering with `errorfamily` messages to catch double-period issues. ← still open
+- [x] ~~Test for `--version` and `-V` output format through `fang.Execute` (not just Cobra directly).~~ done at `ea6493d` — `TestVersionOutput` exercises the command pipeline
+- [ ] ~~Integration test that runs the built binary end-to-end with a mock registry.~~ moved to TODO_LIST.md #14
 
 ### Docs & Maintenance
 
-- [ ] Update `docs/DOMAIN_LANGUAGE.md` if any CLI terminology changed (e.g., `ColorSchemeFunc`, env-var constants).
-- [ ] Add a Nix flake check for `go mod tidy` cleanliness to prevent `go` directive drift.
-- [ ] Add `go mod verify` step to CI.
-- [ ] Update Nix builder to Go 1.26.5 (or use `GOTOOLCHAIN=auto`) to avoid `go` directive drift.
-- [ ] Add `nix flake check` to CI (currently only `build` + `test` + `lint` apps are used).
-- [ ] Consider splitting `cmd/upd/main.go` into smaller files if it grows further.
-- [ ] Review whether `printWarnings` should use a `Renderer` instead of raw ANSI codes.
-- [ ] Review fang dependency update policy (v2 is new, watch for breaking changes).
-- [ ] Schedule a periodic dependency audit (e.g., monthly) given the new Charm ecosystem surface.
-- [ ] Add GitHub issue templates for feature requests and bug reports.
+- [ ] Update `docs/DOMAIN_LANGUAGE.md` if any CLI terminology changed (e.g., `ColorSchemeFunc`, env-var constants). ← still open (verified 2026-09-25: no CLI terms in the glossary)
+- [ ] ~~Add a Nix flake check for `go mod tidy` cleanliness to prevent `go` directive drift.~~ moved to TODO_LIST.md #21
+- [ ] ~~Add `go mod verify` step to CI.~~ moved to TODO_LIST.md #21
+- [x] ~~Update Nix builder to Go 1.26.5 (or use `GOTOOLCHAIN=auto`) to avoid `go` directive drift.~~ done — CI uses `go-version-file: go.mod` and the toolchain is aligned at 1.26.7 (`e13492e`)
+- [ ] ~~Add `nix flake check` to CI (currently only `build` + `test` + `lint` apps are used).~~ moved to TODO_LIST.md #2
+- [ ] Consider splitting `cmd/upd/main.go` into smaller files if it grows further. ← open
+- [ ] Review whether `printWarnings` should use a `Renderer` instead of raw ANSI codes. ← open
+- [ ] Review fang dependency update policy (v2 is new, watch for breaking changes). ← open
+- [ ] Schedule a periodic dependency audit (e.g., monthly) given the new Charm ecosystem surface. ← open (dependabot.yml covers Go modules since 2026-09)
+- [ ] ~~Add GitHub issue templates for feature requests and bug reports.~~ moved to TODO_LIST.md #23
 
 ---
 
@@ -123,16 +123,16 @@ Nothing is catastrophically broken. The follow-up is green across all verificati
 
 ## e) WHAT WE SHOULD IMPROVE!
 
-1. **Top priority: add a deprecation warning for `--noColor`.** Print a clear message when the alias is used, pointing to `--no-color`, and document that it will be removed in v1.2.0.
-2. **Fix man page hidden-flag leakage.** Either remove the `--noColor` alias entirely (breaking change, only after deprecation) or find a way to hide it from `mango`'s roff output.
-3. **Improve invalid env var feedback.** Either log a warning or return a clear error when an env var is set but cannot be parsed. This helps users catch typos like `UPD_TIMEOUT=30`.
-4. **Add typo suggestions.** A small Levenshtein helper in `ParseFlags` would improve UX for unknown flags and subcommands.
-5. **Add a signal-handling test.** Mock SIGINT and verify that `fang.WithNotifySignal` cancels the context and aborts in-flight fetches.
-6. **Automate `go mod tidy` guard.** Add a CI check that `go mod tidy` produces no diff, or pin the Nix builder to Go 1.26.5.
-7. **Add `go mod verify` to CI.** Cheap integrity check for the module cache.
-8. **Re-render VHS demos.** The published GIFs show the old hand-rolled help; they should show the new fang-styled help.
-9. **Add an end-to-end color test.** Capture the actual rendered fang help with `-C` in a controlled (non-TTY) writer and assert no color codes.
-10. **Benchmark the build and binary.** Measure cold `nix build`, `go test`, and startup times before/after the fang migration to quantify the dependency cost.
+1. ~~**Top priority: add a deprecation warning for `--noColor`.** Print a clear message when the alias is used, pointing to `--no-color`, and document that it will be removed in v1.2.0.~~ moved to TODO_LIST.md #7 — still open
+2. ~~**Fix man page hidden-flag leakage.** Either remove the `--noColor` alias entirely (breaking change, only after deprecation) or find a way to hide it from `mango`'s roff output.~~ moved to TODO_LIST.md #7 — still open
+3. ~~**Improve invalid env var feedback.** Either log a warning or return a clear error when an env var is set but cannot be parsed. This helps users catch typos like `UPD_TIMEOUT=30`.~~ moved to TODO_LIST.md #8
+4. ~~**Add typo suggestions.** A small Levenshtein helper in `ParseFlags` would improve UX for unknown flags and subcommands.~~ moved to TODO_LIST.md #9
+5. ~~**Add a signal-handling test.** Mock SIGINT and verify that `fang.WithNotifySignal` cancels the context and aborts in-flight fetches.~~ moved to TODO_LIST.md #15
+6. ~~**Automate `go mod tidy` guard.** Add a CI check that `go mod tidy` produces no diff, or pin the Nix builder to Go 1.26.5.~~ moved to TODO_LIST.md #21
+7. ~~**Add `go mod verify` to CI.** Cheap integrity check for the module cache.~~ moved to TODO_LIST.md #21
+8. ~~**Re-render VHS demos.** The published GIFs show the old hand-rolled help; they should show the new fang-styled help.~~ moved to TODO_LIST.md #10
+9. ~~**Add an end-to-end color test.** Capture the actual rendered fang help with `-C` in a controlled (non-TTY) writer and assert no color codes.~~ still open
+10. ~~**Benchmark the build and binary.** Measure cold `nix build`, `go test`, and startup times before/after the fang migration to quantify the dependency cost.~~ still open
 
 ---
 
