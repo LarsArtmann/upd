@@ -66,11 +66,11 @@ This follow-up session addressed the top-priority polish items from the original
 ## b) PARTIALLY DONE
 
 - [x] **Unified color override** — Implemented via `fang.WithColorSchemeFunc` in `cmd/upd/main.go`. The closure reads `cfg.NoColor` and returns a no-color `fang.ColorScheme` when the `-C`/`--no-color` flag (or `UPD_NO_COLOR` env var) is set. NO_COLOR and non-TTY stdout continue to be handled by fang's `colorprofile` writer.
-- [ ] **`--noColor` alias deprecation** — The old camelCase flag is hidden and still works, but there is no deprecation warning or documented timeline for removal.
-- [ ] **Man page polish** — The generated roff still lists the hidden `--noColor` alias (mango does not honor Cobra's hidden flag flag). The short flags are rendered with `--` prefix in the roff (e.g., `--C --no-color`), which is a mango-cobra formatting quirk.
-- [ ] **Completion discoverability** — The completion command is hidden from help, which is standard but means users must discover it via docs or shell completion setup guides.
-- [ ] **Error punctuation** — fang's `DefaultErrorHandler` appends a period to `err.Error()`. Some `errorfamily` messages already end with punctuation, risking double periods in rare cases.
-- [ ] **Usage line accuracy** — Fang renders `upd [--flags]` in the usage block, which is accurate but could be clearer about positional `[pattern ...]` args.
+- [ ] ~~**`--noColor` alias deprecation** — The old camelCase flag is hidden and still works, but there is no deprecation warning or documented timeline for removal.~~ moved to TODO_LIST.md #7 — still open
+- [ ] ~~**Man page polish** — The generated roff still lists the hidden `--noColor` alias (mango does not honor Cobra's hidden flag flag). The short flags are rendered with `--` prefix in the roff (e.g., `--C --no-color`), which is a mango-cobra formatting quirk.~~ moved to TODO_LIST.md #7 — still open
+- [ ] ~~**Completion discoverability** — The completion command is hidden from help, which is standard but means users must discover it via docs or shell completion setup guides.~~ done (docs-health pass 2026-09-25 — README "Shell Completions" section)
+- [ ] ~~**Error punctuation** — fang's `DefaultErrorHandler` appends a period to `err.Error()`. Some `errorfamily` messages already end with punctuation, risking double periods in rare cases.~~ moved to ROADMAP.md theme 2 — still open
+- [ ] ~~**Usage line accuracy** — Fang renders `upd [--flags]` in the usage block, which is accurate but could be clearer about positional `[pattern ...]` args.~~ moved to ROADMAP.md theme 2 — still open
 
 ---
 
@@ -79,16 +79,16 @@ This follow-up session addressed the top-priority polish items from the original
 ### Features & UX
 
 - [x] Env-var support for flags (`UPD_REGISTRY`, `UPD_FILE`, `UPD_TIMEOUT`, etc.). Implemented in `config.go` via `applyEnvFlags`; all public flags except the hidden `--noColor` alias and `--version` are mapped. CLI flags override env vars; invalid env values fall back to defaults.
-- [ ] Typo suggestions for unknown flags / subcommands (`did you mean --json?`).
+- [ ] ~~Typo suggestions for unknown flags / subcommands (`did you mean --json?`).~~ moved to TODO_LIST.md #9
 - [x] Custom `ColorSchemeFunc` that disables fang colors when `cfg.NoColor` is true. Implemented in `cmd/upd/theme.go` and wired via `fang.WithColorSchemeFunc` in `cmd/upd/main.go`.
-- [ ] Structured logging or `--debug` log level.
-- [ ] New subcommands: `check`, `doctor`, `init`, or `config`.
-- [ ] Config file support (`.updrc`, `upd.json`, etc.).
-- [ ] Human migration guide / blog post for the CLI change.
-- [ ] Benchmark comparing old vs new binary size, startup time, and build time.
+- [ ] ~~Structured logging or `--debug` log level.~~ moved to TODO_LIST.md #27 / ROADMAP.md theme 2
+- [ ] ~~New subcommands: `check`, `doctor`, `init`, or `config`.~~ moved to ROADMAP.md theme 2
+- [ ] ~~Config file support (`.updrc`, `upd.json`, etc.).~~ moved to ROADMAP.md theme 2
+- [ ] Human migration guide / blog post for the CLI change. ← open
+- [ ] Benchmark comparing old vs new binary size, startup time, and build time. ← open
 - [x] Add `CHANGELOG.md` entry for this change. Added an `[Unreleased]` section with fang/Cobra migration, color override, env-var support, and CLI tests.
-- [ ] Commit the current working-tree changes.
-- [ ] Add deprecation notice for `--noColor`.
+- [ ] ~~Commit the current working-tree changes.~~ done at `81d8c44` + `ea6493d`
+- [ ] ~~Add deprecation notice for `--noColor`.~~ moved to TODO_LIST.md #7
 
 ### Tests
 
@@ -98,7 +98,7 @@ This follow-up session addressed the top-priority polish items from the original
 - [x] Test for `--noColor` hidden alias still parsing. Added in `config_test.go`.
 - [x] Test for `--no-color` canonical flag parsing. Already covered by existing tests; verified.
 - [x] Test for styled error output (or at least exit code) on unknown flag. Added `TestUnknownFlagReturnsError` in `cmd/upd/main_test.go`.
-- [ ] Test for signal handling via fang (hard but possible with a mock signal).
+- [ ] ~~Test for signal handling via fang (hard but possible with a mock signal).~~ moved to TODO_LIST.md #15
 - [x] Test for `NewCommand` returning a command with the correct `Use`/`Short`/`Long`. Added in `config_test.go`.
 - [x] Test for `ParseFlags` returning `ErrHelp`/`ErrVersion` correctly. Already covered; verified.
 - [x] Test that `--version` and `-V` both return `ErrVersion` in `ParseFlags`. Already covered; verified.
@@ -106,13 +106,13 @@ This follow-up session addressed the top-priority polish items from the original
 ### Docs & Maintenance
 
 - [x] Update `README.md` to mention the new styled help / man pages / completions. Added sections for styled help, env vars, and shell completions.
-- [ ] Update `docs/DOMAIN_LANGUAGE.md` if any CLI terminology changed.
-- [ ] Re-render VHS demos (`nix run .#demo`) so published GIFs reflect the new help style.
-- [ ] Add a Nix flake check for `go mod tidy` cleanliness to prevent `go` directive drift.
-- [ ] Evaluate whether `PrintUsage`/`PrintVersion` removal breaks any external consumers.
-- [ ] Consider splitting `cmd/upd/main.go` into smaller files if it grows further.
-- [ ] Review fang dependency freshness and pin policy.
-- [ ] Add `go mod verify` step to CI.
+- [ ] Update `docs/DOMAIN_LANGUAGE.md` if any CLI terminology changed. ← still open (verified 2026-09-25)
+- [ ] ~~Re-render VHS demos (`nix run .#demo`) so published GIFs reflect the new help style.~~ moved to TODO_LIST.md #10
+- [ ] ~~Add a Nix flake check for `go mod tidy` cleanliness to prevent `go` directive drift.~~ moved to TODO_LIST.md #21
+- [ ] ~~Evaluate whether `PrintUsage`/`PrintVersion` removal breaks any external consumers.~~ done (docs-health pass 2026-09-25 — single-binary module, no external library consumers; superseded by `NewCommand`)
+- [ ] Consider splitting `cmd/upd/main.go` into smaller files if it grows further. ← open
+- [ ] ~~Review fang dependency freshness and pin policy.~~ open — dependabot.yml now tracks Go modules (2026-09)
+- [ ] ~~Add `go mod verify` step to CI.~~ moved to TODO_LIST.md #21
 
 ---
 

@@ -61,11 +61,11 @@
 
 ## c) NOT STARTED
 
-1. **Commit the `go.mod` fix** — error-family is currently listed as `// indirect` but should be a direct dependency. `go mod tidy` fix is uncommitted.
-2. **`cmd/upd` test coverage** — dropped from 10.2% to 3.9% after removing exit-code tests (moved to `errors_test.go` in the `upd` package). The `run()` and `finalizeRun()` functions are completely untested.
-3. **Stale status report** — `docs/status/2026-07-15_23-30_quality-scan-fixes-partial.md` is now superseded but still exists.
-4. **`docs/DOMAIN_LANGUAGE.md`** — has uncommitted formatting changes from a prior session (may already be committed, needs verification).
-5. **`flake.lock`** — may need update after go.mod changes.
+1. ~~**Commit the `go.mod` fix** — error-family is currently listed as `// indirect` but should be a direct dependency. `go mod tidy` fix is uncommitted.~~ done at `571e312`
+2. ~~**`cmd/upd` test coverage** — dropped from 10.2% to 3.9% after removing exit-code tests (moved to `errors_test.go` in the `upd` package). The `run()` and `finalizeRun()` functions are completely untested.~~ partially done — CLI tests added at `ea6493d`/`1cd0109`; the `run()` end-to-end gap moved to TODO_LIST.md #14
+3. ~~**Stale status report** — `docs/status/2026-07-15_23-30_quality-scan-fixes-partial.md` is now superseded but still exists.~~ done (docs-health pass 2026-09-25 — annotated in place; kept as historical snapshot per docs-health rules)
+4. ~~**`docs/DOMAIN_LANGUAGE.md`** — has uncommitted formatting changes from a prior session (may already be committed, needs verification).~~ done — committed; rewritten in `32c208b`
+5. ~~**`flake.lock`** — may need update after go.mod changes.~~ done — refreshed repeatedly since (latest `f020505`)
 
 ---
 
@@ -95,29 +95,33 @@ Moving exit-code tests to the `upd` package improved that package's coverage but
 
 ## e) WHAT WE SHOULD IMPROVE
 
-1. **Fix go.mod** — `go mod tidy` to correct direct/indirect classification. Uncommitted.
-2. **Add cmd/upd integration tests** — `run()` is the main entry point and has 3.9% coverage. Need tests that exercise the full pipeline with mock registries.
-3. **Add errorfamily.HandleError integration test** — verify that the full HandleError path produces correct stderr output + exit codes for each family.
-4. **Consider using errorfamily.Registry for test isolation** — currently using DefaultRegistry globally; tests could use scoped registries.
-5. **The retryableError type in pnpm.go** could potentially implement the errorfamily.Retryable interface instead of being a separate wrapper type. This would let errorfamily.Classify automatically detect retryability.
-6. **Add error codes to the --json output** — currently JSON output has `state` and `error` strings, but not the machine-readable `code` or `family`. CI consumers would benefit from structured error codes.
-7. **Render errorfamily context in --verbose mode** — `errorfamily.Error.Format(f, '+')` produces verbose output with context keys. The `--verbose` flag could leverage this.
-8. **Context-loss issues (branching-flow)** — 12 MEDIUM issues remain. Most are for complex types (manifest, decoder) but some could be addressed by adding `.WithContext()` calls.
+1. ~~**Fix go.mod** — `go mod tidy` to correct direct/indirect classification. Uncommitted.~~ done at `571e312`
+2. ~~**Add cmd/upd integration tests** — `run()` is the main entry point and has 3.9% coverage. Need tests that exercise the full pipeline with mock registries.~~ moved to TODO_LIST.md #14 — still open
+3. ~~**Add errorfamily.HandleError integration test** — verify that the full HandleError path produces correct stderr output + exit codes for each family.~~ moved to TODO_LIST.md #14
+4. **Consider using errorfamily.Registry for test isolation** — currently using DefaultRegistry globally; tests could use scoped registries. ← open
+5. **The retryableError type in pnpm.go** could potentially implement the errorfamily.Retryable interface instead of being a separate wrapper type. This would let errorfamily.Classify automatically detect retryability. ← open
+6. ~~**Add error codes to the --json output** — currently JSON output has `state` and `error` strings, but not the machine-readable `code` or `family`. CI consumers would benefit from structured error codes.~~ moved to TODO_LIST.md #13
+7. ~~**Render errorfamily context in --verbose mode** — `errorfamily.Error.Format(f, '+')` produces verbose output with context keys. The `--verbose` flag could leverage this.~~ moved to TODO_LIST.md #13
+8. ~~**Context-loss issues (branching-flow)** — 12 MEDIUM issues remain. Most are for complex types (manifest, decoder) but some could be addressed by adding `.WithContext()` calls.~~ done — remaining issues intentionally suppressed (AGENTS.md gotcha, `64d174c`)
 
 ---
 
 ## f) Up to 50 Things We Should Get Done Next
 
+> docs-health 2026-09-25: the actionable subset of this list now lives in
+> `TODO_LIST.md` / `ROADMAP.md`. Resolved items are struck below; the rest
+> are raw ideas retained for context.
+
 ### High Priority — Correctness & Coverage
 
-1. **Commit the `go.mod` fix** (error-family as direct dep, not indirect)
-2. **Write integration test for `cmd/upd/main.go:run()`** — mock registry, verify full pipeline
-3. **Write test for `finalizeRun` JSON path** — verify RenderJSON is called when cfg.JSON=true
-4. **Write test for `finalizeRun` write gate** — verify no write when updates=0 or cfg.Nop=true
-5. **Write test for `finalizeRun` partial failure** — verify ErrPartialFailure returned when errCount>0
-6. **Delete stale status report** `docs/status/2026-07-15_23-30_quality-scan-fixes-partial.md`
-7. **Run `go mod tidy`** and commit the result
-8. **Update flake.lock** if needed after dependency changes
+1. ~~**Commit the `go.mod` fix** (error-family as direct dep, not indirect)~~ done at `571e312`
+2. ~~**Write integration test for `cmd/upd/main.go:run()`** — mock registry, verify full pipeline~~ moved to TODO_LIST.md #14
+3. ~~**Write test for `finalizeRun` JSON path** — verify RenderJSON is called when cfg.JSON=true~~ moved to TODO_LIST.md #14
+4. ~~**Write test for `finalizeRun` write gate** — verify no write when updates=0 or cfg.Nop=true~~ moved to TODO_LIST.md #14
+5. ~~**Write test for `finalizeRun` partial failure** — verify ErrPartialFailure returned when errCount>0~~ done at `077f325` (ErrPartialFailure implemented + tested via `errors_test.go`); finalizeRun-direct tests still tracked in TODO_LIST.md #14
+6. ~~**Delete stale status report** `docs/status/2026-07-15_23-30_quality-scan-fixes-partial.md`~~ done differently (docs-health pass 2026-09-25 — annotated and kept; deletion replaced by annotation)
+7. ~~**Run `go mod tidy`** and commit the result~~ done at `571e312`
+8. ~~**Update flake.lock** if needed after dependency changes~~ done (`f020505` and successors)
 
 ### Medium Priority — Error UX Polish
 
@@ -144,15 +148,15 @@ Moving exit-code tests to the `upd` package improved that package's coverage but
 23. **Address remaining 12 CONTEXT branching-flow issues** (add .WithContext where practical)
 24. **Add fuzzing tests for packagejson.go JSON parsing**
 25. **Add fuzzing tests for manifest.go version regex**
-26. **Update FEATURES.md** with errorfamily adoption
-27. **Update TODO_LIST.md** with cmd/upd coverage gap
-28. **Add `.branching-flow.toml`** to permanently suppress PHANTOM (56 noise violations)
+26. ~~**Update FEATURES.md** with errorfamily adoption~~ done (docs-health pass 2026-09-25)
+27. ~~**Update TODO_LIST.md** with cmd/upd coverage gap~~ done (docs-health pass 2026-09-25 — TODO_LIST #14)
+28. ~~**Add `.branching-flow.toml`** to permanently suppress PHANTOM (56 noise violations)~~ Won't implement — triage rationale documented in AGENTS.md instead
 29. **Consider bumping go.mod to go1.27** when released (eliminates 34 stdversion warnings)
 30. **Add benchmark for HandleError** — ensure template rendering doesn't slow down CLI exit
 31. **Add benchmark for error chain classification** — ensure errors.AsType is fast enough
-32. **Consider adding `upd doctor` subcommand** — check registry connectivity
-33. **Consider adding shell completions** (bash/zsh/fish)
-34. **Consider adding `upd init` subcommand** — create `upd` field in package.json
+32. ~~**Consider adding `upd doctor` subcommand** — check registry connectivity~~ moved to ROADMAP.md theme 2
+33. ~~**Consider adding shell completions** (bash/zsh/fish)~~ done at `81d8c44` (Cobra `completion` command)
+34. ~~**Consider adding `upd init` subcommand** — create `upd` field in package.json~~ moved to ROADMAP.md theme 2
 35. **Add test for WithContext chaining** — verify multiple WithContext calls accumulate
 36. **Add test for message template resolution** — verify correct template matched by code
 37. **Add test for concurrent modification full path** — file written, then modified, then upd.Write fails
