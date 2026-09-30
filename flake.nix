@@ -32,11 +32,11 @@
           checks.build = self'.packages.default;
 
           packages = {
-            default = pkgs.buildGoModule {
+            default = pkgs.buildGo127Module {
               pname = "upd";
               inherit version;
               src = ./.;
-              vendorHash = "sha256-EeEOwgk/VuXR3hz6LU8/0xqWFpmC0OFv+oct7RFhMx4=";
+              vendorHash = "sha256-heYHDFL2o0tTB3E4hqMX3e1nr/9xfjo5Uu+kWfqwjvQ=";
               subPackages = [ "cmd/upd" ];
               env.GOEXPERIMENT = goExperiment;
               ldflags = [
