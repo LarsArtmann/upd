@@ -17,13 +17,19 @@
       ];
 
       perSystem =
-        { pkgs, ... }:
+        {
+          pkgs,
+          self',
+          ...
+        }:
         let
-          version = "1.2.0";
+          version = self'.rev or self'.dirtyRev or "dev";
           goExperiment = "jsonv2";
         in
         {
-          formatter = pkgs.nixpkgs-fmt;
+          formatter = pkgs.nixfmt;
+
+          checks.build = self'.packages.default;
 
           packages = {
             default = pkgs.buildGoModule {
