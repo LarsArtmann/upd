@@ -35,7 +35,7 @@
               pname = "upd";
               inherit version;
               src = ./.;
-              vendorHash = "sha256-heYHDFL2o0tTB3E4hqMX3e1nr/9xfjo5Uu+kWfqwjvQ=";
+              vendorHash = "sha256-kl/nAMJbiZNWZnu4WyUa7/6zUge/9vO/r96QdjoLGgI=";
               subPackages = [ "cmd/upd" ];
               env.GOEXPERIMENT = goExperiment;
               ldflags = [
@@ -71,93 +71,112 @@
           apps = {
             build = {
               type = "app";
-              program = pkgs.lib.getExe (pkgs.writeShellApplication {
-                name = "build";
-                runtimeInputs = [ pkgs.go ];
-                text = ''
-                  export GOEXPERIMENT=${goExperiment}
-                  go build -trimpath -ldflags='-s -w -X github.com/LarsArtmann/upd.ProgramVersion=${version}' -o bin/upd ./cmd/upd
-                '';
-              });
+              program = pkgs.lib.getExe (
+                pkgs.writeShellApplication {
+                  name = "build";
+                  runtimeInputs = [ pkgs.go ];
+                  text = ''
+                    export GOEXPERIMENT=${goExperiment}
+                    go build -trimpath -ldflags='-s -w -X github.com/LarsArtmann/upd.ProgramVersion=${version}' -o bin/upd ./cmd/upd
+                  '';
+                }
+              );
               meta.description = "Build upd to bin/upd";
             };
 
             test = {
               type = "app";
-              program = pkgs.lib.getExe (pkgs.writeShellApplication {
-                name = "test";
-                runtimeInputs = [ pkgs.go ];
-                text = ''
-                  export GOEXPERIMENT=${goExperiment}
-                  go test ./... -v -count=1
-                '';
-              });
+              program = pkgs.lib.getExe (
+                pkgs.writeShellApplication {
+                  name = "test";
+                  runtimeInputs = [ pkgs.go ];
+                  text = ''
+                    export GOEXPERIMENT=${goExperiment}
+                    go test ./... -v -count=1
+                  '';
+                }
+              );
               meta.description = "Run all tests with verbose output";
             };
 
             lint = {
               type = "app";
-              program = pkgs.lib.getExe (pkgs.writeShellApplication {
-                name = "lint";
-                runtimeInputs = with pkgs; [ go golangci-lint ];
-                text = ''
-                  export GOEXPERIMENT=${goExperiment}
-                  go vet ./... && echo "vet OK"
-                  go build ./... && echo "build OK"
-                  golangci-lint run ./... && echo "lint OK"
-                '';
-              });
+              program = pkgs.lib.getExe (
+                pkgs.writeShellApplication {
+                  name = "lint";
+                  runtimeInputs = with pkgs; [
+                    go
+                    golangci-lint
+                  ];
+                  text = ''
+                    export GOEXPERIMENT=${goExperiment}
+                    go vet ./... && echo "vet OK"
+                    go build ./... && echo "build OK"
+                    golangci-lint run ./... && echo "lint OK"
+                  '';
+                }
+              );
               meta.description = "Run go vet, build check, and golangci-lint";
             };
 
             run = {
               type = "app";
-              program = pkgs.lib.getExe (pkgs.writeShellApplication {
-                name = "run";
-                runtimeInputs = [ pkgs.go ];
-                text = ''
-                  export GOEXPERIMENT=${goExperiment}
-                  go run ./cmd/upd "$@"
-                '';
-              });
+              program = pkgs.lib.getExe (
+                pkgs.writeShellApplication {
+                  name = "run";
+                  runtimeInputs = [ pkgs.go ];
+                  text = ''
+                    export GOEXPERIMENT=${goExperiment}
+                    go run ./cmd/upd "$@"
+                  '';
+                }
+              );
               meta.description = "Run upd from source with arguments";
             };
 
             demo = {
               type = "app";
-              program = pkgs.lib.getExe (pkgs.writeShellApplication {
-                name = "demo";
-                runtimeInputs = with pkgs; [ go vhs ttyd ffmpeg git ];
-                text = ''
-                  export GOEXPERIMENT=${goExperiment}
-                  build_dir="$(mktemp -d)"
-                  trap 'rm -rf "$build_dir"' EXIT
+              program = pkgs.lib.getExe (
+                pkgs.writeShellApplication {
+                  name = "demo";
+                  runtimeInputs = with pkgs; [
+                    go
+                    vhs
+                    ttyd
+                    ffmpeg
+                    git
+                  ];
+                  text = ''
+                    export GOEXPERIMENT=${goExperiment}
+                    build_dir="$(mktemp -d)"
+                    trap 'rm -rf "$build_dir"' EXIT
 
-                  repo_root="$(git rev-parse --show-toplevel)"
-                  go build -C "$repo_root" -trimpath \
-                    -ldflags='-s -w -X github.com/LarsArtmann/upd.ProgramVersion=${version}' \
-                    -o "$build_dir/upd" ./cmd/upd
+                    repo_root="$(git rev-parse --show-toplevel)"
+                    go build -C "$repo_root" -trimpath \
+                      -ldflags='-s -w -X github.com/LarsArtmann/upd.ProgramVersion=${version}' \
+                      -o "$build_dir/upd" ./cmd/upd
 
-                  export PATH="$build_dir:$PATH"
-                  cd "$repo_root/demo"
+                    export PATH="$build_dir:$PATH"
+                    cd "$repo_root/demo"
 
-                  if [ "$#" -gt 0 ] && [ "$1" = "--publish" ]; then
-                    shift
-                    for tape in *.tape; do
-                      echo "Rendering and publishing $tape..."
-                      vhs --publish "$tape"
-                    done
-                  else
-                    for tape in *.tape; do
-                      echo "Rendering $tape (local only)..."
-                      vhs "$tape"
-                    done
-                    echo ""
-                    echo "Done. GIFs are in demo/."
-                    echo "To publish to vhs.charm.sh: nix run .#demo -- --publish"
-                  fi
-                '';
-              });
+                    if [ "$#" -gt 0 ] && [ "$1" = "--publish" ]; then
+                      shift
+                      for tape in *.tape; do
+                        echo "Rendering and publishing $tape..."
+                        vhs --publish "$tape"
+                      done
+                    else
+                      for tape in *.tape; do
+                        echo "Rendering $tape (local only)..."
+                        vhs "$tape"
+                      done
+                      echo ""
+                      echo "Done. GIFs are in demo/."
+                      echo "To publish to vhs.charm.sh: nix run .#demo -- --publish"
+                    fi
+                  '';
+                }
+              );
               meta.description = "Render VHS demo GIFs locally or publish to vhs.charm.sh";
             };
           };
