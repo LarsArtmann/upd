@@ -6,7 +6,7 @@ import (
 
 // registerFileAndJSONTemplates registers message templates for file and JSON errors.
 //
-//nolint:exhaustruct // MessageTemplate fields Why/WayOut are optional
+//nolint:exhaustruct_v5 // MessageTemplate fields Why/WayOut are optional
 func registerFileAndJSONTemplates() {
 	errorfamily.DefaultRegistry.RegisterTemplates(map[string]errorfamily.MessageTemplate{
 		"file.not_found": {
@@ -44,7 +44,7 @@ func registerFileAndJSONTemplates() {
 
 // registerRegistryAndVersionTemplates registers message templates for registry and version errors.
 //
-//nolint:exhaustruct // MessageTemplate fields Why/WayOut are optional
+//nolint:exhaustruct_v5 // MessageTemplate fields Why/WayOut are optional
 func registerRegistryAndVersionTemplates() {
 	errorfamily.DefaultRegistry.RegisterTemplates(map[string]errorfamily.MessageTemplate{
 		"registry.package_not_found": {

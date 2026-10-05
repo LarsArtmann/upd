@@ -258,14 +258,13 @@ linters:
     wrapcheck:
       ignore-package-globs:
         - github.com/LarsArtmann/upd
-      ignore-sig-regex-es:
+      ignore-sig-regexps:
         - .*errorfamily\.
   exclusions:
     generated: lax
     rules:
       - path: _test\.go
         linters:
-          - exhaustruct
           - testpackage
           - gochecknoglobals
           - funlen

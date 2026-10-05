@@ -6,25 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-### Changed
+### Added
 
-- **Documentation overhaul** (docs-health pass 2026-09-25) — created
-  `ROADMAP.md`; refreshed `FEATURES.md` and `TODO_LIST.md` against the code;
-  annotated and archived historical status reports; added Keep a Changelog
-  compare links to this file.
+- Nothing yet.
 
 ### Fixed
 
-_Nothing yet._
+- Nothing yet.
 
-### Changed
-
-- **CI supply-chain hardening** — all GitHub Actions pinned to full commit SHAs;
-  golangci-lint pinned to v2.12.2; depguard disabled; funlen widened; gosec
-  G304/G115 excluded; Go sources formatted with dprint (`e13492e`).
-- **Dependency refresh** — `go-atomic-write` v0.5.1, `go-error-family` v0.10.1,
-  `lipgloss` v2.0.6, `xo/terminfo` v1.2.0; `.github/dependabot.yml` added
-  (`a98c59a`, `7a1e31f`).
+## [1.4.0] - 2026-10-05
 
 ### Fixed
 
@@ -33,6 +23,27 @@ _Nothing yet._
   rename (`glob.Glob` interface → `*glob.Pattern`), leaving master
   uncompilable from 2026-09-15 until 2026-09-25. `manifest.go` updated to the
   `*Pattern` API.
+- **Lint config schema** — wrapcheck key typo `ignore-sig-regex-es` corrected
+  to `ignore-sig-regexps` (rejected by golangci-lint's schema validator);
+  `//nolint:exhaustruct` directives migrated to `exhaustruct_v5` (the linter
+  renamed, leaving 12 unsuppressed findings); stale `exhaustruct` exclusion
+  entry removed.
+
+### Changed
+
+- **CI supply-chain hardening** — all GitHub Actions pinned to full commit SHAs;
+  depguard disabled; funlen widened; gosec G304/G115 excluded; Go sources
+  formatted with dprint (`e13492e`). golangci-lint action pinned to v2.14.0
+  (v2.12.2 predates `exhaustruct_v5` support).
+- **Dependency refresh** — `go-atomic-write` v0.6.0, `go-error-family` v0.11.0,
+  `lipgloss` v2.0.6, `xo/terminfo` v1.2.0, `gobwas/glob` v1.0.0;
+  `.github/dependabot.yml` added (`a98c59a`, `7a1e31f`).
+- **Toolchain drift fix** — go 1.27 builder, `rev` version, nixfmt, build check
+  (`d43f460`).
+- **Documentation overhaul** (docs-health pass 2026-09-25) — created
+  `ROADMAP.md`; refreshed `FEATURES.md` and `TODO_LIST.md` against the code;
+  annotated and archived historical status reports; added Keep a Changelog
+  compare links to this file.
 
 ## [1.3.0] - 2026-08-16
 
@@ -190,7 +201,8 @@ First stable release of the Go port.
 
 - All original JavaScript source files
 
-[Unreleased]: https://github.com/LarsArtmann/upd/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/LarsArtmann/upd/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/LarsArtmann/upd/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/LarsArtmann/upd/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/LarsArtmann/upd/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/LarsArtmann/upd/compare/v1.0.0...v1.1.0
