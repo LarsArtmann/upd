@@ -128,26 +128,26 @@ published releases are on the [GitHub Releases page](https://github.com/LarsArtm
 upd [-h] [-V] [-q|-s] [-n|--dry-run] [-C] [-f <file>] [-r <registry>] [-g] [-a] [-c <concurrency>] [-P] [-t <timeout>] [--retries <n>] [--format <table|json>] [--verbose] [<pattern> ...]
 ```
 
-| Flag | Long form       | Description                                                   |
-| ---- | --------------- | ------------------------------------------------------------- |
-| `-h` | `--help`        | Show usage help.                                              |
-| `-V` | `--version`     | Show program version.                                         |
-| `-q` | `--quiet`       | Suppress output (no progress bar, no table, no warnings).     |
-| `-s` | `--silent`      | Alias for `--quiet`.                                          |
-| `-n` | `--nop`         | Dry run — do not modify `package.json`.                       |
-|      | `--dry-run`     | Alias for `--nop`.                                            |
-| `-C` | `--no-color`    | Disable ANSI colors in output. `--noColor` is a deprecated alias (removed in v2). |
-| `-f` | `--file`        | Path to package config (default: `package.json`).             |
-| `-r` | `--registry`    | NPM registry base URL (default: `registry.npmjs.org`).        |
-| `-g` | `--greatest`    | Use greatest published version instead of `latest` tag.       |
-| `-a` | `--all`         | Show all packages, not just updated ones.                     |
-| `-c` | `--concurrency` | Concurrent NPM registry connections (default: 8).             |
-| `-P` | `--pin-latest`  | Pin bare `latest` tags to exact semver.                       |
-| `-t` | `--timeout`     | Per-request timeout (default: `20s`).                         |
-|      | `--retries`     | Max retries for transient 429/5xx failures (default: 3).      |
+| Flag | Long form       | Description                                                                                                |
+| ---- | --------------- | ---------------------------------------------------------------------------------------------------------- |
+| `-h` | `--help`        | Show usage help.                                                                                           |
+| `-V` | `--version`     | Show program version.                                                                                      |
+| `-q` | `--quiet`       | Suppress output (no progress bar, no table, no warnings).                                                  |
+| `-s` | `--silent`      | Alias for `--quiet`.                                                                                       |
+| `-n` | `--nop`         | Dry run — do not modify `package.json`.                                                                    |
+|      | `--dry-run`     | Alias for `--nop`.                                                                                         |
+| `-C` | `--no-color`    | Disable ANSI colors in output. `--noColor` is a deprecated alias (removed in v2).                          |
+| `-f` | `--file`        | Path to package config (default: `package.json`).                                                          |
+| `-r` | `--registry`    | NPM registry base URL (default: `registry.npmjs.org`).                                                     |
+| `-g` | `--greatest`    | Use greatest published version instead of `latest` tag.                                                    |
+| `-a` | `--all`         | Show all packages, not just updated ones.                                                                  |
+| `-c` | `--concurrency` | Concurrent NPM registry connections (default: 8).                                                          |
+| `-P` | `--pin-latest`  | Pin bare `latest` tags to exact semver.                                                                    |
+| `-t` | `--timeout`     | Per-request timeout (default: `20s`).                                                                      |
+|      | `--retries`     | Max retries for transient 429/5xx failures (default: 3).                                                   |
 |      | `--format`      | Output format: `table` (default) or `json` for CI/scripts. `--json` is a deprecated alias (removed in v2). |
-|      | `--verbose`     | Show full error chains in the error detail block.             |
-|      | `<pattern>`     | Glob pattern for dependency names. `!` prefix excludes.       |
+|      | `--verbose`     | Show full error chains in the error detail block.                                                          |
+|      | `<pattern>`     | Glob pattern for dependency names. `!` prefix excludes.                                                    |
 
 **Color auto-detection:** Colors are automatically disabled when the `NO_COLOR`
 environment variable is set (see [no-color.org](https://no-color.org/)) or when
@@ -243,23 +243,23 @@ Malformed or unsupported entries (e.g. legacy `_auth`, scoped
 Every public flag can also be set via an environment variable with the
 `UPD_` prefix. CLI flags always override environment variables.
 
-| Env var           | Equivalent flag |
-| ----------------- | --------------- |
-| `UPD_REGISTRY`    | `--registry`    |
-| `UPD_FILE`        | `--file`        |
-| `UPD_TIMEOUT`     | `--timeout`     |
-| `UPD_CONCURRENCY` | `--concurrency` |
-| `UPD_RETRIES`     | `--retries`     |
-| `UPD_QUIET`       | `--quiet`       |
-| `UPD_NOP`         | `--nop`         |
-| `UPD_DRY_RUN`     | `--dry-run`     |
-| `UPD_NO_COLOR`    | `--no-color`    |
-| `UPD_GREATEST`    | `--greatest`    |
-| `UPD_ALL`         | `--all`         |
-| `UPD_PIN_LATEST`  | `--pin-latest`  |
+| Env var           | Equivalent flag                         |
+| ----------------- | --------------------------------------- |
+| `UPD_REGISTRY`    | `--registry`                            |
+| `UPD_FILE`        | `--file`                                |
+| `UPD_TIMEOUT`     | `--timeout`                             |
+| `UPD_CONCURRENCY` | `--concurrency`                         |
+| `UPD_RETRIES`     | `--retries`                             |
+| `UPD_QUIET`       | `--quiet`                               |
+| `UPD_NOP`         | `--nop`                                 |
+| `UPD_DRY_RUN`     | `--dry-run`                             |
+| `UPD_NO_COLOR`    | `--no-color`                            |
+| `UPD_GREATEST`    | `--greatest`                            |
+| `UPD_ALL`         | `--all`                                 |
+| `UPD_PIN_LATEST`  | `--pin-latest`                          |
 | `UPD_JSON`        | `--json` (deprecated; use `UPD_FORMAT`) |
-| `UPD_FORMAT`      | `--format`      |
-| `UPD_VERBOSE`     | `--verbose`     |
+| `UPD_FORMAT`      | `--format`                              |
+| `UPD_VERBOSE`     | `--verbose`                             |
 
 For example:
 
