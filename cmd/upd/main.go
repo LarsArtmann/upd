@@ -20,10 +20,8 @@ func main() {
 }
 
 func runE(args []string, stdout, stderr io.Writer) error {
-	args, deprecated := deprecatedNoColorArgs(args)
-	if deprecated {
-		printWarnings(stderr, []string{noColorDeprecation})
-	}
+	args, warnings := rewriteDeprecatedArgs(args)
+	printWarnings(stderr, warnings)
 
 	cmd, cfg := upd.NewCommand(func(ctx context.Context, cfg *upd.Config) error {
 		return executeRun(ctx, cfg, stdout, stderr)
@@ -55,6 +53,10 @@ Original: Copyright (c) 2015-2026 Dr. Ralf S. Engelschall
 Go port:  Copyright (c) 2026 Lars Artmann — MIT License`
 
 func executeRun(ctx context.Context, cfg *upd.Config, stdout, stderr io.Writer) error {
+	if cfg.Format != upd.FormatTable && cfg.Format != upd.FormatJSON {
+		return upd.ErrInvalidFormat.WithContextf("format", "%s", cfg.Format)
+	}
+
 	if !cfg.NoColor {
 		cfg.NoColor = upd.ShouldDisableColor(stdout)
 	}
@@ -109,7 +111,7 @@ func finalizeRun(
 	stdout io.Writer,
 ) error {
 	if !cfg.Quiet {
-		if cfg.JSON {
+		if cfg.Format == upd.FormatJSON {
 			err := upd.RenderJSON(stdout, manifest)
 			if err != nil {
 				return err
@@ -141,32 +143,49 @@ const warningLine = "\x1b[33mWARNING:\x1b[0m %s\n"
 // or shell completions.
 const noColorDeprecation = "--noColor is deprecated and will be removed in v2.0.0; use --no-color instead."
 
-// deprecatedNoColorArgs maps the legacy --noColor alias onto --no-color so
-// the alias keeps working without being a registered flag (which leaked it
-// into man pages and completions). It reports whether any argument was
-// rewritten.
-func deprecatedNoColorArgs(args []string) ([]string, bool) {
+// jsonDeprecation is printed when the legacy --json alias is used. The alias
+// is accepted until v2 but no longer appears in help, man pages, or shell
+// completions.
+const jsonDeprecation = "--json is deprecated and will be removed in v2.0.0; use --format=json instead."
+
+// rewriteDeprecatedArgs maps deprecated flag spellings onto their canonical
+// forms so the aliases keep working without being registered flags (which
+// leaked them into man pages and completions). It returns the rewritten
+// arguments and one deprecation warning per rewritten flag.
+func rewriteDeprecatedArgs(args []string) ([]string, []string) {
 	rewritten := make([]string, 0, len(args))
 
-	deprecated := false
+	var warnings []string
 
 	for _, arg := range args {
-		switch arg {
-		case "--noColor":
-			rewritten = append(rewritten, "--no-color")
-			deprecated = true
-		case "--noColor=true":
-			rewritten = append(rewritten, "--no-color=true")
-			deprecated = true
-		case "--noColor=false":
-			rewritten = append(rewritten, "--no-color=false")
-			deprecated = true
-		default:
-			rewritten = append(rewritten, arg)
+		rewrittenArg, warning := rewriteDeprecatedArg(arg)
+		rewritten = append(rewritten, rewrittenArg)
+
+		if warning != "" {
+			warnings = append(warnings, warning)
 		}
 	}
 
-	return rewritten, deprecated
+	return rewritten, warnings
+}
+
+func rewriteDeprecatedArg(arg string) (string, string) {
+	switch arg {
+	case "--noColor":
+		return "--no-color", noColorDeprecation
+	case "--noColor=true":
+		return "--no-color=true", noColorDeprecation
+	case "--noColor=false":
+		return "--no-color=false", noColorDeprecation
+	case "--json":
+		return "--format=json", jsonDeprecation
+	case "--json=true":
+		return "--format=json", jsonDeprecation
+	case "--json=false":
+		return "--format=table", jsonDeprecation
+	default:
+		return arg, ""
+	}
 }
 
 // printWarnings writes warnings to stderr. Write errors are not actionable

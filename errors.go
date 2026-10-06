@@ -67,4 +67,8 @@ var (
 		"update.partial_failure",
 		"one or more dependencies could not be resolved",
 	)
+	ErrInvalidFormat = errorfamily.NewRejection( //nolint:erraudit
+		"config.invalid_format",
+		"invalid output format (use \"table\" or \"json\")",
+	)
 )

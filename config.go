@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +24,13 @@ const (
 	defaultRetries     = 3
 	defaultRegistryURL = "https://registry.npmjs.org"
 	defaultTimeout     = 20 * time.Second
+	defaultFormat      = FormatTable
+)
+
+// Output formats accepted by the --format flag.
+const (
+	FormatTable = "table"
+	FormatJSON  = "json"
 )
 
 const (
@@ -34,6 +42,7 @@ const (
 	EnvAll         = "UPD_ALL"
 	EnvPinLatest   = "UPD_PIN_LATEST"
 	EnvJSON        = "UPD_JSON"
+	EnvFormat      = "UPD_FORMAT"
 	EnvVerbose     = "UPD_VERBOSE"
 	EnvFile        = "UPD_FILE"
 	EnvRegistry    = "UPD_REGISTRY"
@@ -61,7 +70,7 @@ type Config struct {
 	Nop         bool
 	NoColor     bool
 	PinLatest   bool
-	JSON        bool
+	Format      string
 	Verbose     bool
 	Concurrency int
 	Retries     int
@@ -81,7 +90,7 @@ func DefaultConfig() *Config {
 		Nop:         false,
 		NoColor:     false,
 		PinLatest:   false,
-		JSON:        false,
+		Format:      defaultFormat,
 		Verbose:     false,
 		Concurrency: defaultConcurrency,
 		Retries:     defaultRetries,
@@ -113,6 +122,10 @@ func (c *Config) Validate() *Config {
 
 	if c.Registry == "" {
 		c.Registry = defaultRegistryURL
+	}
+
+	if c.Format == "" {
+		c.Format = defaultFormat
 	}
 
 	return c
@@ -172,7 +185,7 @@ func NewCommand(runE func(context.Context, *Config) error) (*cobra.Command, *Con
 	}
 
 	bindFlags(cmd, cfg)
-	cfg.envWarnings = applyEnvFlags(cmd)
+	cfg.envWarnings = append(applyDeprecatedEnvJSON(cmd), applyEnvFlags(cmd)...)
 	cmd.SetFlagErrorFunc(suggestFlagOnError)
 	cmd.CompletionOptions.HiddenDefaultCmd = true
 
@@ -189,7 +202,8 @@ func bindFlags(cmd *cobra.Command, cfg *Config) {
 	flags.BoolVarP(&cfg.Greatest, "greatest", "g", cfg.Greatest, "use greatest version (instead of latest stable)")
 	flags.BoolVarP(&cfg.All, "all", "a", cfg.All, "show all packages (not just updated ones)")
 	flags.BoolVarP(&cfg.PinLatest, "pin-latest", "P", cfg.PinLatest, "pin \"latest\" tag to exact semver version")
-	flags.BoolVar(&cfg.JSON, "json", cfg.JSON, "emit machine-readable JSON to stdout instead of the table")
+	flags.StringVar(&cfg.Format, "format", cfg.Format, "output format: table or json")
+	flags.BoolVarP(&cfg.Quiet, "silent", "s", cfg.Quiet, "alias for --quiet")
 	flags.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "show full error chains (useful for debugging)")
 	flags.StringVarP(&cfg.File, "file", "f", cfg.File, "package configuration file (default: package.json)")
 	flags.StringVarP(&cfg.Registry, "registry", "r", cfg.Registry, "NPM registry base URL")
@@ -251,7 +265,7 @@ func envFlagMappings() []envFlag {
 		{"greatest", EnvGreatest},
 		{"all", EnvAll},
 		{"pin-latest", EnvPinLatest},
-		{"json", EnvJSON},
+		{"format", EnvFormat},
 		{"verbose", EnvVerbose},
 		{"file", EnvFile},
 		{"registry", EnvRegistry},
@@ -259,6 +273,38 @@ func envFlagMappings() []envFlag {
 		{"retries", EnvRetries},
 		{"timeout", EnvTimeout},
 	}
+}
+
+// applyDeprecatedEnvJSON honors the deprecated UPD_JSON env var by mapping
+// truthy values onto the --format flag so existing CI setups keep working.
+// It returns one warning per applied or ignored value; UPD_FORMAT, applied
+// afterwards by applyEnvFlags, still takes precedence.
+func applyDeprecatedEnvJSON(cmd *cobra.Command) []string {
+	value, ok := os.LookupEnv(EnvJSON)
+	if !ok {
+		return nil
+	}
+
+	jsonWanted, err := strconv.ParseBool(value)
+	if err != nil {
+		return []string{fmt.Sprintf(
+			"invalid env var %s=%q is ignored (using the default): not a boolean value", EnvJSON, value,
+		)}
+	}
+
+	if !jsonWanted {
+		return nil
+	}
+
+	if err := cmd.Flags().Set("format", FormatJSON); err != nil {
+		return []string{fmt.Sprintf(
+			"invalid env var %s=%q is ignored (using the default): %v", EnvJSON, value, err,
+		)}
+	}
+
+	return []string{fmt.Sprintf(
+		"env var %s is deprecated and will be removed in v2.0.0; use %s=%s instead", EnvJSON, EnvFormat, FormatJSON,
+	)}
 }
 
 // ParseFlags parses CLI arguments into a Config without executing the command.
@@ -283,6 +329,10 @@ func ParseFlags(args []string) (*Config, error) {
 		return nil, ErrVersion
 	}
 
+	if cfg.Format != FormatTable && cfg.Format != FormatJSON {
+		return nil, ErrInvalidFormat.WithContextf("format", "%s", cfg.Format)
+	}
+
 	cfg.Patterns = cmd.Flags().Args()
 
 	return cfg, nil
@@ -295,7 +345,7 @@ func (c *Config) EnvWarnings() []string {
 }
 
 // suggestFlagOnError is the cobra flag-error hook: it appends a "did you mean"
-// suggestion for unknown long flags so typos like --jso point at --json.
+// suggestion for unknown long flags so typos like --jso point at --format.
 func suggestFlagOnError(cmd *cobra.Command, err error) error {
 	msg := err.Error()
 
@@ -304,12 +354,37 @@ func suggestFlagOnError(cmd *cobra.Command, err error) error {
 		return err
 	}
 
-	suggestion, found := suggestFlag(name, flagNames(cmd))
+	candidates := append(flagNames(cmd), deprecatedFlagNames()...)
+
+	suggestion, found := suggestFlag(name, candidates)
 	if !found {
 		return err
 	}
 
+	if replacement, deprecated := deprecatedFlagSuggestions()[suggestion]; deprecated {
+		return fmt.Errorf("%w\n\nDid you mean --%s? (--%s is deprecated)", err, replacement, suggestion)
+	}
+
 	return fmt.Errorf("%w\n\nDid you mean --%s?", err, suggestion)
+}
+
+// deprecatedFlagSuggestions maps removed flag names onto their canonical
+// replacement spellings so typos of removed flags still produce a useful hint.
+func deprecatedFlagSuggestions() map[string]string {
+	return map[string]string{
+		"json": "format=" + FormatJSON,
+	}
+}
+
+func deprecatedFlagNames() []string {
+	suggestions := deprecatedFlagSuggestions()
+	names := make([]string, 0, len(suggestions))
+
+	for name := range suggestions {
+		names = append(names, name)
+	}
+
+	return names
 }
 
 // flagNames lists all long flag names declared on the command.

@@ -85,8 +85,8 @@ func TestParseFlagsDefaults(t *testing.T) {
 		t.Errorf("Timeout = %v, want %v", cfg.Timeout, defaultTimeout)
 	}
 
-	if cfg.JSON {
-		t.Error("JSON should default to false")
+	if cfg.Format != defaultFormat {
+		t.Errorf("Format = %q, want default %q", cfg.Format, defaultFormat)
 	}
 
 	if cfg.Verbose {
@@ -187,10 +187,48 @@ func TestParseFlagsRetriesFlag(t *testing.T) {
 	}
 }
 
-func TestParseFlagsJSONFlag(t *testing.T) {
-	cfg := mustParseFlags(t, []string{"--json"})
+func TestParseFlagsFormatFlag(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"--format=json"})
 
-	assertFlagTrue(t, "JSON", cfg.JSON)
+	if cfg.Format != FormatJSON {
+		t.Errorf("Format = %q, want %q", cfg.Format, FormatJSON)
+	}
+}
+
+func TestParseFlagsFormatTableExplicit(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"--format=table"})
+
+	if cfg.Format != FormatTable {
+		t.Errorf("Format = %q, want %q", cfg.Format, FormatTable)
+	}
+}
+
+func TestParseFlagsInvalidFormatRejected(t *testing.T) {
+	_, err := ParseFlags([]string{"--format=yaml"})
+	if !errors.Is(err, ErrInvalidFormat) {
+		t.Fatalf("expected ErrInvalidFormat, got %v", err)
+	}
+}
+
+func TestParseFlagsSilentAlias(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"--silent"})
+
+	assertFlagTrue(t, "Quiet via --silent", cfg.Quiet)
+}
+
+func TestParseFlagsSilentShorthand(t *testing.T) {
+	cfg := mustParseFlags(t, []string{"-s"})
+
+	assertFlagTrue(t, "Quiet via -s", cfg.Quiet)
+}
+
+// TestJSONFlagRejectedByParser documents that the legacy --json alias is
+// rewritten by the CLI layer (see cmd/upd rewriteDeprecatedArgs) instead of
+// being a registered flag, so the parser no longer knows it.
+func TestJSONFlagRejectedByParser(t *testing.T) {
+	if _, err := ParseFlags([]string{"--json"}); err == nil {
+		t.Error("expected --json to be rejected by ParseFlags (handled by CLI rewrite)")
+	}
 }
 
 func TestParseFlagsVerboseFlag(t *testing.T) {
@@ -410,8 +448,8 @@ func TestNewCommandMetadata(t *testing.T) {
 	}
 
 	flags := []string{
-		"quiet", "nop", "dry-run", "no-color", "greatest", "all",
-		"pin-latest", "json", "verbose", "file", "registry", "concurrency",
+		"quiet", "silent", "nop", "dry-run", "no-color", "greatest", "all",
+		"pin-latest", "format", "verbose", "file", "registry", "concurrency",
 		"retries", "timeout", "version",
 	}
 
@@ -466,12 +504,85 @@ func TestApplyEnvFlagsValidValuesProduceNoWarnings(t *testing.T) {
 	}
 }
 
+func TestApplyEnvFormatSetsJSONOutput(t *testing.T) {
+	t.Setenv("UPD_FORMAT", "json")
+
+	_, cfg := NewCommand(func(context.Context, *Config) error { return nil })
+
+	if cfg.Format != FormatJSON {
+		t.Errorf("Format = %q, want %q from UPD_FORMAT", cfg.Format, FormatJSON)
+	}
+
+	if warnings := cfg.EnvWarnings(); len(warnings) != 0 {
+		t.Errorf("expected no warnings for UPD_FORMAT, got %q", warnings)
+	}
+}
+
+func TestApplyDeprecatedEnvJSONWarnsAndStillWorks(t *testing.T) {
+	t.Setenv("UPD_JSON", "true")
+
+	_, cfg := NewCommand(func(context.Context, *Config) error { return nil })
+
+	if cfg.Format != FormatJSON {
+		t.Errorf("Format = %q, want %q from deprecated UPD_JSON", cfg.Format, FormatJSON)
+	}
+
+	warnings := cfg.EnvWarnings()
+	if len(warnings) != 1 {
+		t.Fatalf("expected 1 deprecation warning, got %d: %q", len(warnings), warnings)
+	}
+
+	if !strings.Contains(warnings[0], "UPD_JSON is deprecated") || !strings.Contains(warnings[0], "UPD_FORMAT=json") {
+		t.Errorf("warning should point at UPD_FORMAT=json, got: %q", warnings[0])
+	}
+}
+
+func TestApplyDeprecatedEnvJSONFalseIsIgnored(t *testing.T) {
+	t.Setenv("UPD_JSON", "false")
+
+	_, cfg := NewCommand(func(context.Context, *Config) error { return nil })
+
+	if cfg.Format != defaultFormat {
+		t.Errorf("Format = %q, want default", cfg.Format)
+	}
+
+	if warnings := cfg.EnvWarnings(); len(warnings) != 0 {
+		t.Errorf("expected no warnings for UPD_JSON=false, got %q", warnings)
+	}
+}
+
+func TestApplyDeprecatedEnvJSONInvalidValueWarns(t *testing.T) {
+	t.Setenv("UPD_JSON", "not-a-bool")
+
+	_, cfg := NewCommand(func(context.Context, *Config) error { return nil })
+
+	if cfg.Format != defaultFormat {
+		t.Errorf("Format = %q, want default (invalid env ignored)", cfg.Format)
+	}
+
+	warnings := cfg.EnvWarnings()
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "UPD_JSON") {
+		t.Errorf("expected 1 warning naming UPD_JSON, got %q", warnings)
+	}
+}
+
+func TestApplyEnvFormatWinsOverDeprecatedJSON(t *testing.T) {
+	t.Setenv("UPD_JSON", "true")
+	t.Setenv("UPD_FORMAT", "table")
+
+	_, cfg := NewCommand(func(context.Context, *Config) error { return nil })
+
+	if cfg.Format != FormatTable {
+		t.Errorf("Format = %q, want %q (UPD_FORMAT takes precedence)", cfg.Format, FormatTable)
+	}
+}
+
 func TestSuggestFlagTypo(t *testing.T) {
 	t.Parallel()
 
 	candidates := []string{
-		"quiet", "nop", "dry-run", "no-color", "greatest", "all", "pin-latest",
-		"json", "verbose", "file", "registry", "concurrency", "retries", "timeout",
+		"quiet", "silent", "nop", "dry-run", "no-color", "greatest", "all", "pin-latest",
+		"format", "verbose", "file", "registry", "concurrency", "retries", "timeout",
 	}
 
 	tests := []struct {
@@ -479,10 +590,11 @@ func TestSuggestFlagTypo(t *testing.T) {
 		want  string
 		found bool
 	}{
-		{"jso", "json", true},
-		{"json", "json", true},
+		{"forma", "format", true},
+		{"format", "format", true},
 		{"verbos", "verbose", true},
 		{"qiet", "quiet", true},
+		{"silen", "silent", true},
 		{"no-colour", "no-color", true},
 		{"pin-late", "pin-latest", true},
 		{"registryy", "registry", true},
@@ -498,13 +610,28 @@ func TestSuggestFlagTypo(t *testing.T) {
 }
 
 func TestParseFlagsUnknownFlagSuggestsAlternative(t *testing.T) {
+	_, err := ParseFlags([]string{"--forma"})
+	if err == nil {
+		t.Fatal("expected unknown flag error")
+	}
+
+	if !strings.Contains(err.Error(), "Did you mean --format?") {
+		t.Errorf("error should contain a suggestion, got: %v", err)
+	}
+}
+
+func TestParseFlagsRemovedJSONFlagSuggestsReplacement(t *testing.T) {
 	_, err := ParseFlags([]string{"--jso"})
 	if err == nil {
 		t.Fatal("expected unknown flag error")
 	}
 
-	if !strings.Contains(err.Error(), "Did you mean --json?") {
-		t.Errorf("error should contain a suggestion, got: %v", err)
+	if !strings.Contains(err.Error(), "Did you mean --format=json?") {
+		t.Errorf("error should suggest the --format replacement, got: %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "--json is deprecated") {
+		t.Errorf("error should note the deprecation, got: %v", err)
 	}
 }
 

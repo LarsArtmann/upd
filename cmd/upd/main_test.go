@@ -244,7 +244,7 @@ func TestDryRunAliasSetsNop(t *testing.T) {
 }
 
 // TestNoColorAliasRejectedByParser documents that the legacy --noColor alias
-// is rewritten by the CLI layer (see deprecatedNoColorArgs) instead of being
+// is rewritten by the CLI layer (see rewriteDeprecatedArgs) instead of being
 // a registered flag, so the parser no longer knows it.
 func TestNoColorAliasRejectedByParser(t *testing.T) {
 	if _, err := upd.ParseFlags([]string{"--noColor"}); err == nil {
@@ -252,14 +252,15 @@ func TestNoColorAliasRejectedByParser(t *testing.T) {
 	}
 }
 
-func TestDeprecatedNoColorArgsRewritesAlias(t *testing.T) {
+func TestRewriteDeprecatedArgsRewritesAliases(t *testing.T) {
 	t.Parallel()
 
-	got, deprecated := deprecatedNoColorArgs([]string{"--noColor", "--file", "x", "--noColor=false", "-n"})
+	got, warnings := rewriteDeprecatedArgs([]string{
+		"--noColor", "--json", "--file", "x", "--noColor=false", "--json=false", "-n",
+	})
 
-	want := []string{"--no-color", "--file", "x", "--no-color=false", "-n"}
-	if deprecated != true {
-		t.Error("expected deprecated=true for rewritten alias")
+	want := []string{
+		"--no-color", "--format=json", "--file", "x", "--no-color=false", "--format=table", "-n",
 	}
 
 	for i := range want {
@@ -267,17 +268,26 @@ func TestDeprecatedNoColorArgsRewritesAlias(t *testing.T) {
 			t.Fatalf("arg[%d] = %q, want %q (full: %q)", i, got[i], want[i], got)
 		}
 	}
+
+	if len(warnings) != 4 {
+		t.Fatalf("expected 4 deprecation warnings, got %d: %q", len(warnings), warnings)
+	}
+
+	joined := strings.Join(warnings, "\n")
+	if !strings.Contains(joined, "--noColor") || !strings.Contains(joined, "--json") {
+		t.Errorf("warnings should name the deprecated flags: %q", joined)
+	}
 }
 
-func TestDeprecatedNoColorArgsPassthrough(t *testing.T) {
+func TestRewriteDeprecatedArgsPassthrough(t *testing.T) {
 	t.Parallel()
 
-	args := []string{"--no-color", "-q", "--file=x"}
+	args := []string{"--no-color", "--format=json", "-q", "--silent", "--file=x"}
 
-	got, deprecated := deprecatedNoColorArgs(args)
+	got, warnings := rewriteDeprecatedArgs(args)
 
-	if deprecated {
-		t.Error("expected no rewrite for canonical flags")
+	if len(warnings) != 0 {
+		t.Errorf("expected no rewrite for canonical flags, got %q", warnings)
 	}
 
 	for i := range args {
@@ -297,7 +307,7 @@ func TestRunEUnknownFlagSuggestsAlternative(t *testing.T) {
 		t.Fatal("expected unknown flag error")
 	}
 
-	if !strings.Contains(err.Error(), "Did you mean --json?") {
+	if !strings.Contains(err.Error(), "Did you mean --format=json?") {
 		t.Errorf("error should contain a suggestion, got: %v", err)
 	}
 }

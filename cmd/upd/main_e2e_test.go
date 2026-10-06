@@ -160,7 +160,7 @@ func TestRunEEndToEndJSONOutput(t *testing.T) {
 	writeE2EPackage(t, file, e2ePkgBefore)
 
 	var stdout, stderr bytes.Buffer
-	err := runE([]string{"--registry", server.URL, "--file", file, "--json"}, &stdout, &stderr)
+	err := runE([]string{"--registry", server.URL, "--file", file, "--format=json"}, &stdout, &stderr)
 	if err != nil {
 		t.Fatalf("runE returned error: %v", err)
 	}
@@ -179,6 +179,74 @@ func TestRunEEndToEndJSONOutput(t *testing.T) {
 
 	if out.Summary.Updated != 1 || out.Summary.Total != 1 || out.Summary.Errors != 0 {
 		t.Errorf("unexpected JSON summary: %+v", out.Summary)
+	}
+}
+
+func TestRunEDeprecatedJSONFlagWarnsAndEmitsJSON(t *testing.T) {
+	t.Parallel()
+
+	server := newE2ERegistry(t, map[string]string{"left-pad": e2ePackument})
+	file := filepath.Join(t.TempDir(), "package.json")
+	writeE2EPackage(t, file, e2ePkgBefore)
+
+	var stdout, stderr bytes.Buffer
+	err := runE([]string{"--registry", server.URL, "--file", file, "--json"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("runE returned error: %v", err)
+	}
+
+	if !strings.Contains(stderr.String(), "--json is deprecated") {
+		t.Errorf("stderr missing deprecation warning: %q", stderr.String())
+	}
+
+	var out struct {
+		Summary struct {
+			Updated int `json:"updated"`
+		} `json:"summary"`
+	}
+
+	if err := json.Unmarshal(stdout.Bytes(), &out); err != nil {
+		t.Fatalf("--json alias did not emit JSON: %v\n%s", err, stdout.String())
+	}
+
+	if out.Summary.Updated != 1 {
+		t.Errorf("unexpected summary via --json alias: %+v", out.Summary)
+	}
+}
+
+func TestRunESilentAliasSuppressesOutput(t *testing.T) {
+	t.Parallel()
+
+	server := newE2ERegistry(t, map[string]string{"left-pad": e2ePackument})
+	file := filepath.Join(t.TempDir(), "package.json")
+	writeE2EPackage(t, file, e2ePkgBefore)
+
+	var stdout, stderr bytes.Buffer
+	err := runE([]string{"--registry", server.URL, "--file", file, "--silent"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("runE returned error: %v", err)
+	}
+
+	if stdout.Len() != 0 {
+		t.Errorf("--silent wrote to stdout: %q", stdout.String())
+	}
+}
+
+func TestRunEInvalidFormatFailsBeforeFetch(t *testing.T) {
+	t.Parallel()
+
+	server := newE2ERegistry(t, map[string]string{})
+	file := filepath.Join(t.TempDir(), "package.json")
+	writeE2EPackage(t, file, e2ePkgBefore)
+
+	var stdout, stderr bytes.Buffer
+	err := runE([]string{"--registry", server.URL, "--file", file, "--format=yaml"}, &stdout, &stderr)
+	if !errors.Is(err, upd.ErrInvalidFormat) {
+		t.Fatalf("expected ErrInvalidFormat, got %v", err)
+	}
+
+	if !strings.Contains(err.Error(), "config.invalid_format") {
+		t.Errorf("error should carry the invalid-format code, got: %v", err)
 	}
 }
 
@@ -220,7 +288,7 @@ func TestRunEUnknownFlagWithPositionalArgSuggestsFlag(t *testing.T) {
 		t.Fatal("expected an error for the unknown --jso flag")
 	}
 
-	if !strings.Contains(err.Error(), "Did you mean --json?") {
+	if !strings.Contains(err.Error(), "Did you mean --format=json?") {
 		t.Errorf("error missing flag suggestion: %v", err)
 	}
 
