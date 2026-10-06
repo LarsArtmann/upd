@@ -8,11 +8,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Nothing yet.
+- **Positional patterns restored through fang** — `upd react*` failed with
+  `unknown command` since the fang migration registered hidden
+  `man`/`completion` subcommands (cobra's default arg validation then
+  rejected bare arguments on the root command). The root command now
+  declares that positional arguments are patterns; a CLI-level end-to-end
+  test pins the behavior.
+- **`--format=table|json` replaces `--json`** — invalid values are rejected
+  up front with a clear error. `--json` (and `UPD_JSON`) keep working but
+  print a deprecation warning and are gone from help, man pages, and
+  completions; typos like `--jso` now suggest `--format=json`.
+- **`--silent` alias for `--quiet`** — registered as a first-class flag with
+  the `-s` shorthand.
+- **`.npmrc` support** — the registry URL and per-registry bearer tokens
+  (`//host/:_authToken`) are read from the user's and the package file's
+  `.npmrc` (project-local wins). Explicit `--registry`/`UPD_REGISTRY` still
+  takes precedence; malformed or unsupported entries warn instead of
+  silently breaking auth, and token values never appear in output.
+- **Machine-readable error classification in `--json`** — error entries now
+  carry `code` and `family` (e.g. `registry.package_not_found`,
+  `rejection`) so CI consumers can act on error kinds instead of message
+  text.
+- **Deprecation warnings for invalid `UPD_*` env vars** — invalid values
+  (e.g. `UPD_TIMEOUT=30`) warn instead of silently falling back to the
+  default.
+- **Typo suggestions for unknown flags** — `--jso` answers with
+  `Did you mean --format=json?`, including when positional patterns
+  accompany the flag.
+- **Issue and pull request templates** (`bug_report.yml`,
+  `feature_request.yml`, `PULL_REQUEST_TEMPLATE.md`).
+- **Release automation** — `.goreleaser.yml` (Linux/macOS, amd64+arm64,
+  `SHA256SUMS`) plus a tag-triggered `release.yml` workflow;
+  `docs/RELEASING.md` documents the full ritual.
 
 ### Fixed
 
-- Nothing yet.
+- **Unknown-flag suggestions now fire with positional arguments** —
+  `upd --jso -f package.json` previously reported `unknown command
+  "package.json"` because cobra's command lookup failed before flag parsing.
+
+### Changed
+
+- **Every package failure is carried in the partial-failure error** —
+  scripts can now `errors.Is`/`As` over the run error instead of parsing
+  rendered output.
+- **CI hardening** — `nix flake check` job added; `govulncheck` no longer
+  allowed to fail (verified clean); `go mod tidy -diff` + `go mod verify`
+  steps; test timeout of 120s; 80% coverage gate (coverage is 87.7%).
+- **Local test gate matches CI** — `nix run .#test` now runs with `-race`.
+- **Test coverage expanded** — CLI-level end-to-end tests (update, dry-run,
+  partial failure, JSON output, quiet, positional patterns, `.npmrc` auth),
+  a SIGINT cancellation test, property tests for the version regexes,
+  compile-verified package example, and opt-in integration tests against
+  the real NPM registry (`nix run .#test-integration`).
 
 ## [1.4.0] - 2026-10-05
 

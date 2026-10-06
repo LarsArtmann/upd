@@ -1,0 +1,33 @@
+version: 2
+
+project_name: upd
+
+builds:
+  - id: upd
+    main: ./cmd/upd
+    binary: upd
+    env:
+      - CGO_ENABLED=0
+      - GOEXPERIMENT=jsonv2
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/LarsArtmann/upd.ProgramVersion={{.Version}}
+
+archives:
+  - formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ title .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: SHA256SUMS
+
+release:
+  mode: append
+
+changelog:
+  disable: true
