@@ -15,11 +15,15 @@ This repo standardizes on [Nix flakes](https://nix.dev/concepts/flakes) for all
 build automation — no Makefile, no justfile.
 
 ```bash
-nix run .#build          # build to bin/upd
-nix run .#test           # go test ./... -v -count=1
-nix run .#lint           # go vet ./... && go build ./...
-nix run .#run -- <args>  # go run ./cmd/upd <args>
+nix run .#build             # build to bin/upd
+nix run .#test              # go test ./... -v -count=1 -race
+nix run .#test-integration  # opt-in tests against the real NPM registry
+nix run .#lint              # go vet + go build + golangci-lint
+nix run .#run -- <args>     # go run ./cmd/upd <args>
 ```
+
+Run `nix run .#test` and `nix run .#lint` before submitting a PR — CI runs
+the same gates on every push.
 
 ### Plain Go equivalents
 
@@ -34,9 +38,9 @@ go vet ./...
 
 ### Linting
 
-The project has `.golangci.yml` with 100+ linters enabled. Expect loud
-diagnostics on first run — match surrounding style rather than chasing every
-pre-existing warning.
+`nix run .#lint` runs `go vet`, a build check, and the full golangci-lint
+suite (`.golangci.yml`, 100+ linters). Expect loud diagnostics on first run —
+match surrounding style rather than chasing every pre-existing warning.
 
 ```bash
 golangci-lint run ./...     # full linter suite (optional, strict)

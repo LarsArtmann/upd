@@ -73,25 +73,25 @@ Four themes (frictionless distribution, trustworthy observable CLI, beyond a sin
 
 ## b) PARTIALLY DONE
 
-1. **Root cause of the broken local gates left standing.** The untracked `go.work` (created 2026-09-15) adds `use /home/lars/projects/go-atomic-write`, whose module requires go ≥ 1.27; local toolchain is go 1.26.7 with `GOTOOLCHAIN=local` (both in nix and user env). I documented the `GOWORK=off` workaround everywhere instead of fixing the flake apps (`GOWORK=off` could simply be exported in the `flake.nix` test/lint/run apps — a one-line, root-cause fix I judged out of docs-scope). The gates remain broken for anyone who doesn't know the workaround.
-2. **v1.3.0 release completion** — fully documented (CHANGELOG, AGENTS.md, TODO_LIST #1), but not executed: no GitHub Release exists, `flake.nix:22` still says `1.2.0`, and whether to re-cut vs. document-forward is a release-policy decision I won't make unilaterally.
-3. **Remote CI state unverified** — given the Sep 15 build break, `gh run list` almost certainly shows red runs for the last ten days. I never ran it. Assumption, not fact.
-4. **Annotation depth is uneven by design** — the highest-signal sections (headers, "still open" blocks, NOT STARTED lists, question sections, recent reports' full item lists) got per-item verdicts; the older 50-item "ideas we should get done next" dumps in _in-place_ (non-archived) reports got a routing note plus per-item markers only where verdicts exist. The raw ideas are captured in ROADMAP/TODO_LIST, but a maximalist pass would strike every line.
-5. **`doc.go` example** still hardcodes `pinLatest=false` and remains non-compile-verified (TODO_LIST #17). Verified the hardcoded `false` is current (`doc.go:22`).
-6. **`dependabot.yml` verified for existence and birth-commit only** — I cited it as "covers Go modules since 2026-09" in one annotation without reading its ecosystem stanza. Existence: verified. Content: not read.
-7. **jscpd zero-clone claim** left as-is after my 2-line `manifest.go` change — no re-run (risk ~zero, but the claim wasn't re-verified).
+1. ~~**Root cause of the broken local gates left standing.** The untracked `go.work` (created 2026-09-15) adds `use /home/lars/projects/go-atomic-write`, whose module requires go ≥ 1.27; local toolchain is go 1.26.7 with `GOTOOLCHAIN=local` (both in nix and user env). I documented the `GOWORK=off` workaround everywhere instead of fixing the flake apps (`GOWORK=off` could simply be exported in the `flake.nix` test/lint/run apps — a one-line, root-cause fix I judged out of docs-scope). The gates remain broken for anyone who doesn't know the workaround.~~ done 2026-10-06 — the `go.work` was deleted; plain `GOEXPERIMENT=jsonv2 go build/vet` verified green without any workaround
+2. ~~**v1.3.0 release completion** — fully documented (CHANGELOG, AGENTS.md, TODO_LIST #1), but not executed: no GitHub Release exists, `flake.nix:22` still says `1.2.0`, and whether to re-cut vs. document-forward is a release-policy decision I won't make unilaterally.~~ done — GitHub Release published 2026-10-06 (option a, from the existing tag); the version constant was then removed entirely (`d43f460`, rev-derived); v1.4.0 followed cut properly
+3. ~~**Remote CI state unverified** — given the Sep 15 build break, `gh run list` almost certainly shows red runs for the last ten days. I never ran it. Assumption, not fact.~~ verified 2026-10-06 — master is green (latest run success); the one visible failure (`827b163`, 2026-10-06 20:05) was the nix job dying in `install-nix-action` (infra), followed by green runs
+4. ~~**Annotation depth is uneven by design** — the highest-signal sections (headers, "still open" blocks, NOT STARTED lists, question sections, recent reports' full item lists) got per-item verdicts; the older 50-item "ideas we should get done next" dumps in _in-place_ (non-archived) reports got a routing note plus per-item markers only where verdicts exist. The raw ideas are captured in ROADMAP/TODO_LIST, but a maximalist pass would strike every line.~~ done 2026-10-06 — this report and all its sibling `2026-0*` files got the maximalist pass
+5. ~~**`doc.go` example** still hardcodes `pinLatest=false` and remains non-compile-verified (TODO_LIST #17). Verified the hardcoded `false` is current (`doc.go:22`).~~ done at `8f8d6fd` — `example_test.go` compile-verifies the example; the hardcoded `false` verdict is Won't implement (default-flow example, see the 07-09 pinlatest report E7)
+6. ~~**`dependabot.yml` verified for existence and birth-commit only** — I cited it as "covers Go modules since 2026-09" in one annotation without reading its ecosystem stanza. Existence: verified. Content: not read.~~ verified 2026-10-06 — covers `gomod` + `github-actions`, weekly, grouped minor-and-patch, PR limit 5
+7. ~~**jscpd zero-clone claim** left as-is after my 2-line `manifest.go` change — no re-run (risk ~zero, but the claim wasn't re-verified).~~ re-run 2026-10-06 — **14 clones found** (110 lines, 1.61%): the `8f8d6fd`+ test batch reintroduced duplication; AGENTS.md claim corrected, re-elimination tracked as TODO_LIST #11
 
 ---
 
 ## c) NOT STARTED
 
-1. GitHub Release for the existing `v1.3.0` tag.
-2. `flake.nix` version-line decision (1.2.0 → 1.3.0 on master, or re-cut).
-3. All TODO_LIST #2–#28 work items (this was a docs pass — zero feature work was attempted).
-4. `gh run list` to confirm/quantify the CI red window since Sep 15.
-5. Fixing the flake apps (`GOWORK=off` export) or removing the stale `go.work` `use`-line.
-6. Reconciling the ~8 generic `chore: auto-commit` messages from this session (needs a history decision — see g.3).
-7. VHS re-render, `--noColor` deprecation, env-var feedback, typo suggestions, `run()` end-to-end test, signal test, `--format` flag — all remain open in TODO_LIST.
+1. ~~GitHub Release for the existing `v1.3.0` tag.~~ done 2026-10-06
+2. ~~`flake.nix` version-line decision (1.2.0 → 1.3.0 on master, or re-cut).~~ done differently — the constant was removed; version derives from the git rev (`d43f460`)
+3. ~~All TODO_LIST #2–#28 work items (this was a docs pass — zero feature work was attempted).~~ done — swept 2026-10-06: 24 of 28 completed; the remainder re-tracked in the current TODO_LIST (#1–#11)
+4. ~~`gh run list` to confirm/quantify the CI red window since Sep 15.~~ done 2026-10-06 — master green; see b3
+5. ~~Fixing the flake apps (`GOWORK=off` export) or removing the stale `go.work` `use`-line.~~ done differently — the whole `go.work` was deleted (2026-10-06); no workaround needed
+6. ~~Reconciling the ~8 generic `chore: auto-commit` messages from this session (needs a history decision — see g.3).~~ Won't implement — history left as-is (g3 option a); discipline going forward instead
+7. ~~VHS re-render, `--noColor` deprecation, env-var feedback, typo suggestions, `run()` end-to-end test, signal test, `--format` flag — all remain open in TODO_LIST.~~ all done — demos re-rendered 2026-10-06; deprecation/env-warnings/typo-suggestions/`--format`+`--silent` at `2ea7868`; e2e + signal tests at `8f8d6fd`
 
 ---
 
@@ -126,64 +126,64 @@ Ordered roughly by impact × urgency. Items 1–28 are the TODO_LIST (already ev
 
 ### Release & integrity (this week)
 
-1. **Decide v1.3.0 disposition and execute it** — GitHub Release for the existing tag + `flake.nix` version line, or re-cut as v1.3.1 with the version baked correctly (g.1).
-2. **Check `gh run list`** — confirm the CI red window since `a98c59a` (Sep 15) and whether the glob fix turned it green.
-3. **Fix the local gates at the root**: export `GOWORK=off` in `flake.nix`'s `test`/`lint`/`run` apps, or drop the `go-atomic-write` use-line from `go.work` (g.2).
-4. Add `nix flake check` to CI (TODO_LIST #2).
-5. `release.yml` on tag push + goreleaser prebuilt binaries + SHA256SUMS (TODO_LIST #3).
-6. Write `docs/RELEASING.md` runbook, including "always `nix flake check`" and "verify dep-bot commits compile" (TODO_LIST #4).
-7. Compile-gate dependency-bot PRs: a CI job that runs `go build ./...` on `chore(deps)` commits (lesson from the 10-day break).
-8. Include `-race` in `nix run .#test` (TODO_LIST #28).
-9. `-timeout 120s` on the CI test step (TODO_LIST #22).
-10. `go mod tidy` cleanliness + `go mod verify` CI guards (TODO_LIST #21).
-11. Verify govulncheck is green on Go 1.26.7, then remove `continue-on-error` (TODO_LIST #6).
-12. Document the legacy `2.x` tags is DONE in AGENTS.md — add the same note to `docs/RELEASING.md` when it exists.
-13. Add a CHANGELOG-sync check: fail CI if the latest tag lacks a matching section (ROADMAP theme 4).
-14. Read and confirm `.github/dependabot.yml` actually covers `gomod` + `github-actions` ecosystems (unverified this session — b.6).
-15. Re-run `jscpd` to re-certify the zero-clone claim post-change (b.7).
+1. ~~**Decide v1.3.0 disposition and execute it** — GitHub Release for the existing tag + `flake.nix` version line, or re-cut as v1.3.1 with the version baked correctly (g.1).~~ done — Release published from the tag (2026-10-06); version constant then removed (`d43f460`)
+2. ~~**Check `gh run list`** — confirm the CI red window since `a98c59a` (Sep 15) and whether the glob fix turned it green.~~ done 2026-10-06 — green on master; one transient nix-infra failure since, self-healed
+3. ~~**Fix the local gates at the root**: export `GOWORK=off` in `flake.nix`'s `test`/`lint`/`run` apps, or drop the `go-atomic-write` use-line from `go.work` (g.2).~~ done — `go.work` deleted entirely (2026-10-06)
+4. ~~Add `nix flake check` to CI (TODO_LIST #2).~~ done at `8f8d6fd`
+5. ~~`release.yml` on tag push + goreleaser prebuilt binaries + SHA256SUMS (TODO_LIST #3).~~ done at `cfb5cfd`
+6. ~~Write `docs/RELEASING.md` runbook, including "always `nix flake check`" and "verify dep-bot commits compile" (TODO_LIST #4).~~ done at `cfb5cfd` — pre-flight gate list included; dep-bot compile safety comes from CI running on every PR
+7. ~~Compile-gate dependency-bot PRs: a CI job that runs `go build ./...` on `chore(deps)` commits (lesson from the 10-day break).~~ done differently — CI's build+vet+test jobs already run on every PR, dep-bot ones included; the Sep-15 gap was the broken commit landing via direct auto-commit push, which current CI would flag red
+8. ~~Include `-race` in `nix run .#test` (TODO_LIST #28).~~ done at `8f8d6fd`
+9. ~~`-timeout 120s` on the CI test step (TODO_LIST #22).~~ done at `8f8d6fd`
+10. ~~`go mod tidy` cleanliness + `go mod verify` CI guards (TODO_LIST #21).~~ done at `8f8d6fd`
+11. ~~Verify govulncheck is green on Go 1.26.7, then remove `continue-on-error` (TODO_LIST #6).~~ done — verified clean; the flag was removed and the job is blocking
+12. ~~Document the legacy `2.x` tags is DONE in AGENTS.md — add the same note to `docs/RELEASING.md` when it exists.~~ done — `docs/RELEASING.md` carries the legacy-tags section
+13. ~~Add a CHANGELOG-sync check: fail CI if the latest tag lacks a matching section (ROADMAP theme 4).~~ still a raw idea — ROADMAP theme 4
+14. ~~Read and confirm `.github/dependabot.yml` actually covers `gomod` + `github-actions` ecosystems (unverified this session — b.6).~~ verified 2026-10-06 — both ecosystems, weekly, grouped
+15. ~~Re-run `jscpd` to re-certify the zero-clone claim post-change (b.7).~~ done 2026-10-06 — 14 clones found; claim corrected in AGENTS.md, fix tracked as TODO_LIST #11
 
 ### CLI & UX
 
-16. `--noColor` deprecation warning + removal plan; fixes the mango roff leak (TODO_LIST #7).
-17. Warn on invalid `UPD_*` env values instead of silent fallback (TODO_LIST #8).
-18. Typo suggestions for unknown flags (TODO_LIST #9).
-19. Re-render VHS demos for the fang-styled CLI (TODO_LIST #10).
-20. `--format` flag + optional `--silent` alias (TODO_LIST #11).
-21. Errorfamily `code`/`family` in `--json` + `Format('+')` in `--verbose` (TODO_LIST #13).
-22. Improve the `GOEXPERIMENT=jsonv2` unset error message (ROADMAP theme 2).
+16. ~~`--noColor` deprecation warning + removal plan; fixes the mango roff leak (TODO_LIST #7).~~ done at `2ea7868`
+17. ~~Warn on invalid `UPD_*` env values instead of silent fallback (TODO_LIST #8).~~ done at `2ea7868`
+18. ~~Typo suggestions for unknown flags (TODO_LIST #9).~~ done at `2ea7868`
+19. ~~Re-render VHS demos for the fang-styled CLI (TODO_LIST #10).~~ done 2026-10-06
+20. ~~`--format` flag + optional `--silent` alias (TODO_LIST #11).~~ done at `2ea7868`
+21. ~~Errorfamily `code`/`family` in `--json` + `Format('+')` in `--verbose` (TODO_LIST #13).~~ done — codes in `--json` at `827b163`; verbose `%+v` chains at `e64d3a7`
+22. ~~Improve the `GOEXPERIMENT=jsonv2` unset error message (ROADMAP theme 2).~~ still a raw idea — ROADMAP theme 2
 
 ### Testing
 
-23. End-to-end `run()` test with mock registry (TODO_LIST #14).
-24. Signal-handling test via fang (TODO_LIST #15).
-25. Property-based tests for `versionRe`/`latestRe` (TODO_LIST #16).
-26. Compile-verified doc examples; while there, show `PinLatest: true` in `doc.go` (TODO_LIST #17 + b.5).
-27. Derive `updates` from the manifest in `RenderJSON` (TODO_LIST #19).
-28. Coverage threshold gate in CI (TODO_LIST #18).
+23. ~~End-to-end `run()` test with mock registry (TODO_LIST #14).~~ done at `8f8d6fd` — `cmd/upd/main_e2e_test.go`
+24. ~~Signal-handling test via fang (TODO_LIST #15).~~ done at `8f8d6fd` — `cmd/upd/main_signal_test.go`
+25. ~~Property-based tests for `versionRe`/`latestRe` (TODO_LIST #16).~~ done at `8f8d6fd` — `manifest_property_test.go`
+26. ~~Compile-verified doc examples; while there, show `PinLatest: true` in `doc.go` (TODO_LIST #17 + b.5).~~ done at `8f8d6fd` (`example_test.go`); `PinLatest: true` Won't implement — default-flow example (07-09 pinlatest report E7)
+27. ~~Derive `updates` from the manifest in `RenderJSON` (TODO_LIST #19).~~ done — `RenderJSON(w, manifest)` (`render.go:338`)
+28. ~~Coverage threshold gate in CI (TODO_LIST #18).~~ done at `8f8d6fd` — 80% gate (coverage 87.7%)
 
 ### Maintenance & docs
 
-29. `errors.Join` for warnings (TODO_LIST #24).
-30. Issue/PR templates (TODO_LIST #23).
-31. Focused demo tapes (TODO_LIST #25).
-32. Build-tagged real-registry test (TODO_LIST #26).
-33. `slog` structured logging (TODO_LIST #27).
-34. Update `docs/DOMAIN_LANGUAGE.md` with CLI terms (`ColorSchemeFunc`, env-var constants, `HandleError`) — still absent (verified this session).
-35. Audit remaining `errors.As` sites for `errors.AsType` migration eligibility — `b6110bf` converted `npm.go` only; sweep the rest (`errors_test.go`, `config.go`).
-36. Sweep the 11 in-place status reports again after the next work cycle — items marked "moved to TODO_LIST #N" should be re-pointed when numbering shifts.
-37. Consider extracting the status-report annotation conventions (HTML `<s>` style, routing-note pattern) into the project's docs-health usage notes.
-38. Benchmarks `b.N` → `b.Loop()` (TODO_LIST #20).
-39. Add a version badge to README (ROADMAP theme 1).
-40. Investigate upstream `mango` hidden-flag support (man-page leak root fix) instead of only planning alias removal.
-41. Decide the `--no-color` ⇒ `NO_COLOR` child-process question (open since the fang follow-up report).
-42. Delete-or-keep decision for the stale `2.x` tags now that they're documented (TODO_LIST R11 leaves this to you).
-43. Add `nix flake check --all-systems` to the release gate (the default check skips aarch64/darwin).
-44. Add a release-smoke job (build on tag, assert `upd --version` matches the tag) (ROADMAP theme 4).
-45. Move the `retryableError`/errorfamily-Retryable decision forward (open since the 00:50 report).
-46. 401/403 handling in `classifyRegistryError` (left open in the 23:30 report — currently they masquerade as transient).
-47. Close the `ErrNoSemverVersions` vs `ErrNoValidVersions` overlap question (23:30 report item 13).
-48. Terminal-width-aware table/error layout (ROADMAP theme 2; oldest unowned UX item, from the first port report).
-49. Write the "Why upd?" README section (open since the pinlatest report, item 29).
+29. ~~`errors.Join` for warnings (TODO_LIST #24).~~ Won't implement — warnings are display-only; `errors.Join` adopted for partial-failure spec errors (`3696a33`)
+30. ~~Issue/PR templates (TODO_LIST #23).~~ done at `cced077`
+31. ~~Focused demo tapes (TODO_LIST #25).~~ done 2026-10-06
+32. ~~Build-tagged real-registry test (TODO_LIST #26).~~ done at `8f8d6fd` — `nix run .#test-integration`
+33. ~~`slog` structured logging (TODO_LIST #27).~~ Won't implement — TODO_LIST R12
+34. ~~Update `docs/DOMAIN_LANGUAGE.md` with CLI terms (`ColorSchemeFunc`, env-var constants, `HandleError`) — still absent (verified this session).~~ NOT-DO — implementation names, not domain terms; the glossary is intentionally domain-level
+35. ~~Audit remaining `errors.As` sites for `errors.AsType` migration eligibility — `b6110bf` converted `npm.go` only; sweep the rest (`errors_test.go`, `config.go`).~~ done 2026-10-06 — zero `errors.As` call sites remain (only a doc comment mentions it)
+36. ~~Sweep the 11 in-place status reports again after the next work cycle — items marked "moved to TODO_LIST #N" should be re-pointed when numbering shifts.~~ done 2026-10-06 — this is that sweep; every `2026-0*` report re-annotated with current verdicts
+37. ~~Consider extracting the status-report annotation conventions (HTML `<s>` style, routing-note pattern) into the project's docs-health usage notes.~~ Won't implement — the docs-health skill owns those conventions
+38. ~~Benchmarks `b.N` → `b.Loop()` (TODO_LIST #20).~~ done — `benchmark_test.go` (2026-10-06)
+39. ~~Add a version badge to README (ROADMAP theme 1).~~ still a raw idea — ROADMAP theme 1
+40. ~~Investigate upstream `mango` hidden-flag support (man-page leak root fix) instead of only planning alias removal.~~ superseded — the leak was eliminated by de-registering the aliases (`2ea7868`); no upstream ask needed
+41. ~~Decide the `--no-color` ⇒ `NO_COLOR` child-process question (open since the fang follow-up report).~~ Won't implement — upd should not mutate the child environment
+42. ~~Delete-or-keep decision for the stale `2.x` tags now that they're documented (TODO_LIST R11 leaves this to you).~~ Won't implement — R11 (deletion is irreversible; documentation suffices)
+43. ~~Add `nix flake check --all-systems` to the release gate (the default check skips aarch64/darwin).~~ still a raw idea — ROADMAP theme 4
+44. ~~Add a release-smoke job (build on tag, assert `upd --version` matches the tag) (ROADMAP theme 4).~~ still a raw idea — ROADMAP theme 4
+45. ~~Move the `retryableError`/errorfamily-Retryable decision forward (open since the 00:50 report).~~ resolved — option (a): the wrapper stays for `retryAfter` (00:50 report g1; AGENTS.md)
+46. ~~401/403 handling in `classifyRegistryError` (left open in the 23:30 report — currently they masquerade as transient).~~ moved to TODO_LIST #8
+47. ~~Close the `ErrNoSemverVersions` vs `ErrNoValidVersions` overlap question (23:30 report item 13).~~ Won't implement — distinct registry states with distinct message templates (23:30 report f13)
+48. ~~Terminal-width-aware table/error layout (ROADMAP theme 2; oldest unowned UX item, from the first port report).~~ still a raw idea — ROADMAP theme 2
+49. ~~Write the "Why upd?" README section (open since the pinlatest report, item 29).~~ NOT-DO — superseded: motivation is woven into the README intro and atomic-writes rationale
 50. Quarterly ROADMAP prune is due next at ~2026-12-25.
 
 ---
@@ -192,9 +192,15 @@ Ordered roughly by impact × urgency. Items 1–28 are the TODO_LIST (already ev
 
 1. **How should v1.3.0 be completed?** The tag is pushed and its source compiles, but its binaries self-report `1.2.0` and there is no GitHub Release. Options: (a) create the GitHub Release from the existing tag and bump `flake.nix` on master going forward (fastest; the tag's version wart is documented), or (b) re-cut as `v1.3.1` with the version bump included (clean; makes today's glob fix part of a properly versioned release). This is release policy — your call.
 
+> **Resolved:** option (a) — GitHub Release published from the tag 2026-10-06; the version constant was then removed outright (`d43f460`), and v1.4.0 was cut cleanly afterward.
+
 2. **What should happen to the `go.work`?** Its workspace is unresolvable on this machine (member requires go ≥ 1.27; you run 1.26.7 with `GOTOOLCHAIN=local`), so it currently only breaks gates. I restored it byte-identical after my experiment. Delete it, keep it for a future go-1.27 cross-repo session on `go-atomic-write`, or keep the file but drop the `use` line? (And do you want `GOWORK=off` baked into the flake apps regardless?)
 
+> **Resolved:** deleted (2026-10-06); plain Go commands verified green. No `GOWORK=off` needed anywhere.
+
 3. **Should this session's history be cleaned up?** My work is smeared across ~8 daemon `chore: auto-commit N file(s)` commits plus a few uncommitted annotation/archive changes. If the daemon already pushed them, rewriting means force-push-with-lease on master. Do you want (a) leave history as-is and just hold me to better amend discipline going forward, or (b) squash today's session into properly messaged commits (docs / build-fix / changelog) with an explicit force-push approval?
+
+> **Resolved:** option (a) — history stays as-is; no force-push.
 
 ---
 

@@ -11,13 +11,13 @@
 > - Copyright year fix — DONE: `2015-2026` (#7)
 > - `latestReplaceRe` consolidation — DONE: removed; `resolveSpecVersion` sets `SNew = VNew` directly (#8)
 > - `makezero` warnings — RESOLVED (#17, #18)
-> - `doc.go` example — needs updating again (signatures changed in error-handling overhaul)
+> - ~~`doc.go` example — needs updating again (signatures changed in error-handling overhaul)~~ done — example shows the current 3-arg `BuildManifest` signature and is compile-verified (`example_test.go`)
 >
 > **Rejected / Obsolete:**
 >
 > - `BuildManifest` options struct refactor — **REJECTED**: positional `bool` remains; YAGNI for a CLI with no external library consumers (#20)
 > - Golden file tests vs `rse/upd` — **REJECTED**: no value for a Go rewrite with different output format (#25)
-> - Shell completions — not done (#47, #48)
+> - ~~Shell completions — not done (#47, #48)~~ done — `upd completion <bash\|zsh\|fish>` + `upd man` shipped with the fang migration (`81d8c44`)
 >
 > ~~**Still relevant:**~~ all four resolved since (docs-health pass 2026-09-25):
 >
@@ -104,7 +104,7 @@ Nothing was broken. No regressions. All 40 tests pass including race detector.
 4. ~~**3 pre-existing `makezero` lint warnings** in `diff.go` and `render.go` (not introduced this session, but still present).~~ done — resolved; lint is 0 issues
 5. ~~**Copyright year is stale** — `PrintVersion` in `config.go` says `2015-2025` but the original `rse/upd` now says `2015-2026` and today's date is 2026-07-09.~~ done at `55dfe76` era
 6. ~~**No `-P` in `TestParseFlagsShortFlags`** — The flag-parsing tests are the regression net for CLI behavior; the new flag is invisible to them.~~ done at `e64d3a7` era
-7. **`doc.go` example hardcodes `false`** — Doesn't show a library consumer how to enable `pinLatest`. ← open (minor)
+7. ~~**`doc.go` example hardcodes `false`** — Doesn't show a library consumer how to enable `pinLatest`.~~ Won't implement — the example demonstrates the default flow; `-P`/`--pin-latest` behavior is documented in README and FEATURES.md
 8. ~~**README "Development" section** lists plain `go build`/`go test`/`go vet` instead of `nix run .#build` etc. (Pre-existing, but AGENTS.md says Nix-first.)~~ done — README Development section shows the nix commands
 
 ---
@@ -124,14 +124,14 @@ Nothing was broken. No regressions. All 40 tests pass including race detector.
 
 ### Testing Improvements
 
-9. Add test for `IsLatest` + `Nop` interaction (should count as update but not write)
-10. Add test for `IsLatest` + `Greatest` mode (should resolve to greatest, not latest dist-tag)
-11. Add test for `"latest"` with whitespace padding (e.g., `" latest "`)
-12. Add test for `IsLatest` when registry returns error (should become `StateError`)
-13. Add test for mixed manifest: some `"latest"`, some semver, some skipped — all in one pass
-14. Add test for `"latest"` appearing in multiple sections (dependencies + devDependencies)
-15. Add test verifying byte-level formatting preservation when replacing `"latest"`
-16. Add integration test: full CLI run with `-P` flag end-to-end
+9. ~~Add test for `IsLatest` + `Nop` interaction (should count as update but not write)~~ moved to TODO_LIST #5
+10. ~~Add test for `IsLatest` + `Greatest` mode (should resolve to greatest, not latest dist-tag)~~ moved to TODO_LIST #5
+11. ~~Add test for `"latest"` with whitespace padding (e.g., `" latest "`)~~ moved to TODO_LIST #5
+12. ~~Add test for `IsLatest` when registry returns error (should become `StateError`)~~ moved to TODO_LIST #5
+13. ~~Add test for mixed manifest: some `"latest"`, some semver, some skipped — all in one pass~~ done — `TestBuildManifestPinLatest` covers semver + `latest` + `Latest` + `file:` in one manifest (`manifest_test.go:177`)
+14. ~~Add test for `"latest"` appearing in multiple sections (dependencies + devDependencies)~~ moved to TODO_LIST #5
+15. ~~Add test verifying byte-level formatting preservation when replacing `"latest"`~~ done — `TestEnginePinLatest` asserts the written raw bytes (`engine_test.go:254`)
+16. ~~Add integration test: full CLI run with `-P` flag end-to-end~~ moved to TODO_LIST #5
 
 ### Code Quality
 
@@ -140,33 +140,33 @@ Nothing was broken. No regressions. All 40 tests pass including race detector.
 19. ~~Consider consolidating the quiet/non-quiet code branches in `main.go` (noted in AGENTS.md as duplication)~~ done at `e64d3a7` (D24)
 20. ~~Consider `BuildManifest` options pattern instead of positional bools~~ Won't implement — TODO_LIST R2
 21. ~~Add `golangci-lint` to CI (currently CI only runs `go vet`)~~ done at `e64d3a7`
-22. Consider using `structs` with exhaustive initialization to satisfy `exhaustruct` linter ← open
+22. ~~Consider using `structs` with exhaustive initialization to satisfy `exhaustruct` linter~~ Won't implement — resolved via `//nolint:exhaustruct` directives and the `exhaustruct_v5` migration instead (`93c5aef`); lint is 0 issues
 
 ### Feature Parity with rse/upd
 
 23. ~~Evaluate issue #11 (VHS demos) — decide yes/no~~ done — adopted (v1.1.0)
-24. Check if there are other open PRs or issues on `rse/upd` worth migrating ← open
+24. ~~Check if there are other open PRs or issues on `rse/upd` worth migrating~~ Won't implement — parity work concluded; remaining direction (workspaces, lockfiles, other ecosystems) lives in ROADMAP theme 3
 25. ~~Verify CLI output matches `rse/upd` byte-for-byte for identical inputs (golden file tests)~~ Won't implement — TODO_LIST R5
-26. Compare the JS version's error messages with Go port's error messages for consistency ← superseded — Go messages now come from `messages.go` templates (`3cd313e`)
+26. ~~Compare the JS version's error messages with Go port's error messages for consistency~~ NOT-DO — superseded: Go messages now come from `messages.go` templates (`3cd313e`), not the JS strings
 27. ~~Check if `rse/upd` has any config-file support beyond the `upd` field in `package.json`~~ moved to ROADMAP.md theme 2
 
 ### Documentation
 
-28. Add `--pin-latest` to the usage examples in README
-29. Add a "Why?" section to README explaining the motivation (reproducible builds)
-30. Update README "Development" section to show `nix run` commands
-31. Add `CONTRIBUTING.md` note about `nix run .#lint` before submitting PRs
-32. Add architecture diagram (D2) to docs/
+28. ~~Add `--pin-latest` to the usage examples in README~~ done — `upd -P` example + flag-table row (README Usage)
+29. ~~Add a "Why?" section to README explaining the motivation (reproducible builds)~~ NOT-DO — superseded: motivation is woven into the README intro and the atomic-writes rationale; a separate essay section adds no value
+30. ~~Update README "Development" section to show `nix run` commands~~ done — Installation → Build from source shows `nix run .#build` (same fix as E8)
+31. ~~Add `CONTRIBUTING.md` note about `nix run .#lint` before submitting PRs~~ done — CONTRIBUTING Development Setup carries the lint/test pre-PR note (refreshed 2026-10-06)
+32. ~~Add architecture diagram (D2) to docs/~~ moved to ROADMAP.md theme 2
 33. ~~Update `docs/DOMAIN_LANGUAGE.md` with `pinLatest` and `IsLatest` concepts~~ done — glossary documents `pinLatest`, `IsLatest`, and the `shouldUpdate` short-circuit (verified 2026-09-25, lines 34/48/57)
 
 ### DevOps / CI
 
 34. ~~Add `golangci-lint` step to `.github/workflows/ci.yml`~~ done at `e64d3a7`
 35. ~~Add `go test -race` to CI (currently only `go test`)~~ done — CI test step uses `-race`
-36. ~~Add release workflow with `ldflags` version injection~~ moved to TODO_LIST.md #3
-37. ~~Add `nix flake check` to CI~~ moved to TODO_LIST.md #2
+36. ~~Add release workflow with `ldflags` version injection~~ done at `cfb5cfd` — `.goreleaser.yml` injects `{{.Version}}` + tag-triggered `release.yml`
+37. ~~Add `nix flake check` to CI~~ done at `8f8d6fd` — dedicated CI job
 38. ~~Consider Renovate/Dependabot for Go dependency updates~~ done — `.github/dependabot.yml` (verified 2026-09-25)
-39. Add `.golangci.yml` sarif output for GitHub Security tab ← open
+39. ~~Add `.golangci.yml` sarif output for GitHub Security tab~~ moved to ROADMAP.md theme 4
 
 ### Robustness
 
@@ -180,10 +180,10 @@ Nothing was broken. No regressions. All 40 tests pass including race detector.
 
 ### Polish
 
-47. Add shell completion generation (`--bash-completion`, `--zsh-completion`)
-48. Add `man` page generation
-49. Add progress bar ETA calculation
-50. Add color detection (respect `NO_COLOR` env var, not just `-C` flag)
+47. ~~Add shell completion generation (`--bash-completion`, `--zsh-completion`)~~ done at `81d8c44` — hidden `upd completion <bash\|zsh\|fish>` via Cobra
+48. ~~Add `man` page generation~~ done at `81d8c44` — hidden `upd man` emits roff via mango
+49. ~~Add progress bar ETA calculation~~ Won't implement — typical runs finish in seconds; an ETA estimate would be noise
+50. ~~Add color detection (respect `NO_COLOR` env var, not just `-C` flag)~~ done at `ea6493d` — `config.go:ShouldDisableColor`, 3 dedicated tests
 
 ---
 
@@ -193,6 +193,10 @@ Nothing was broken. No regressions. All 40 tests pass including race detector.
 
 Adding `pinLatest bool` as a third parameter to `BuildManifest` works but is fragile — every future flag that affects classification (e.g., `--pinGreatest`, `--allowDowngrade`) would require another positional parameter or another breaking change. An `Options` struct or functional options pattern would future-proof the API. **However**, there are no known external library consumers, so the blast radius is zero today. Should I refactor now or defer?
 
+> **Resolved:** defer permanently — rejected as TODO_LIST R2 (YAGNI, zero external consumers).
+
 ### Q2: Should the `latestReplaceRe` regex be anchored?
 
 The replacement regex `(?i)latest` in `engine.go` is unanchored — it replaces any occurrence of "latest" in the constraint string. Since detection only matches bare `"latest"` (via the anchored `latestRe`), the unanchored replacement is technically safe today. But it's a latent bug if someone manually sets `SOld` to something containing "latest" in a version prerelease tag (e.g., `"1.0.0-latest"`). Should I anchor it to `(?i)^latest$` for safety, or is this YAGNI?
+
+> **Resolved:** the regex was removed entirely — `resolveSpecVersion` now sets `SNew = VNew` directly when `IsLatest` (see E1/F8; AGENTS.md documents the mechanism).

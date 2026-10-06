@@ -190,7 +190,7 @@ Revisit adoption **only if** `upd` grows into one of these:
 | HTTP API or daemon mode                                  | go-error-family (HTTPStatus middleware) + oops (trace IDs) + bridge |
 | Exit-code-sensitive CI integration is requested by users | go-error-family OR the 10-line stdlib snippet above                 |
 
-Until one of these materializes, **the stdlib is the right tool for this job.**
+Until one of these materializes, ~~**the stdlib is the right tool for this job.**~~ superseded — the retry loop materialized and `go-error-family` was adopted (see the overturned verdict at the top); the oops/bridge rejections stand.
 
 ---
 

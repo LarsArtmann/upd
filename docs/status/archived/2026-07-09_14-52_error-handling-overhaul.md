@@ -124,11 +124,9 @@
 
 33. **Exhaustive first-pass audit.** When asked for "across the board," grep for ALL error-swallowing patterns (`return nil$`, `return make(`, `_ =`, `continue` on error) before writing any code. The second-pass audit found these immediately — they should have been in the first pass.
 
-34. **Update documentation examples when changing signatures.** `doc.go` is a compile-checked example — changing public API without updating it is a breakage. Always `grep` for changed function names across ALL files including `.go` docs.
-
-35. **Test the boundary code.** `exitCode()` and `printWarnings()` are user-facing logic with zero test coverage. The `cmd/upd` package needs a test file.
-
-36. **Check doc.go / example compilation.** After signature changes, `go build` doesn't catch broken examples in comments. Should `go doc` or manual review be part of the checklist.
+34. ~~**Update documentation examples when changing signatures.** `doc.go` is a compile-checked example — changing public API without updating it is a breakage. Always `grep` for changed function names across ALL files including `.go` docs.~~ done structurally — `example_test.go` (`8f8d6fd`) compile-verifies the example, so drift breaks the build
+35. ~~**Test the boundary code.** `exitCode()` and `printWarnings()` are user-facing logic with zero test coverage. The `cmd/upd` package needs a test file.~~ done at `1cd0109`
+36. ~~**Check doc.go / example compilation.** After signature changes, `go build` doesn't catch broken examples in comments. Should `go doc` or manual review be part of the checklist.~~ done structurally — the example lives in `example_test.go` and compiles as part of `go test`
 
 ---
 
@@ -136,51 +134,51 @@
 
 ### Critical (broken right now)
 
-1. **Fix `doc.go` line 14** — update example to new `BuildManifest` and `GetUpdArgs` signatures
-2. **Update AGENTS.md "Execution Pipeline" section** — reflect `BuildManifest` → `(Manifest, []string)`, mention warnings pipeline
-3. **Update AGENTS.md "Gotchas" section** — document `Spec.Err`, `ErrRegistryUnavailable`, exit code 75, warnings pipeline
+1. ~~**Fix `doc.go` line 14** — update example to new `BuildManifest` and `GetUpdArgs` signatures~~ done at `9ca148e`; compile-verified at `8f8d6fd`
+2. ~~**Update AGENTS.md "Execution Pipeline" section** — reflect `BuildManifest` → `(Manifest, []string)`, mention warnings pipeline~~ done — pipeline documents the warnings return and their non-fatal semantics (verified 2026-10-06)
+3. ~~**Update AGENTS.md "Gotchas" section** — document `Spec.Err`, `ErrRegistryUnavailable`, exit code 75, warnings pipeline~~ done — all four are in AGENTS.md (verified 2026-10-06)
 
 ### High priority (testing gaps)
 
-4. **Create `cmd/upd/main_test.go`** — test `exitCode()` with `ErrRegistryUnavailable`, `ErrConcurrentModification`, nil, and generic errors
-5. **Test `printWarnings` output format** — verify yellow `WARNING:` prefix and message content
-6. **Integration test: malformed section → warning → stderr** — end-to-end from `BuildManifest` warning to `main()` output
-7. **Test `GetDependencySection` wrong-type error path** — `"dependencies": 42` returns error (currently only tested transitively via `BuildManifest`)
-8. **Test `GetUpdArgs` error path** — malformed `"upd"` field returns error
-9. **Test `GetDependencySection` missing section** — returns `(empty map, nil)`, not error
+4. ~~**Create `cmd/upd/main_test.go`** — test `exitCode()` with `ErrRegistryUnavailable`, `ErrConcurrentModification`, nil, and generic errors~~ done at `1cd0109`/`ea6493d`
+5. ~~**Test `printWarnings` output format** — verify yellow `WARNING:` prefix and message content~~ done — `main_test.go` asserts the yellow prefix through the CLI writer path (`cmd/upd/main_test.go:43`)
+6. ~~**Integration test: malformed section → warning → stderr** — end-to-end from `BuildManifest` warning to `main()` output~~ done — `printWarnings` exercised at the CLI level with output capture (`cmd/upd/main_test.go:64`)
+7. ~~**Test `GetDependencySection` wrong-type error path** — `"dependencies": 42` returns error (currently only tested transitively via `BuildManifest`)~~ done — `packagejson_test.go:159`
+8. ~~**Test `GetUpdArgs` error path** — malformed `"upd"` field returns error~~ moved to TODO_LIST #6 — `TestGetUpdArgs` covers array/string/missing, not the malformed field
+9. ~~**Test `GetDependencySection` missing section** — returns `(empty map, nil)`, not error~~ done — `TestGetDependencySection` "missing" subtest
 
 ### Error handling improvements
 
-10. **Add `--fail-on-error` flag** — exit non-zero when per-package errors occur
-11. **Decide quiet-mode + warnings interaction** — should `-q` suppress warnings?
-12. **Consider `--verbose` flag for full error chains** — `%+v` formatting of `spec.Err`
-13. **Surface `ErrRegistryUnavailable` in the non-fatal path too** — currently only the fatal path (write failure) gets exit 75; a run where some packages 500'd but others succeeded still exits 0
-14. **Consider exit code 65 (EX_DATAERR) for `ErrInvalidJSON`** — malformed package.json is a data error, not a generic failure
-15. **Consider exit code 66 (EX_NOINPUT) for `ErrFileNotFound`** — missing input file has a dedicated BSD code
-16. **Document exit codes in `--help` output** — users need to know what 75 means
-17. **Add exit code table to README** — 0 success, 1 user error, 65 data error, 75 transient
+10. ~~**Add `--fail-on-error` flag** — exit non-zero when per-package errors occur~~ Won't implement — superseded by `ErrPartialFailure` (TODO_LIST R9)
+11. ~~**Decide quiet-mode + warnings interaction** — should `-q` suppress warnings?~~ done at `e64d3a7` (D39): quiet suppresses warnings
+12. ~~**Consider `--verbose` flag for full error chains** — `%+v` formatting of `spec.Err`~~ done at `e64d3a7` (D40)
+13. ~~**Surface `ErrRegistryUnavailable` in the non-fatal path too** — currently only the fatal path (write failure) gets exit 75; a run where some packages 500'd but others succeeded still exits 0~~ Won't implement — TODO_LIST R7: partial failure mixes 404 + 503; exit 1 via `ErrPartialFailure` is correct
+14. ~~**Consider exit code 65 (EX_DATAERR) for `ErrInvalidJSON`** — malformed package.json is a data error, not a generic failure~~ done differently — `errorfamily` derives 65 from the Corruption family automatically (`3cd313e`)
+15. ~~**Consider exit code 66 (EX_NOINPUT) for `ErrFileNotFound`** — missing input file has a dedicated BSD code~~ Won't implement — TODO_LIST R8: only 0/1/75 are used
+16. ~~**Document exit codes in `--help` output** — users need to know what 75 means~~ done 2026-10-06 — the command `Long` text now lists 0/1/75 (`config.go`)
+17. ~~**Add exit code table to README** — 0 success, 1 user error, 65 data error, 75 transient~~ done — README "Exit Codes" table (0/1/75; 65 folded into 1 via family exit codes)
 
 ### Code quality
 
-18. **Consolidate the duplicated fetch+apply branches in `main.go`** — quiet and non-quiet paths duplicate `FetchAll` + `ApplyUpdates` logic (AGENTS.md already notes this)
-19. **Pre-compile patterns once, not per-call** — `compilePatterns` is called inside `BuildManifest` which is correct, but verify no other path re-compiles
-20. **Consider `errors.Join` for multi-error aggregation** — when multiple sections fail, currently produces N separate warnings; a joined error might be cleaner
-21. **Add `Error()` method to `Spec`** — currently `Spec.String()` exists but doesn't include `Err` in output
-22. **Consider whether `renderErrorDetails` should respect terminal width** — long error messages could wrap badly
+18. ~~**Consolidate the duplicated fetch+apply branches in `main.go`** — quiet and non-quiet paths duplicate `FetchAll` + `ApplyUpdates` logic (AGENTS.md already notes this)~~ done at `e64d3a7` (D24)
+19. ~~**Pre-compile patterns once, not per-call** — `compilePatterns` is called inside `BuildManifest` which is correct, but verify no other path re-compiles~~ done — verified single call site (`manifest.go:57`)
+20. ~~**Consider `errors.Join` for multi-error aggregation** — when multiple sections fail, currently produces N separate warnings; a joined error might be cleaner~~ Won't implement — warnings are display-only and `[]string` is the right shape; `errors.Join` was adopted where it matters (partial-failure carries every spec error, `3696a33`)
+21. ~~**Add `Error()` method to `Spec`** — currently `Spec.String()` exists but doesn't include `Err` in output~~ Won't implement — no caller; the renderer reads `spec.Err` directly for the detail block
+22. ~~**Consider whether `renderErrorDetails` should respect terminal width** — long error messages could wrap badly~~ moved to ROADMAP theme 2 (terminal-width-aware error rendering)
 
 ### Documentation
 
-23. **Update README error behavior section** — mention exit codes, warnings, error detail block
-24. **Add a "Troubleshooting" section to README** — common errors (404, registry down, malformed JSON) and their meanings
-25. **Document the warning vs error distinction** — warnings don't stop execution; errors on the fatal path do
-26. **Update the VHS demo tapes** — if error output changed, demos may need re-recording
+23. ~~**Update README error behavior section** — mention exit codes, warnings, error detail block~~ done — README Exit Codes + Troubleshooting cover all three
+24. ~~**Add a "Troubleshooting" section to README** — common errors (404, registry down, malformed JSON) and their meanings~~ done — README Troubleshooting section with per-error What/Fix
+25. ~~**Document the warning vs error distinction** — warnings don't stop execution; errors on the fatal path do~~ done — AGENTS.md warnings pipeline documents fatal `upd`-field vs non-fatal sections/patterns
+26. ~~**Update the VHS demo tapes** — if error output changed, demos may need re-recording~~ done 2026-10-06 — all four tapes reworked and re-rendered
 
 ### Research follow-ups
 
-27. **Benchmark the error-handling overhead** — `spec.Err` adds an `error` field to every `Spec`; verify no allocation regression
-28. **Consider `slog` integration** — if observability is ever needed, `spec.Err` values are structured enough to feed directly
-29. **Revisit go-error-family when retry loop is added** — the sentinels (`ErrRegistryUnavailable`) already model retry-vs-not behavior
-30. **Audit `progress.go` for error handling** — not reviewed this session
+27. ~~**Benchmark the error-handling overhead** — `spec.Err` adds an `error` field to every `Spec`; verify no allocation regression~~ Won't implement — a nil interface field has no cost when unset; `benchmark_test.go` covers the hot paths
+28. ~~**Consider `slog` integration** — if observability is ever needed, `spec.Err` values are structured enough to feed directly~~ Won't implement — TODO_LIST R12
+29. ~~**Revisit go-error-family when retry loop is added** — the sentinels (`ErrRegistryUnavailable`) already model retry-vs-not behavior~~ done — `go-error-family` adopted (`db891d0`, `3cd313e`); retry decisions come from the Family
+30. ~~**Audit `progress.go` for error handling** — not reviewed this session~~ done — reviewed since; the concurrent-write race was found and fixed at `1cacb3e`
 
 ---
 
@@ -192,8 +190,12 @@ Currently: a run that updates 3 packages and fails 2 (e.g. two 404s) still write
 
 **Why I can't decide:** This is a semantic contract decision. Changing exit code 0 → non-zero for partial failure would break existing CI scripts that rely on `upd && deploy`. But leaving it at 0 means CI doesn't know the run was degraded. Only the user knows their deployment contract.
 
+> **Resolved:** partial failure now exits 1 by default via `ErrPartialFailure` (`077f325`), and the returned error carries every package failure (`3696a33`). No flag needed (TODO_LIST R9).
+
 ### Q2: Should the deleted status files and README change be committed?
 
 `git status` shows 5 files deleted from `docs/status/` and `README.md` modified — changes I did NOT make this session. The working tree was "clean" at conversation start per the git snapshot, but these changes exist now (possibly from another session or agent run). I did not touch these files.
 
 **Why I can't decide:** I don't know if these were intentional changes by the user or a concurrent agent. My rules say "NEVER revert changes you didn't author" — but I also need to know whether to include them in a commit if asked. Clarification needed on whether these are intended.
+
+> **Resolved:** the changes were legitimate (the repo's auto-commit daemon and later sessions absorbed them); the working tree is clean at this report's final annotation pass (2026-10-06).

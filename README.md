@@ -90,6 +90,12 @@ Example output (`upd -n -C`):
 
 ## Installation
 
+### Prebuilt binaries
+
+Download a `tar.gz` for your platform (Linux/macOS, amd64/arm64) with the
+matching `SHA256SUMS` from the
+[GitHub Releases page](https://github.com/LarsArtmann/upd/releases).
+
 ### Go
 
 ```bash

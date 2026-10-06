@@ -37,12 +37,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   accompany the flag.
 - **Issue and pull request templates** (`bug_report.yml`,
   `feature_request.yml`, `PULL_REQUEST_TEMPLATE.md`).
+- **Exit codes documented in `--help`** — the long description spells out the
+  0/1/75 contract so the retry semantics are discoverable without the README.
 - **Release automation** — `.goreleaser.yml` (Linux/macOS, amd64+arm64,
   `SHA256SUMS`) plus a tag-triggered `release.yml` workflow;
   `docs/RELEASING.md` documents the full ritual.
 
 ### Fixed
 
+- **Usage errors exit 1 instead of 75** — flag typos and missing flag values
+  were classified as transient (`75`, "safe to retry"), telling CI to retry
+  invocations that can never succeed. Flag-parse failures are now classified
+  as Rejection (`1`); registry-side transience is unaffected.
 - **Data race in the progress bar** — concurrent fetches each wrote the
   progress line without synchronization, corrupting output (and failing the
   new local `-race` gate). Progress writes are now serialized.

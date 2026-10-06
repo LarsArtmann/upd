@@ -98,8 +98,8 @@ Moving exit-code tests to the `upd` package improved that package's coverage but
 1. ~~**Fix go.mod** — `go mod tidy` to correct direct/indirect classification. Uncommitted.~~ done at `571e312`
 2. ~~**Add cmd/upd integration tests** — `run()` is the main entry point and has 3.9% coverage. Need tests that exercise the full pipeline with mock registries.~~ moved to TODO_LIST.md #14 — still open
 3. ~~**Add errorfamily.HandleError integration test** — verify that the full HandleError path produces correct stderr output + exit codes for each family.~~ moved to TODO_LIST.md #14
-4. **Consider using errorfamily.Registry for test isolation** — currently using DefaultRegistry globally; tests could use scoped registries. ← open
-5. **The retryableError type in pnpm.go** could potentially implement the errorfamily.Retryable interface instead of being a separate wrapper type. This would let errorfamily.Classify automatically detect retryability. ← open
+4. ~~**Consider using errorfamily.Registry for test isolation** — currently using DefaultRegistry globally; tests could use scoped registries.~~ Won't implement — 14 static sentinels, no registration collisions; scoped registries add ceremony without a problem
+5. ~~**The retryableError type in pnpm.go** could potentially implement the errorfamily.Retryable interface instead of being a separate wrapper type. This would let errorfamily.Classify automatically detect retryability.~~ Won't implement — g1 resolved as option (a): the wrapper stays because it carries `retryAfter`, which errorfamily doesn't model (AGENTS.md)
 6. ~~**Add error codes to the --json output** — currently JSON output has `state` and `error` strings, but not the machine-readable `code` or `family`. CI consumers would benefit from structured error codes.~~ moved to TODO_LIST.md #13
 7. ~~**Render errorfamily context in --verbose mode** — `errorfamily.Error.Format(f, '+')` produces verbose output with context keys. The `--verbose` flag could leverage this.~~ moved to TODO_LIST.md #13
 8. ~~**Context-loss issues (branching-flow)** — 12 MEDIUM issues remain. Most are for complex types (manifest, decoder) but some could be addressed by adding `.WithContext()` calls.~~ done — remaining issues intentionally suppressed (AGENTS.md gotcha, `64d174c`)
@@ -125,54 +125,54 @@ Moving exit-code tests to the `upd` package improved that package's coverage but
 
 ### Medium Priority — Error UX Polish
 
-9. **Add error `code` and `family` fields to --json output** — machine-readable for CI
-10. **Leverage `errorfamily.Format('+')` in --verbose mode** — structured verbose output
-11. **Test HandleError end-to-end** — capture stderr, verify message templates render correctly
-12. **Register `context.DeadlineExceeded` as Transient** in DefaultRegistry (for timeout errors)
-13. **Register `context.Canceled` as Rejection** (for Ctrl+C)
-14. **Add retryableError.IsRetryable() method** — implement errorfamily.Retryable interface
-15. **Consider removing retryableError wrapper entirely** — errorfamily.Transient already signals retryability
-16. **Add errorfamily.Code(err) to render.go error display** — show machine code in verbose mode
+9. ~~**Add error `code` and `family` fields to --json output** — machine-readable for CI~~ done at `827b163`
+10. ~~**Leverage `errorfamily.Format('+')` in --verbose mode** — structured verbose output~~ done at `e64d3a7` (D40) — `%+v` traverses the chain and errorfamily's `Format` renders the context
+11. ~~**Test HandleError end-to-end** — capture stderr, verify message templates render correctly~~ NOT-DO — superseded: upd never calls `errorfamily.HandleError`; fang renders errors and `errorfamily.ExitCode` classifies at the process boundary (covered by CLI e2e tests, `8f8d6fd`)
+12. ~~**Register `context.DeadlineExceeded` as Transient** in DefaultRegistry (for timeout errors)~~ Won't implement — timeouts already flow through the transient path (AGENTS.md); a Registry entry would add a second classification mechanism beside `classifyRegistryError`
+13. ~~**Register `context.Canceled` as Rejection** (for Ctrl+C)~~ done differently — cancellation during backoff is wrapped as Rejection `registry.fetch_aborted` at the abort site (`npm.go:FetchPackument`)
+14. ~~**Add retryableError.IsRetryable() method** — implement errorfamily.Retryable interface~~ Won't implement — g1 option (a)
+15. ~~**Consider removing retryableError wrapper entirely** — errorfamily.Transient already signals retryability~~ Won't implement — the wrapper carries `retryAfter`, which errorfamily doesn't model (g1 option a)
+16. ~~**Add errorfamily.Code(err) to render.go error display** — show machine code in verbose mode~~ Won't implement — verbose shows full `%+v` chains; machine codes live in the JSON output (`827b163`)
 
 ### Medium Priority — Architecture
 
-17. **Consider making `retryableError` implement `errorfamily.Classified`** — return Transient family directly
-18. **Review if `classifyRegistryError` can use errorfamily.Registry.RegisterClassification** instead of custom logic
-19. **Split `config.go`** — Config struct, ParseFlags, PrintUsage, ShouldDisableColor are 4 concerns
-20. **Consider extracting progress reporter** into its own file (currently inline in engine.go)
-21. **Add `Section` named type** for dependency section names (currently bare strings)
-22. **Consider `PackageName` named type** — used in 10+ places as bare string
+17. ~~**Consider making `retryableError` implement `errorfamily.Classified`** — return Transient family directly~~ Won't implement — g1 option (a)
+18. ~~**Review if `classifyRegistryError` can use errorfamily.Registry.RegisterClassification** instead of custom logic~~ Won't implement — a two-line function with explicit statuses is clearer than registry indirection
+19. ~~**Split `config.go`** — Config struct, ParseFlags, PrintUsage, ShouldDisableColor are 4 concerns~~ Won't implement — one cohesive CLI-surface concern; usage helpers were removed by the fang migration
+20. ~~**Consider extracting progress reporter** into its own file (currently inline in engine.go)~~ done already — `progress.go` exists with the Reporter interface
+21. ~~**Add `Section` named type** for dependency section names (currently bare strings)~~ Won't implement — TODO_LIST R3
+22. ~~**Consider `PackageName` named type** — used in 10+ places as bare string~~ Won't implement — TODO_LIST R4
 
 ### Lower Priority — Quality
 
-23. **Address remaining 12 CONTEXT branching-flow issues** (add .WithContext where practical)
-24. **Add fuzzing tests for packagejson.go JSON parsing**
-25. **Add fuzzing tests for manifest.go version regex**
+23. ~~**Address remaining 12 CONTEXT branching-flow issues** (add .WithContext where practical)~~ done — addressed at creation sites; the rest intentionally suppressed (AGENTS.md, `64d174c`)
+24. ~~**Add fuzzing tests for packagejson.go JSON parsing**~~ Won't implement — trusted local input; decoder error paths unit-tested
+25. ~~**Add fuzzing tests for manifest.go version regex**~~ Won't implement — property tests cover the regex space (`manifest_property_test.go`)
 26. ~~**Update FEATURES.md** with errorfamily adoption~~ done (docs-health pass 2026-09-25)
 27. ~~**Update TODO_LIST.md** with cmd/upd coverage gap~~ done (docs-health pass 2026-09-25 — TODO_LIST #14)
 28. ~~**Add `.branching-flow.toml`** to permanently suppress PHANTOM (56 noise violations)~~ Won't implement — triage rationale documented in AGENTS.md instead
-29. **Consider bumping go.mod to go1.27** when released (eliminates 34 stdversion warnings)
-30. **Add benchmark for HandleError** — ensure template rendering doesn't slow down CLI exit
-31. **Add benchmark for error chain classification** — ensure errors.AsType is fast enough
+29. ~~**Consider bumping go.mod to go1.27** when released (eliminates 34 stdversion warnings)~~ done at `d43f460`
+30. ~~**Add benchmark for HandleError** — ensure template rendering doesn't slow down CLI exit~~ Won't implement — exit-path rendering runs once per process, and upd doesn't call HandleError (see f11)
+31. ~~**Add benchmark for error chain classification** — ensure errors.AsType is fast enough~~ Won't implement — classification over a 2-level chain is nanoseconds; no hot path
 32. ~~**Consider adding `upd doctor` subcommand** — check registry connectivity~~ moved to ROADMAP.md theme 2
 33. ~~**Consider adding shell completions** (bash/zsh/fish)~~ done at `81d8c44` (Cobra `completion` command)
-34. ~~**Consider adding `upd init` subcommand** — create `upd` field in package.json~~ moved to ROADMAP.md theme 2
-35. **Add test for WithContext chaining** — verify multiple WithContext calls accumulate
-36. **Add test for message template resolution** — verify correct template matched by code
-37. **Add test for concurrent modification full path** — file written, then modified, then upd.Write fails
-38. **Consider structured logging (slog)** — replace fmt.Fprintf warnings with structured logs
-39. **Review if `printWarnings` should use errorfamily** — currently raw fmt.Fprintf
-40. **Consider adding `--format` flag** — json/table/csv output modes
-41. **Consider adding dry-run diff output** — show what would change without writing
-42. **Consider adding lockfile parsing** — yarn.lock, pnpm-lock.yaml
-43. **Consider adding monorepo workspace support**
-44. **Consider adding a GitHub Action** that runs branching-flow on PRs
-45. **Review if `Spec.Err` should be `*errorfamily.Error`** instead of bare `error`
-46. **Consider adding `Spec.Code()` and `Spec.Family()` methods** for structured access
-47. **Add test for errors.Is across WithContext cloning** — verify identity preservation
-48. __Add test for errors.Is across Wrap_ functions_* — verify chain traversal
-49. **Consider adding errorfamily.HTTPHandler** if upd ever gets an HTTP API
-50. **Consider adding errorfamily.RetryPolicy integration** with pnpm.go retry loop
+34. ~~**Consider adding `upd init` subcommand** — create `upd` field in package.json~~ Won't implement — one JSON line; a command would be ceremony
+35. ~~**Add test for WithContext chaining** — verify multiple WithContext calls accumulate~~ NOT-DO — library-owned surface; that contract belongs to go-error-family's own test suite
+36. ~~**Add test for message template resolution** — verify correct template matched by code~~ NOT-DO — library-owned surface (same rationale)
+37. ~~**Add test for concurrent modification full path** — file written, then modified, then upd.Write fails~~ done — `TestWriteRejectsConcurrentModification` (`packagejson_test.go:277`) plus the `messages.go` recovery template
+38. ~~**Consider structured logging (slog)** — replace fmt.Fprintf warnings with structured logs~~ Won't implement — TODO_LIST R12
+39. ~~**Review if `printWarnings` should use errorfamily** — currently raw fmt.Fprintf~~ Won't implement — warnings are display lines, not classified errors; the yellow `WARNING:` format is the tested contract
+40. ~~**Consider adding `--format` flag** — json/table/csv output modes~~ done at `2ea7868` — `--format=table|json` (csv rejected: JSON covers machine consumption)
+41. ~~**Consider adding dry-run diff output** — show what would change without writing~~ already in ROADMAP theme 2 (dry-run renders the old→new table today)
+42. ~~**Consider adding lockfile parsing** — yarn.lock, pnpm-lock.yaml~~ already in ROADMAP theme 3
+43. ~~**Consider adding monorepo workspace support**~~ already in ROADMAP theme 3
+44. ~~**Consider adding a GitHub Action** that runs branching-flow on PRs~~ Won't implement — local audit tool, not a CI-grade dependency
+45. ~~**Review if `Spec.Err` should be `*errorfamily.Error`** instead of bare `error`~~ Won't implement — the field holds wrapped chains (errors.Join at `3696a33`); the interface type is correct
+46. ~~**Consider adding `Spec.Code()` and `Spec.Family()` methods** for structured access~~ Won't implement — the JSON renderer extracts code/family where consumed (`render.go`); accessor methods without callers are ceremony
+47. ~~**Add test for errors.Is across WithContext cloning** — verify identity preservation~~ NOT-DO — library-owned surface (go-error-family test suite)
+48. ~~**Add test for errors.Is across Wrap_ functions** — verify chain traversal~~ NOT-DO — library-owned surface (same rationale)
+49. ~~**Consider adding errorfamily.HTTPHandler** if upd ever gets an HTTP API~~ Won't implement — no HTTP surface; ROADMAP non-goals exclude a server mode
+50. ~~**Consider adding errorfamily.RetryPolicy integration** with pnpm.go retry loop~~ Won't implement — the custom loop honors `Retry-After`, which a generic policy doesn't express (g1 option a)
 
 ---
 
@@ -186,6 +186,10 @@ Currently `pnpm.go` has a custom `retryableError` struct that wraps transient er
 - **(b)** Make it implement `errorfamily.Retryable` and `errorfamily.Classified` interfaces, or
 - **(c)** Add `RetryAfter` to errorfamily's `Error` struct and eliminate the custom type entirely?
 
+> **Resolved:** option (a) — the wrapper stays because it carries `retryAfter` from the `Retry-After` header, which errorfamily doesn't model. Documented in AGENTS.md.
+
 ### 2. Should the --json output include structured error codes and families?
 
 Currently `RenderJSON` outputs `{name, section, old, new, state, error}` where `error` is a flat string. With errorfamily, every error now has a machine-readable `code` (e.g., `registry.package_not_found`) and `family` (e.g., `rejection`). Should the JSON output include these fields? This would be a **breaking change** for any CI scripts that parse the current JSON schema, but would make the output far more useful for automated consumers. Should I add them as new fields (additive) or replace the flat `error` string?
+
+> **Resolved:** done at `827b163` — error entries carry additive `code` and `family` fields alongside the human `error` string.

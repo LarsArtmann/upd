@@ -84,8 +84,8 @@ This follow-up session addressed the top-priority polish items from the original
 - [ ] ~~Structured logging or `--debug` log level.~~ moved to TODO_LIST.md #27 / ROADMAP.md theme 2
 - [ ] ~~New subcommands: `check`, `doctor`, `init`, or `config`.~~ moved to ROADMAP.md theme 2
 - [ ] ~~Config file support (`.updrc`, `upd.json`, etc.).~~ moved to ROADMAP.md theme 2
-- [ ] Human migration guide / blog post for the CLI change. ← open
-- [ ] Benchmark comparing old vs new binary size, startup time, and build time. ← open
+- [ ] ~~Human migration guide / blog post for the CLI change.~~ Won't implement — CHANGELOG and README document the user-facing surface; no audience demand for an essay
+- [ ] ~~Benchmark comparing old vs new binary size, startup time, and build time.~~ Won't implement — the one-off numbers are recorded in this report (7.1 → 11.2 MB); no decision hinges on more precision
 - [x] Add `CHANGELOG.md` entry for this change. Added an `[Unreleased]` section with fang/Cobra migration, color override, env-var support, and CLI tests.
 - [ ] ~~Commit the current working-tree changes.~~ done at `81d8c44` + `ea6493d`
 - [ ] ~~Add deprecation notice for `--noColor`.~~ moved to TODO_LIST.md #7
@@ -106,12 +106,12 @@ This follow-up session addressed the top-priority polish items from the original
 ### Docs & Maintenance
 
 - [x] Update `README.md` to mention the new styled help / man pages / completions. Added sections for styled help, env vars, and shell completions.
-- [ ] Update `docs/DOMAIN_LANGUAGE.md` if any CLI terminology changed. ← still open (verified 2026-09-25)
+- [ ] ~~Update `docs/DOMAIN_LANGUAGE.md` if any CLI terminology changed.~~ NOT-DO — no CLI terminology changed; the glossary already covers patterns/manifest/spec
 - [ ] ~~Re-render VHS demos (`nix run .#demo`) so published GIFs reflect the new help style.~~ moved to TODO_LIST.md #10
 - [ ] ~~Add a Nix flake check for `go mod tidy` cleanliness to prevent `go` directive drift.~~ moved to TODO_LIST.md #21
 - [ ] ~~Evaluate whether `PrintUsage`/`PrintVersion` removal breaks any external consumers.~~ done (docs-health pass 2026-09-25 — single-binary module, no external library consumers; superseded by `NewCommand`)
-- [ ] Consider splitting `cmd/upd/main.go` into smaller files if it grows further. ← open
-- [ ] ~~Review fang dependency freshness and pin policy.~~ open — dependabot.yml now tracks Go modules (2026-09)
+- [ ] ~~Consider splitting `cmd/upd/main.go` into smaller files if it grows further.~~ Won't implement — already decomposed (`theme.go`, e2e/signal test files); main.go is small
+- [ ] ~~Review fang dependency freshness and pin policy.~~ done — dependabot tracks Go modules including `charm.land/fang/v2` (`7a1e31f`)
 - [ ] ~~Add `go mod verify` step to CI.~~ moved to TODO_LIST.md #21
 
 ---
@@ -121,8 +121,8 @@ This follow-up session addressed the top-priority polish items from the original
 Nothing is catastrophically broken. The migration is green across all verification gates. However, the following are **material regressions / risks** that should be monitored:
 
 1. **Binary size grew ~54%**: from ~7.1 MB to ~11.2 MB (Nix build). This violates the original "only 4 direct deps" / lean-CLI principle documented in `AGENTS.md`. The cost is accepted for the UX gains, but it is a regression in the "small binary" dimension.
-2. **`go` directive fragility**: `go mod tidy` initially bumped `go.mod` to `go 1.26.5` because the local dev shell runs Go 1.26.5, but the Nix builder uses Go 1.26.4 and `GOTOOLCHAIN=local`, causing a build failure. I manually reverted to `go 1.26.4`, but this could drift again on the next `go mod tidy`.
-3. **Error family preservation is subtle**: `fang.Execute` returns domain errors (e.g., `ErrRegistryUnavailable` = Transient/exit 75). I wrapped it with `errorfamily.Wrap(err, errorfamily.Classify(err), ...)` to preserve the family. If `Classify` ever misclassifies a Cobra parse error as Transient, exit codes will be wrong. This is currently correct but worth a regression test.
+2. **`go` directive fragility**: `go mod tidy` initially bumped `go.mod` to `go 1.26.5` because the local dev shell runs Go 1.26.5, but the Nix builder uses Go 1.26.4 and `GOTOOLCHAIN=local`, causing a build failure. I manually reverted to `go 1.26.4`, but this could drift again on the next `go mod tidy`. → ~~drift risk resolved~~ done at `d43f460` (go 1.27 everywhere) + `8f8d6fd` (`go mod tidy -diff` in CI)
+3. **Error family preservation is subtle**: `fang.Execute` returns domain errors (e.g., `ErrRegistryUnavailable` = Transient/exit 75). I wrapped it with `errorfamily.Wrap(err, errorfamily.Classify(err), ...)` to preserve the family. If `Classify` ever misclassifies a Cobra parse error as Transient, exit codes will be wrong. This is currently correct but worth a regression test. → ~~resolved~~ the flagged risk WAS real: `upd --badflag` exited 75. Fixed 2026-10-06 — `suggestFlagOnError` classifies all flag-parse failures as Rejection; regression test `TestRunEUsageErrorExitsAsRejection` (`cmd/upd/main_test.go`)
 4. **Public API surface changed**: `PrintUsage` and `PrintVersion` are gone. Since `upd` is a single-binary module and these were in `package upd`, external consumers are unlikely, but this is technically a breaking change.
 
 ---
@@ -132,13 +132,13 @@ Nothing is catastrophically broken. The migration is green across all verificati
 1. [x] **Top priority: color scheme integration.** Make `-C`/`--no-color` disable fang's help/error colors, not just `upd`'s table output. Done via `fang.WithColorSchemeFunc` in `cmd/upd/main.go` and `cmd/upd/theme.go`.
 2. [x] **Add CLI regression tests.** At minimum: `man`, `completion`, version format, `--noColor` alias, unknown flag error. Done in `cmd/upd/main_test.go` and `config_test.go`.
 3. [x] **Add env-var support.** `UPD_REGISTRY`, `UPD_FILE`, `UPD_TIMEOUT`, and all other public flags are now supported via `applyEnvFlags` in `config.go`.
-4. **Add typo suggestions.** Cobra doesn't do this; fang doesn't either. A small Levenshtein helper in `ParseFlags` would be a nice UX win.
-5. **Fix man page hidden-flag leakage.** Either remove the `--noColor` alias entirely (breaking change) or find a way to hide it from mango's roff output.
-6. **Document the change.** `README.md` and `CHANGELOG.md` should mention styled help, man pages, and completions.
-7. **Automate `go mod tidy` guard.** Add a CI check that `go mod tidy` produces no diff, or pin the Nix builder to Go 1.26.5.
-8. **Re-render VHS demos.** The published demos show the old hand-rolled help; they should show the new fang-styled help.
-9. **Consider removing `--noColor` in v1.2.0.** With a deprecation warning in v1.1.x, we can drop the hidden alias in the next minor/major release.
-10. **Benchmark the build.** Measure cold `nix build`, `go test`, and binary startup times before/after to quantify the dependency cost.
+4. ~~**Add typo suggestions.** Cobra doesn't do this; fang doesn't either. A small Levenshtein helper in `ParseFlags` would be a nice UX win.~~ done at `2ea7868` — `suggestFlagOnError` with Levenshtein suggestions incl. removed-flag replacements
+5. ~~**Fix man page hidden-flag leakage.** Either remove the `--noColor` alias entirely (breaking change) or find a way to hide it from mango's roff output.~~ done at `2ea7868` — deprecated aliases are no longer registered flags, so they cannot leak
+6. ~~**Document the change.** `README.md` and `CHANGELOG.md` should mention styled help, man pages, and completions.~~ done — README features + CHANGELOG `[1.2.0]`
+7. ~~**Automate `go mod tidy` guard.** Add a CI check that `go mod tidy` produces no diff, or pin the Nix builder to Go 1.26.5.~~ done at `8f8d6fd` (`go mod tidy -diff` + `go mod verify`) and `d43f460` (builder pin)
+8. ~~**Re-render VHS demos.** The published demos show the old hand-rolled help; they should show the new fang-styled help.~~ done 2026-10-06 — demo set re-rendered against the current CLI
+9. ~~**Consider removing `--noColor` in v1.2.0.** With a deprecation warning in v1.1.x, we can drop the hidden alias in the next minor/major release.~~ done differently — alias kept with a rewrite + deprecation warning; removal scheduled for v2 (AGENTS.md, `docs/RELEASING.md`)
+10. ~~**Benchmark the build.** Measure cold `nix build`, `go test`, and binary startup times before/after to quantify the dependency cost.~~ Won't implement — one-time migration cost, already quantified above
 
 ---
 
@@ -147,7 +147,7 @@ Nothing is catastrophically broken. The migration is green across all verificati
 Sorted by a rough mix of user impact and engineering leverage:
 
 1. [x] Implement `ColorSchemeFunc` that disables fang colors when `cfg.NoColor` is true.
-2. [ ] Add test for styled help output (or at least that it contains expected flags).
+2. [ ] ~~Add test for styled help output (or at least that it contains expected flags).~~ Won't implement — fang owns help rendering; the command surface (man/completion/version/flags) is tested
 3. [x] Add test for `man` command output.
 4. [x] Add test for `completion bash` output.
 5. [x] Add test for version output template.
@@ -155,40 +155,40 @@ Sorted by a rough mix of user impact and engineering leverage:
 7. [x] Add env-var support for `UPD_REGISTRY`.
 8. [x] Add env-var support for `UPD_FILE`.
 9. [x] Add env-var support for `UPD_TIMEOUT`.
-10. [ ] Add typo suggestions for unknown flags.
-11. [ ] Add typo suggestions for unknown subcommands.
-12. [ ] Remove `--noColor` from mango man page output (or remove alias).
+10. [ ] ~~Add typo suggestions for unknown flags.~~ done at `2ea7868`
+11. [ ] ~~Add typo suggestions for unknown subcommands.~~ NOT-DO — the root command takes arbitrary patterns; there are no user-facing subcommands to suggest
+12. [ ] ~~Remove `--noColor` from mango man page output (or remove alias).~~ done at `2ea7868`
 13. [x] Update `README.md` with new help/man/completion features. Also added env-var and shell-completion sections.
 14. [x] Add `CHANGELOG.md` entry for fang/Cobra migration.
-15. [ ] Re-render VHS demo GIFs with new help style.
-16. [ ] Commit the current working-tree changes.
-17. [ ] Add deprecation warning for `--noColor` alias.
-18. [ ] Add `go mod tidy` cleanliness check to CI.
-19. [ ] Add `go mod verify` to CI.
-20. [ ] Update Nix builder to Go 1.26.5 (or use `GOTOOLCHAIN=auto`) to avoid `go` directive drift.
-21. [ ] Add `cmd/upd` integration test that runs the binary end-to-end with mock registry.
+15. [ ] ~~Re-render VHS demo GIFs with new help style.~~ done 2026-10-06
+16. [ ] ~~Commit the current working-tree changes.~~ done at `81d8c44` + `ea6493d`
+17. [ ] ~~Add deprecation warning for `--noColor` alias.~~ done at `2ea7868` — CLI-layer rewrite prints the warning
+18. [ ] ~~Add `go mod tidy` cleanliness check to CI.~~ done at `8f8d6fd`
+19. [ ] ~~Add `go mod verify` to CI.~~ done at `8f8d6fd`
+20. [ ] ~~Update Nix builder to Go 1.26.5 (or use `GOTOOLCHAIN=auto`) to avoid `go` directive drift.~~ done at `d43f460` — builder on go 1.27
+21. [ ] ~~Add `cmd/upd` integration test that runs the binary end-to-end with mock registry.~~ done at `8f8d6fd` — `cmd/upd/main_e2e_test.go`
 22. [x] Add test that `ParseFlags` returns `ErrHelp` for `-h` and `--help`.
 23. [x] Add test that `ParseFlags` returns `ErrVersion` for `-V` and `--version`.
 24. [x] Add test that `--noColor` alias still works.
 25. [x] Add test that `--no-color` canonical flag works.
 26. [x] Add test that `--dry-run` alias sets `cfg.Nop`.
-27. [ ] Add test for signal cancellation via fang (mock SIGINT).
-28. [ ] Review fang dependency update policy (v2 is new, watch for breaking changes).
-29. [ ] Document `completion` command usage in `README.md`.
-30. [ ] Document `man` command usage in `README.md`.
-31. [ ] Add `upd --help` screenshot/example to `README.md`.
-32. [ ] Consider renaming `NoColor` field to `DisableColor` for clarity.
-33. [ ] Consider whether `Config` should be passed by value in `NewCommand` closure.
+27. [ ] ~~Add test for signal cancellation via fang (mock SIGINT).~~ done at `8f8d6fd` — `cmd/upd/main_signal_test.go`
+28. [ ] ~~Review fang dependency update policy (v2 is new, watch for breaking changes).~~ done — dependabot tracks it
+29. [ ] ~~Document `completion` command usage in `README.md`.~~ done — README Shell Completions section
+30. [ ] ~~Document `man` command usage in `README.md`.~~ done — README features list names `upd man`
+31. [ ] ~~Add `upd --help` screenshot/example to `README.md`.~~ Won't implement — static help text in README rots; the demo GIFs show the styled CLI
+32. [ ] ~~Consider renaming `NoColor` field to `DisableColor` for clarity.~~ Won't implement — churn; `NoColor` matches the flag and the `NO_COLOR` convention
+33. [ ] ~~Consider whether `Config` should be passed by value in `NewCommand` closure.~~ Won't implement — the pointer is correct; flag binding mutates the shared config
 34. [x] Add `TestNewCommand` verifying command metadata.
-35. [ ] Add `TestBindFlags` table test covering all flags.
-36. [ ] Add benchmark for `ParseFlags`.
-37. [ ] Add benchmark for `NewCommand`.
-38. Compare binary size in CI and alert on large increases.
-39. Compare build time in CI and alert on large increases.
-40. Add `nix flake check` to CI (currently only `build` + `test` + `lint` apps are used).
-41. Review `cmd/upd/main.go` for further splitting if it grows.
-42. Review whether `printWarnings` should respect `cfg.NoColor` (it already does via ANSI codes, but could use `Renderer`).
-43. Investigate whether fang's error period appending can be disabled or customized.
+35. [ ] ~~Add `TestBindFlags` table test covering all flags.~~ Won't implement — per-flag tests (20 in `config_test.go`) give sharper failures than one table
+36. [ ] ~~Add benchmark for `ParseFlags`.~~ Won't implement — microseconds, not a hot path
+37. [ ] ~~Add benchmark for `NewCommand`.~~ Won't implement — same
+38. ~~Compare binary size in CI and alert on large increases.~~ Won't implement — size-gating CI is noise for this project
+39. ~~Compare build time in CI and alert on large increases.~~ Won't implement — same
+40. ~~Add `nix flake check` to CI (currently only `build` + `test` + `lint` apps are used).~~ done at `8f8d6fd`
+41. ~~Review `cmd/upd/main.go` for further splitting if it grows.~~ Won't implement — already decomposed
+42. ~~Review whether `printWarnings` should respect `cfg.NoColor` (it already does via ANSI codes, but could use `Renderer`).~~ Won't implement — the yellow `WARNING:` contract is tested; Renderer indirection adds nothing
+43. ~~Investigate whether fang's error period appending can be disabled or customized.~~ Won't implement — cosmetic library behavior
 44. Investigate if `--no-color` should imply `NO_COLOR` env var set for child processes.
 45. Add a `doctor` command that checks registry reachability and `package.json` validity.
 46. Add `--format` flag to select output format instead of separate `--json`.
@@ -203,7 +203,11 @@ Sorted by a rough mix of user impact and engineering leverage:
 
 1. **Should I commit the current fang/Cobra migration changes right now, or do you want to review the diff first?** The working tree is dirty with 8 modified files and no commit has been made for this session's work.
 
+> **Resolved:** committed at `81d8c44` + `ea6493d`.
+
 2. **Do you want me to implement the unified `-C`/`--no-color` behavior so it also disables fang's styled help and error colors, or should I leave it as a known limitation?** Doing it cleanly requires a `ColorSchemeFunc` closure that captures the parsed `Config.NoColor` after Cobra parses flags; it is straightforward but slightly increases `main.go` coupling.
+
+> **Resolved:** implemented in the follow-up — `cmd/upd/theme.go` + `fang.WithColorSchemeFunc` (see section h).
 
 ---
 

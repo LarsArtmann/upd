@@ -3,7 +3,9 @@
 > Short- and mid-term improvement tasks, verified against the actual codebase.
 > Harvested from status reports (`docs/status/`), release audits, and code reads.
 > De-duplicated. **Open items only** — completed work lives in `CHANGELOG.md`.
-> Swept 2026-10-06: 24 of the 28 open items completed; the remainder follows.
+> Swept 2026-10-06: 24 of the 28 open items completed; a second docs-health sweep
+> the same day annotated and archived every `2026-0*` status report and
+> harvested items #5–#11 below.
 
 ---
 
@@ -19,6 +21,13 @@
 | # | Task                                                                                                    | Source              | Notes                                                                                                   |
 | - | ------------------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------- |
 | 4 | `.npmrc` scoped registries: honor `@scope:registry=<url>` and per-scope tokens for `@scope/pkg` fetches | TODO_LIST #12 (gap) | Default registry + tokens work; scope dispatch needs per-package registry resolution in the fetch path. |
+| 5 | Pin-latest test hardening: `IsLatest` × `--nop`, × `--greatest`, whitespace-padded `" latest "`, registry-error → `StateError`, `"latest"` across multiple sections, CLI-level `-P` e2e | 2026-07-09 report F9–F16 | `TestBuildManifestPinLatest` covers the mixed-manifest classification and `TestEnginePinLatest` the byte-level write; the six interaction cases are uncovered (`engine_test.go:254`). |
+| 6 | `GetUpdArgs` malformed-`upd`-field test: assert the error return for a non-string/non-array `upd` value | 2026-07-09 error-overhaul report F8 | `TestGetUpdArgs` covers array/string/missing forms only (`packagejson_test.go:74`); the fatal path is untested. |
+| 7 | Retry-path micro-gaps: `parseRetryAfter` HTTP-date, invalid-input, and past-date branches; `FetchPackument` when the context cancels mid-backoff (`sleep` returns `false`) | 2026-07-09 fake-clock report F1–F4 | Backoff schedule/`Retry-After` integer path tested (`npm_test.go:129`–`174`); the three parse branches and the cancelled-sleep path are not. |
+| 8 | Registry auth failures (HTTP 401/403) currently classify as `ErrRegistryUnavailable` — transient, exit 75, "safe to retry". Give them a distinct Rejection-family sentinel (exit 1, "fix your credentials") with a `messages.go` template, and extend the classification test matrix to cover 401/403 and 410 explicitly. | 2026-07-15 quality-scan reports F12/F27, round-2 F8 | `classifyRegistryError` (`npm.go`) only special-cases 404/410 in code, but no test pins the 410 branch, and 401/403 fall into the transient bucket — retrying bad credentials wastes the backoff budget and lies to CI. |
+| 9 | Renderer micro-tests: `NewRenderer` with zero-value `RendererOptions{}` and the empty-manifest "all up-to-date" rendering path | 2026-07-15 quality-scan report F23/F24 | Table rendering is e2e-covered; the two degenerate constructor/input cases have no direct test (`render_test.go`). |
+| 10 | Manifest/engine micro-tests: `UpdateDependency` with a missing section (`ErrSectionNotFound` path), `versionIsGreater` with invalid semver on either side, and the `resolveSpecVersion` nil-result guard | 2026-07-15 round-2 report F11/F15/F22 | Dependency-not-found is tested (`packagejson_test.go:65`); the section-level error, the downgrade-guard edge, and the nil guard (`engine.go`) are only exercised indirectly. |
+| 11 | Re-eliminate the 14 jscpd clones (110 duplicated lines, 1.61%) that crept back in with the 2026-10-06 test additions — extract/consolidate helpers, then re-run `jscpd --pattern "**/*.go" --min-lines 5 --min-tokens 40 .` to re-certify zero | 2026-09-25 audit report F15 re-check | AGENTS.md claimed 0 clones since the 2026-07-16 sweep; the e2e/property/signal test batch (`8f8d6fd` and later) reintroduced setup duplication. |
 
 ---
 

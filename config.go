@@ -170,6 +170,8 @@ func NewCommand(runE func(context.Context, *Config) error) (*cobra.Command, *Con
 		Args: cobra.ArbitraryArgs,
 		Long: fmt.Sprintf(`%s while preserving original JSON formatting, key order, and whitespace.
 
+Exit codes: 0 = success, 1 = failure (package not found, partial failures, IO or JSON errors), 75 = registry unavailable (transient, safe to retry).
+
 %s`, ProgramDesc, ProgramURL),
 		Example: fmt.Sprintf(`  # Upgrade all dependencies in package.json
   %s
@@ -349,25 +351,31 @@ func (c *Config) EnvWarnings() []string {
 // suggestFlagOnError is the cobra flag-error hook: it appends a "did you mean"
 // suggestion for unknown long flags so typos like --jso point at --format.
 func suggestFlagOnError(cmd *cobra.Command, err error) error {
+	// Every error reaching this func is a flag-parsing failure, i.e. a user
+	// input problem rather than a transient fault. Classify it as Rejection so
+	// a typo exits 1; the unclassified default would exit 75 and tell CI to
+	// retry a command that can never succeed.
+	wrapped := errorfamily.WrapRejection(err, "cli.invalid_flag", "invalid command-line usage")
+
 	msg := err.Error()
 
 	name, ok := strings.CutPrefix(msg, "unknown flag: --")
 	if !ok || name == "" || strings.ContainsAny(name, " =") {
-		return err
+		return wrapped
 	}
 
 	candidates := append(flagNames(cmd), deprecatedFlagNames()...)
 
 	suggestion, found := suggestFlag(name, candidates)
 	if !found {
-		return err
+		return wrapped
 	}
 
 	if replacement, deprecated := deprecatedFlagSuggestions()[suggestion]; deprecated {
-		return fmt.Errorf("%w\n\nDid you mean --%s? (--%s is deprecated)", err, replacement, suggestion)
+		return fmt.Errorf("%w\n\nDid you mean --%s? (--%s is deprecated)", wrapped, replacement, suggestion)
 	}
 
-	return fmt.Errorf("%w\n\nDid you mean --%s?", err, suggestion)
+	return fmt.Errorf("%w\n\nDid you mean --%s?", wrapped, suggestion)
 }
 
 // deprecatedFlagSuggestions maps removed flag names onto their canonical

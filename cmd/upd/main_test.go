@@ -11,6 +11,7 @@ import (
 	"charm.land/fang/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/LarsArtmann/upd"
+	errorfamily "github.com/larsartmann/go-error-family"
 )
 
 func TestPrintWarningsEmptyProducesNoOutput(t *testing.T) {
@@ -309,6 +310,25 @@ func TestRunEUnknownFlagSuggestsAlternative(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "Did you mean --format=json?") {
 		t.Errorf("error should contain a suggestion, got: %v", err)
+	}
+}
+
+func TestRunEUsageErrorExitsAsRejection(t *testing.T) {
+	t.Parallel()
+
+	var stdout, stderr bytes.Buffer
+
+	err := runE([]string{"--badflag"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected unknown flag error")
+	}
+
+	if code := errorfamily.ExitCode(err); code != 1 {
+		t.Errorf("usage error exit code = %d, want 1 (a flag typo is a user error, not a transient fault)", code)
+	}
+
+	if family := errorfamily.Classify(err); family != errorfamily.Rejection {
+		t.Errorf("usage error family = %v, want Rejection", family)
 	}
 }
 

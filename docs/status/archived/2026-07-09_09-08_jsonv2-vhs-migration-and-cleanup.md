@@ -76,21 +76,21 @@ The tape file, fixture, nix app, and documentation are all in place, but `nix ru
 
 ## C. NOT STARTED
 
-### 1. VHS GitHub Action for Auto-Rendering
+### 1. ~~VHS GitHub Action for Auto-Rendering~~ Won't implement
 
-No `.github/workflows/vhs.yml` was created. The `charmbracelet/vhs-action@v2` GitHub Action could automatically render tapes on push and auto-commit GIFs or publish to cloud. This would make demos self-updating.
+~~No `.github/workflows/vhs.yml` was created.~~ The `charmbracelet/vhs-action@v2` GitHub Action could automatically render tapes on push and auto-commit GIFs or publish to cloud. This would make demos self-updating. → Won't implement — GIFs stay git-ignored and are published on demand via `nix run .#demo -- --publish`; auto-committing binaries contradicts that policy.
 
-### 2. Additional Demo Tapes
+### 2. ~~Additional Demo Tapes~~ done (2026-10-06)
 
-Only one tape (`demo.tape`) exists. Could add: `pin-latest.tape` (focused pinLatest demo), `greatest.tape` (`-g` flag demo), `patterns.tape` (glob filtering demo).
+~~Only one tape (`demo.tape`) exists.~~ Could add: `pin-latest.tape` (focused pinLatest demo), `greatest.tape` (`-g` flag demo), `patterns.tape` (glob filtering demo). → done — all three tapes exist in `demo/`, rendered and published; README links every GIF.
 
 ### 3. ~~`golangci-lint` Integration in CI~~ done at `e64d3a7`
 
 CI runs only `go vet`. The project has a `.golangci.yml` with 100+ linters but `golangci-lint` is not run in CI or in `nix run .#lint`. → done — separate CI job + lint app (D25/D26); pinned v2.12.2 in `e13492e`
 
-### 4. ~~`doc.go` Example Verification~~ partially done
+### 4. ~~`doc.go` Example Verification~~ done at `8f8d6fd`
 
-The doc.go example was updated to `BuildManifest(pkg, pkg.GetUpdArgs(), false)` but the example is not compiled or tested as part of the test suite (Go doc examples with `// Output:` comments would add compile-time verification). → example fixed at `9ca148e`; compile-verification tracked as TODO_LIST.md #17
+The doc.go example was updated to `BuildManifest(pkg, pkg.GetUpdArgs(), false)` but the example is not compiled or tested as part of the test suite (Go doc examples with `// Output:` comments would add compile-time verification). → done — `example_test.go` compile-verifies the documented flow (`8f8d6fd`); listed in CHANGELOG as "compile-verified package example"
 
 ### 5. ~~`BuildManifest` Options Struct Refactor~~ Won't implement
 
@@ -108,14 +108,14 @@ No regressions, no broken builds, no data loss. The one issue during this sessio
 
 ## E. WHAT WE SHOULD IMPROVE
 
-1. **VHS tape must be tested** — The tape file was written blind. It needs at least one render to validate syntax, timing, and visual quality.
-2. **No `golangci-lint` in CI** — The project has an extensive `.golangci.yml` but it's never actually run automatically. The 3 `makezero` warnings prove it's not being enforced.
-3. **`nix run .#lint` only runs `go vet`** — It doesn't run `golangci-lint` despite the config file existing. Should be added.
-4. **`BuildManifest` API smell** — Three positional args (two `[]string`/`string` slices + one `bool`) is a calling-convention footgun. Options struct would prevent argument transposition bugs.
-5. **Test file shadowing risk** — The `json` variable name in a test file shadowed the `encoding/json` import, requiring a rename. With `json/v2` this is less likely (the import is `json` not `encoding/json`) but the pattern of importing `json` and then naming local variables `json` remains a trap.
-6. **No integration test with real registry** — All tests use mock registries. A single opt-in integration test (behind a build tag or `-run=Integration`) hitting `registry.npmjs.org` would catch real-world regressions.
-7. **flake.lock changed unexpectedly** — `flake.lock` shows 18 lines changed in the diff. This was not intentional and may be a side effect of `nix` operations during the session. Should be reviewed.
-8. **CONTRIBUTING.md not updated** — Doesn't mention `GOEXPERIMENT=jsonv2` requirement for contributors.
+1. ~~**VHS tape must be tested** — The tape file was written blind. It needs at least one render to validate syntax, timing, and visual quality.~~ done — rendered + published (v1.1.0); tapes reworked and re-rendered 2026-10-06
+2. ~~**No `golangci-lint` in CI** — The project has an extensive `.golangci.yml` but it's never actually run automatically. The 3 `makezero` warnings prove it's not being enforced.~~ done at `e64d3a7`
+3. ~~**`nix run .#lint` only runs `go vet`** — It doesn't run `golangci-lint` despite the config file existing. Should be added.~~ done at `e64d3a7`
+4. ~~**`BuildManifest` API smell** — Three positional args (two `[]string`/`string` slices + one `bool`) is a calling-convention footgun. Options struct would prevent argument transposition bugs.~~ Won't implement — TODO_LIST R2
+5. ~~**Test file shadowing risk** — The `json` variable name in a test file shadowed the `encoding/json` import, requiring a rename. With `json/v2` this is less likely (the import is `json` not `encoding/json`) but the pattern of importing `json` and then naming local variables `json` remains a trap.~~ NOT-DO — awareness note only; `encoding/json/v2` is imported as `json`, which dissolves the original collision
+6. ~~**No integration test with real registry** — All tests use mock registries. A single opt-in integration test (behind a build tag or `-run=Integration`) hitting `registry.npmjs.org` would catch real-world regressions.~~ done at `8f8d6fd` — `integration_registry_test.go` + `nix run .#test-integration`
+7. ~~**flake.lock changed unexpectedly** — `flake.lock` shows 18 lines changed in the diff. This was not intentional and may be a side effect of `nix` operations during the session. Should be reviewed.~~ done — reviewed; lockfile refreshes are routine since (`f020505` etc.)
+8. ~~**CONTRIBUTING.md not updated** — Doesn't mention `GOEXPERIMENT=jsonv2` requirement for contributors.~~ done at `32c208b`
 
 ---
 
@@ -133,55 +133,55 @@ No regressions, no broken builds, no data loss. The one issue during this sessio
 
 6. ~~Add `golangci-lint` to CI workflow (`.github/workflows/ci.yml`)~~ done at `e64d3a7`
 7. ~~Add `golangci-lint` to `nix run .#lint`~~ done at `e64d3a7`
-8. Add `.github/workflows/vhs.yml` with `charmbracelet/vhs-action@v2` for auto-rendering ← open
+8. ~~Add `.github/workflows/vhs.yml` with `charmbracelet/vhs-action@v2` for auto-rendering~~ Won't implement — demos publish on demand; no binary artifacts in the repo
 9. ~~Update `CONTRIBUTING.md` with `GOEXPERIMENT=jsonv2` requirement~~ done at `32c208b`
 10. ~~Refactor `BuildManifest` to use an options struct (resolve Q1 from prior session)~~ Won't implement — TODO_LIST R2
-11. ~~Add focused demo tapes: `pin-latest.tape`, `greatest.tape`, `patterns.tape`~~ moved to TODO_LIST.md #25
-12. ~~Add an integration test (build-tagged) hitting the real NPM registry~~ moved to TODO_LIST.md #26
-13. ~~Add Go doc examples with `// Output:` to `doc.go` for compile-time example verification~~ moved to TODO_LIST.md #17
-14. Pin VHS version in `flake.nix` devShell (currently unpinned via nixpkgs) ← open
+11. ~~Add focused demo tapes: `pin-latest.tape`, `greatest.tape`, `patterns.tape`~~ done 2026-10-06 — all three tapes rendered + published
+12. ~~Add an integration test (build-tagged) hitting the real NPM registry~~ done at `8f8d6fd` — `nix run .#test-integration`
+13. ~~Add Go doc examples with `// Output:` to `doc.go` for compile-time example verification~~ done at `8f8d6fd` — `example_test.go`
+14. ~~Pin VHS version in `flake.nix` devShell (currently unpinned via nixpkgs)~~ Won't implement — vhs enters through the flake-locked nixpkgs input, which already pins it
 15. ~~Add `meta.description` to all nix apps (flake check warns about this)~~ done at `e64d3a7` (D44)
 
 ### Lower Priority (P2)
 
-16. Consider `sjson` for writes instead of full byte-splice rebuild in `UpdateDependency`
-17. Add benchmark tests comparing json/v2 vs old gjson performance
-18. Add property-based tests for `versionRe` and `latestRe` regex edge cases
-19. Document the `jsontext.Token` voiding gotcha in a code comment near the decoder usage
-20. Add a `Makefile`-equivalent help target: `nix run .#help` or similar
-21. Consider `embedding/json/v2` `Marshalers`/`Unmarshalers` for custom Packument parsing
-22. Add `gofumpt` to devShell and CI for stricter formatting
-23. Add `govulncheck` to CI for dependency vulnerability scanning
-24. Consider `reuse` compliance for SPDX license headers
-25. Add a `CHANGELOG.md` entry for `[1.1.0]` when ready to release
-26. Tag `v1.1.0` once all P0 items are resolved
-27. Add `--dry-run` as an alias for `-n` (discoverability)
-28. Add shell completions (bash/zsh/fish) generation
-29. Consider a `--format json` output mode for CI/automation consumption
-30. Add a `upd.test` binary or test harness for E2E testing
+16. ~~Consider `sjson` for writes instead of full byte-splice rebuild in `UpdateDependency`~~ Won't implement — TODO_LIST R6
+17. ~~Add benchmark tests comparing json/v2 vs old gjson performance~~ Won't implement — gjson was removed as a dependency; `benchmark_test.go` covers the live hot paths
+18. ~~Add property-based tests for `versionRe` and `latestRe` regex edge cases~~ done at `8f8d6fd` — `manifest_property_test.go`
+19. ~~Document the `jsontext.Token` voiding gotcha in a code comment near the decoder usage~~ done differently — documented as a critical gotcha in AGENTS.md (the project's canonical memory) instead of a code comment
+20. ~~Add a `Makefile`-equivalent help target: `nix run .#help` or similar~~ Won't implement — `nix flake show` lists every app with its `meta.description`; a help app would duplicate that
+21. ~~Consider `embedding/json/v2` `Marshalers`/`Unmarshalers` for custom Packument parsing~~ Won't implement — struct-based unmarshaling in `npm.go` covers the two shapes we need
+22. ~~Add `gofumpt` to devShell and CI for stricter formatting~~ Won't implement — dprint is the formatter (`e13492e`); a second formatter would fight it
+23. ~~Add `govulncheck` to CI for dependency vulnerability scanning~~ done — dedicated CI job (now non-failing and verified clean)
+24. ~~Consider `reuse` compliance for SPDX license headers~~ Won't implement — single-maintainer project with a standard MIT LICENSE; tooling ceremony without payoff
+25. ~~Add a `CHANGELOG.md` entry for `[1.1.0]` when ready to release~~ done — `[1.1.0] - 2026-07-16` section exists
+26. ~~Tag `v1.1.0` once all P0 items are resolved~~ done at `2332acb`
+27. ~~Add `--dry-run` as an alias for `-n` (discoverability)~~ done at `e64d3a7` (D32)
+28. ~~Add shell completions (bash/zsh/fish) generation~~ done at `81d8c44`
+29. ~~Consider a `--format json` output mode for CI/automation consumption~~ done — shipped as `--json` (v1.1.0), replaced by `--format=json` (`2ea7868`)
+30. ~~Add a `upd.test` binary or test harness for E2E testing~~ done differently — CLI-level end-to-end tests live in `cmd/upd/main_test.go` (`8f8d6fd`); a separate binary adds nothing
 
 ### Polish (P3)
 
-31. Improve demo tape: add typed comments, better pacing, terminal clear
-32. Add a second tape showing the `--greatest` flag
-33. Add a tape showing negative glob patterns (`!pattern`)
-34. Add VHS theme matching the terminal colors in `render.go`
-35. Consider WebM output in addition to GIF (smaller, higher quality)
-36. Add a `demo/` entry to `.gitattributes` if needed for line-ending handling
-37. Review all error messages for user-facing quality (What/Reassure/Why/Fix/Escape pattern)
-38. Add `--registry` flag for custom/private NPM registry support
-39. Consider rate-limiting backoff for 429 responses from registry
-40. Add HTTP/2 support verification (Go default client should use it)
-41. Add a man page (`man/upd.1`)
-42. Add `nix run .#bench` app for running benchmarks
-43. Consider NixOS module for running upd as a periodic systemd service
-44. Add `renovate.json` or similar for self-hosted dependency updates
-45. Add issue/PR templates to `.github/`
-46. Add `CODE_OF_CONDUCT.md`
-47. Add `FUNDING.yml`
-48. Review and update `docs/DOMAIN_LANGUAGE.md` with new terms
-49. Add architecture diagram (D2 or Mermaid) to README or docs/
-50. Consider extracting diff algorithm (`diff.go`) into its own package
+31. ~~Improve demo tape: add typed comments, better pacing, terminal clear~~ done 2026-10-06 — `demo.tape` reworked with fixtures
+32. ~~Add a second tape showing the `--greatest` flag~~ done 2026-10-06 — `greatest.tape`
+33. ~~Add a tape showing negative glob patterns (`!pattern`)~~ done 2026-10-06 — `patterns.tape`
+34. ~~Add VHS theme matching the terminal colors in `render.go`~~ Won't implement — tapes use a Catppuccin palette; replicating upd's exact ANSI colors is fiddly with no demand
+35. ~~Consider WebM output in addition to GIF (smaller, higher quality)~~ Won't implement — GIF is the README-embedded artifact; `.gitignore` already excludes stray webm/mp4
+36. ~~Add a `demo/` entry to `.gitattributes` if needed for line-ending handling~~ NOT-DO — no line-ending issues with tape files observed
+37. ~~Review all error messages for user-facing quality (What/Reassure/Why/Fix/Escape pattern)~~ done — `messages.go` registers What/Why/Fix/WayOut templates for every error code (`3cd313e`)
+38. ~~Add `--registry` flag for custom/private NPM registry support~~ done at `e64d3a7` (D29)
+39. ~~Consider rate-limiting backoff for 429 responses from registry~~ done — exponential backoff + `Retry-After` support (`e64d3a7`, D28)
+40. ~~Add HTTP/2 support verification (Go default client should use it)~~ Won't implement — Go's default transport negotiates h2 automatically; nothing actionable
+41. ~~Add a man page (`man/upd.1`)~~ done at `81d8c44` — hidden `upd man` emits roff on demand
+42. ~~Add `nix run .#bench` app for running benchmarks~~ Won't implement — `go test -bench=. ./...` inside the devShell (which exports `GOEXPERIMENT=jsonv2`) is sufficient
+43. ~~Consider NixOS module for running upd as a periodic systemd service~~ Won't implement — a static binary on a PATH needs no module; a plain systemd timer/cron entry calls it directly
+44. ~~Add `renovate.json` or similar for self-hosted dependency updates~~ done differently — `.github/dependabot.yml` (`7a1e31f`)
+45. ~~Add issue/PR templates to `.github/`~~ done at `cced077`
+46. ~~Add `CODE_OF_CONDUCT.md`~~ Won't implement — single-maintainer project; CONTRIBUTING covers the basics
+47. ~~Add `FUNDING.yml`~~ Won't implement — no funding channels for this project
+48. ~~Review and update `docs/DOMAIN_LANGUAGE.md` with new terms~~ done — glossary carries `pinLatest`, `IsLatest`, `packument`, and the state machine (verified 2026-09-25)
+49. ~~Add architecture diagram (D2 or Mermaid) to README or docs/~~ moved to ROADMAP.md theme 2
+50. ~~Consider extracting diff algorithm (`diff.go`) into its own package~~ Won't implement — contradicts the single-root-package convention (AGENTS.md); no external consumer
 
 ---
 
@@ -191,6 +191,10 @@ No regressions, no broken builds, no data loss. The one issue during this sessio
 
 The project has `.golangci.yml` with extensive linter configuration but `nix run .#lint` only runs `go vet` + `go build`. Adding `golangci-lint` would surface the 3 `makezero` warnings and enforce the config, but would also likely produce many warnings on untouched files (the AGENTS.md explicitly says "expect loud diagnostics"). Should I add it and deal with the noise, or keep `go vet` as the standard?
 
+> **Resolved:** golangci-lint was added to both the lint app and CI at `e64d3a7`; the noise was worked down to 0 issues.
+
 ### Q2: Should the VHS demo GIFs be auto-committed by CI or always cloud-hosted?
 
 Two approaches: (a) GitHub Action auto-renders and commits GIFs to the repo (works offline, renders in Markdown natively on GitHub), or (b) always cloud-hosted via `vhs.charm.sh` (no binary files in repo, but requires network to view and links can expire). The user asked for cloud hosting, but option (a) is the more common VHS pattern. Which is preferred?
+
+> **Resolved:** cloud-hosted — README embeds `vhs.charm.sh` URLs; GIFs remain git-ignored and re-render locally with `nix run .#demo`.

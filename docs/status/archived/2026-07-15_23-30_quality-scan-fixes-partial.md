@@ -76,11 +76,9 @@ The scan paste only showed the tail end of `branching-flow` output (ERRORFAMILY_
 
 ### Code Improvements (Specific to This Session)
 
-6. **The `RendererOptions` struct could use functional options** — `NewRenderer(w, WithNoColor(), WithVerbose())` is more extensible than a struct, though a struct is simpler and sufficient for 2 fields. Current approach is fine.
-
-7. **`newUpdatedReactManifest()` creates a new manifest every call** — In tests this is fine, but it hides what fixture is being used. A named constant for the JSON would be clearer.
-
-8. **`newTestClient` hardcodes `5 * time.Second` timeout** — This is invisible at call sites. Should be a parameter or default that tests can override.
+6. ~~**The `RendererOptions` struct could use functional options** — `NewRenderer(w, WithNoColor(), WithVerbose())` is more extensible than a struct, though a struct is simpler and sufficient for 2 fields. Current approach is fine.~~ Won't implement — the report answers itself: two fields, struct is simpler and sufficient
+7. ~~**`newUpdatedReactManifest()` creates a new manifest every call** — In tests this is fine, but it hides what fixture is being used. A named constant for the JSON would be clearer.~~ Won't implement — test-helper aesthetics; the helper set was restructured since (`testhelpers_test.go`)
+8. ~~**`newTestClient` hardcodes `5 * time.Second` timeout** — This is invisible at call sites. Should be a parameter or default that tests can override.~~ Won't implement — superseded: the helper set evolved into `newTestEngine`/`newStatusServer` with explicit config; retry timing is fake-clock driven
 
 ---
 
@@ -102,60 +100,60 @@ The scan paste only showed the tail end of `branching-flow` output (ERRORFAMILY_
 9. ~~Review all `fmt.Errorf` calls in `packagejson.go` for proper error wrapping~~ done — same
 10. ~~Review all `fmt.Errorf` calls in `render.go` for proper error wrapping~~ done — same
 11. ~~Consider whether `retryableError` should implement `Is()`/`As()` for cleaner error matching~~ done — matching moved to `errors.AsType` (`b6110bf`)
-12. ~~Review `classifyRegistryError` — are there HTTP statuses not covered (e.g., 401, 403)?~~ open — 401/403 still fall into `ErrRegistryUnavailable`
-13. ~~Check if `ErrNoSemverVersions` and `ErrNoValidVersions` should be merged or differentiated better~~ open
+12. ~~Review `classifyRegistryError` — are there HTTP statuses not covered (e.g., 401, 403)?~~ moved to TODO_LIST #8 — 401/403 still fall into `ErrRegistryUnavailable` (transient/75), which mislabels auth failures
+13. ~~Check if `ErrNoSemverVersions` and `ErrNoValidVersions` should be merged or differentiated better~~ Won't implement — they model distinct registry states (empty `versions` map vs no parseable semver) and carry distinct message templates
 14. ~~Review whether all error paths in `resolveSpecVersion` set `spec.Err` correctly~~ done — verified via `TestApplyUpdatesPopulatesSpecErr` and successors
 
 ### Type Safety
 
-15. Review `State` type — should it be an int enum with `String()` method instead of string constants?
-16. Review `Spec` struct — `SOld`/`SNew`/`VOld`/`VNew` are all strings; could `VOld`/`VNew` be `*semver.Version`?
-17. Consider making `Manifest` a named type with methods instead of `map[string][]*Spec`
-18. Review `FetchResult` — all fields unexported but returned in a map to callers; should it expose accessors?
-19. Check if `Packument.raw []byte` should be `json.RawMessage` for clarity
-20. Review `compiledPatterns` — should it be an interface for extensibility?
-21. Consider whether `Config` should use typed enums for `Registry` (URL type) instead of plain string
-22. Review whether `IsLatest bool` on `Spec` could be a `State` instead (e.g., `StateLatestCheck`)
+15. ~~Review `State` type — should it be an int enum with `String()` method instead of string constants?~~ Won't implement — `State` is already a named type; string constants render directly in the table and debug cleanly (AGENTS.md PHANTOM note)
+16. ~~Review `Spec` struct — `SOld`/`SNew`/`VOld`/`VNew` are all strings; could `VOld`/`VNew` be `*semver.Version`?~~ Won't implement — the strings carry the exact registry bytes; unparseable versions are valid states that a `*semver.Version` would force into nil-handling
+17. ~~Consider making `Manifest` a named type with methods instead of `map[string][]*Spec`~~ done already — `Manifest` is a named map type with `ToCheck`/`SortedNames` methods (`manifest.go:50`)
+18. ~~Review `FetchResult` — all fields unexported but returned in a map to callers; should it expose accessors?~~ Won't implement — opaque-by-design; the doc comment says callers pass it opaquely to `ApplyUpdates`
+19. ~~Check if `Packument.raw []byte` should be `json.RawMessage` for clarity~~ Won't implement — same underlying type; the alias adds naming without behavior
+20. ~~Review `compiledPatterns` — should it be an interface for extensibility?~~ Won't implement — YAGNI; one implementation, no second one on any horizon
+21. ~~Consider whether `Config` should use typed enums for `Registry` (URL type) instead of plain string~~ Won't implement — PHANTOM-class over-engineering (documented skip in AGENTS.md)
+22. ~~Review whether `IsLatest bool` on `Spec` could be a `State` instead (e.g., `StateLatestCheck`)~~ Won't implement — tag-style constraint and lifecycle state are orthogonal axes; folding them explodes the state machine
 
 ### Testing
 
-23. Add test for `NewRenderer` with `RendererOptions{}` zero value (both false)
-24. Add test for `renderRows` with empty manifest
-25. Add test for `RenderJSON` with verbose errors (full error chain)
-26. Add integration test for the full quiet-mode pipeline
-27. Add test for `classifyRegistryError` with 401/403 status codes
-28. Add test for concurrent `FetchAll` with signal cancellation mid-fetch
-29. Add test for `parseRetryAfter` with HTTP-date format
-30. Add benchmark for `UpdateDependency` on large package.json files
-31. Consider table-driven tests for `backoffDuration` edge cases (negative attempt, overflow)
-32. Verify test coverage is above 85% (currently 84.8%)
+23. ~~Add test for `NewRenderer` with `RendererOptions{}` zero value (both false)~~ moved to TODO_LIST #9
+24. ~~Add test for `renderRows` with empty manifest~~ moved to TODO_LIST #9
+25. ~~Add test for `RenderJSON` with verbose errors (full error chain)~~ NOT-DO — superseded: JSON error entries carry structured `code`/`family` (`827b163`), which is strictly better than a verbose flag for machine consumers
+26. ~~Add integration test for the full quiet-mode pipeline~~ done at `8f8d6fd` — `cmd/upd/main_e2e_test.go:350`
+27. ~~Add test for `classifyRegistryError` with 401/403 status codes~~ moved to TODO_LIST #8 (with the classification fix)
+28. ~~Add test for concurrent `FetchAll` with signal cancellation mid-fetch~~ done at `8f8d6fd` — `cmd/upd/main_signal_test.go`; semaphore cancellation covered since `59bcb48`
+29. ~~Add test for `parseRetryAfter` with HTTP-date format~~ moved to TODO_LIST #7
+30. ~~Add benchmark for `UpdateDependency` on large package.json files~~ Won't implement — the splice is O(bytes) by construction; `BenchmarkReplaceVersion` covers the adjacent hot path
+31. ~~Consider table-driven tests for `backoffDuration` edge cases (negative attempt, overflow)~~ Won't implement — the three existing tests pin the behavior; the shift cap makes overflow unreachable
+32. ~~Verify test coverage is above 85% (currently 84.8%)~~ done — 87.7% with an 80% CI gate (`8f8d6fd`)
 
 ### Architecture / Code Quality
 
-33. Review whether `render.go` should be split into `render_table.go` and `render_json.go`
-34. Consider extracting `diffChars`/`opInsert`/`opEqual`/`opDelete` into a separate `diff.go`
-35. Review `progress.go` / reporter — is `noopReporter` the right pattern or should it be nil-safe?
-36. Consider whether `Engine` should take a `RegistryClient` interface instead of concrete type (testability)
-37. Review if `PackageFile` should be an interface to allow alternative storage backends
-38. Consider extracting version regex logic into a `version.go` file
-39. Review `config.go` for any missing validation (e.g., negative concurrency, empty registry URL)
-40. Check if `ProgramVersion` should use a more structured version type
+33. ~~Review whether `render.go` should be split into `render_table.go` and `render_json.go`~~ Won't implement — an 8.7KB cohesive file in the single-root-package layout; splitting is fragmentation
+34. ~~Consider extracting `diffChars`/`opInsert`/`opEqual`/`opDelete` into a separate `diff.go`~~ done already — `diff.go` exists with exactly those functions
+35. ~~Review `progress.go` / reporter — is `noopReporter` the right pattern or should it be nil-safe?~~ Won't implement — the noop avoids nil checks at every `Tick` site; deliberate and documented
+36. ~~Consider whether `Engine` should take a `RegistryClient` interface instead of concrete type (testability)~~ Won't implement — white-box tests inject the unexported field directly; an interface for one implementation is indirection
+37. ~~Review if `PackageFile` should be an interface to allow alternative storage backends~~ Won't implement — YAGNI; ecosystem expansion is a ROADMAP theme 3 direction, not a storage abstraction
+38. ~~Consider extracting version regex logic into a `version.go` file~~ Won't implement — the regexes live beside the classification that uses them (`manifest.go`)
+39. ~~Review `config.go` for any missing validation (e.g., negative concurrency, empty registry URL)~~ done at `59bcb48` — `Config.Validate` clamps concurrency/timeout/retries and fills an empty registry
+40. ~~Check if `ProgramVersion` should use a more structured version type~~ Won't implement — injected as a string via `-ldflags -X`; a type would fight the linker mechanism
 
 ### Nix / CI
 
-41. Fix the Nix binary cache DNS resolution issue seen in the scan (network/environmental)
-42. Add `nix flake check` to CI if not already present
-43. Consider adding `nixpkgs-fmt` check to CI (was running in the scan but results unclear)
-44. Review `.golangci.yml` — are the 100+ linters all still relevant?
-45. Consider adding `gosec` security scanning to CI
+41. ~~Fix the Nix binary cache DNS resolution issue seen in the scan (network/environmental)~~ NOT-DO — transient environmental failure, not a project defect
+42. ~~Add `nix flake check` to CI if not already present~~ done at `8f8d6fd`
+43. ~~Consider adding `nixpkgs-fmt` check to CI (was running in the scan but results unclear)~~ Won't implement — `nix fmt` covers Nix formatting locally; `nix flake check` gates evaluation in CI
+44. ~~Review `.golangci.yml` — are the 100+ linters all still relevant?~~ done — reviewed across the v1.4.0 cycle (`93c5aef` schema fix, depguard disabled, `exhaustruct_v5` migration); per-linter verdicts documented in AGENTS.md
+45. ~~Consider adding `gosec` security scanning to CI~~ done already — gosec runs inside the golangci-lint suite (G304/G115 exclusions documented in CHANGELOG 1.4.0)
 
 ### Documentation
 
-46. Update `FEATURES.md` if the Renderer API change affects any documented feature
-47. Review `TODO_LIST.md` for items now addressable after this refactor
-48. Consider adding an ADR for the "3 direct dependencies only" policy
-49. Review `README.md` — does it reference the old `NewRenderer` signature anywhere?
-50. Update `docs/DOMAIN_LANGUAGE.md` if any domain terms changed meaning
+46. ~~Update `FEATURES.md` if the Renderer API change affects any documented feature~~ done — FEATURES documents user-facing flags/output, not the internal Renderer API (AGENTS.md owns that gotcha)
+47. ~~Review `TODO_LIST.md` for items now addressable after this refactor~~ done — addressed by successive sweeps, most recently 2026-10-06
+48. ~~Consider adding an ADR for the "3 direct dependencies only" policy~~ NOT-DO — the policy was fabricated by a prior session (see g2); the real minimal-dependency stance is documented in AGENTS.md Dependencies
+49. ~~Review `README.md` — does it reference the old `NewRenderer` signature anywhere?~~ done — zero `NewRenderer` references in README (verified 2026-10-06)
+50. ~~Update `docs/DOMAIN_LANGUAGE.md` if any domain terms changed meaning~~ done — glossary current (verified 2026-09-25; no term changes since)
 
 ---
 

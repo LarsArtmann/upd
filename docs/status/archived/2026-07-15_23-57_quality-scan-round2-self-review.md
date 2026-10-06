@@ -89,7 +89,7 @@ All 128 branching-flow issues triaged and documented with rationale in AGENTS.md
 1. ~~**Commit the changes** — 9 files modified, all uncommitted. User has not said "commit".~~ done at `78d0cbf` (and successors committed the session's work)
 2. ~~**Previous session's status report cleanup** — `docs/status/2026-07-15_23-30_quality-scan-fixes-partial.md` is now stale (it documented the incomplete first pass). Could be deleted or updated.~~ done (docs-health pass 2026-09-25 — annotated in place, kept as historical)
 3. ~~**`cmd/upd` test coverage** — 11.9% coverage. The `run()` and `finalizeRun()` functions in `cmd/upd/main.go` have no dedicated tests. They contain the exit-code classification logic and the write gate.~~ partially done — `exitCode`/`printWarnings` tested at `1cd0109`; `run()` end-to-end gap moved to TODO_LIST.md #14
-4. ~~**The 34 gopls `stdversion` warnings** — All are `json/v2` API requiring go1.27 but `go.mod` says go1.26.4. These are environmental (`GOEXPERIMENT=jsonv2` enables the API at runtime on go1.26). Not real issues, but noisy in IDE. Could be silenced by bumping `go.mod` to go1.27 if/when that's released.~~ still open — toolchain now 1.26.7; go1.27 not adopted yet (blocked by GOTOOLCHAIN=local)
+4. ~~**The 34 gopls `stdversion` warnings** — All are `json/v2` API requiring go1.27 but `go.mod` says go1.26.4. These are environmental (`GOEXPERIMENT=jsonv2` enables the API at runtime on go1.26). Not real issues, but noisy in IDE. Could be silenced by bumping `go.mod` to go1.27 if/when that's released.~~ done at `d43f460` — go.mod and toolchain moved to go 1.27
 
 ---
 
@@ -122,7 +122,7 @@ I added `renderBorder` to render.go without being asked. While it's a legitimate
 3. ~~**Consider whether `renderBorder` belongs** — It's fine but unprompted. Should be its own commit or reverted if the user disagrees.~~ done — kept; committed in `713776e`
 4. ~~**Clean up stale status reports** — Multiple status reports in `docs/status/` are historical. The partial one from 23:30 is now superseded.~~ done (docs-health pass 2026-09-25 — annotated + archived where fully resolved)
 5. ~~**The PHANTOM linter is too aggressive** — 56 violations for basic Go types. Consider adding a `.branching-flow.toml` or ignore file if the tool supports it, to suppress PHANTOM and ERRORFAMILY permanently rather than documenting skip decisions in AGENTS.md.~~ Won't implement — rationale documented in AGENTS.md instead
-6. **Test coverage stagnation** — 84.8% is decent but hasn't moved. The uncovered 15.2% includes error paths in `pnpm.go` (retry exhaustion edge cases), `packagejson.go` (malformed JSON edge cases), and `render.go` (color output paths). ← still open (coverage gate: TODO_LIST.md #18)
+6. ~~**Test coverage stagnation** — 84.8% is decent but hasn't moved. The uncovered 15.2% includes error paths in `pnpm.go` (retry exhaustion edge cases), `packagejson.go` (malformed JSON edge cases), and `render.go` (color output paths).~~ done — coverage now 87.7% with an 80% CI gate (`8f8d6fd`); the retry edge paths are tracked as TODO_LIST #7
 7. ~~**`docs/DOMAIN_LANGUAGE.md` has uncommitted formatting changes** from the prior session — these are in the working tree and should be committed or reverted.~~ done — committed; rewritten in `32c208b`
 
 ---
@@ -141,52 +141,52 @@ I added `renderBorder` to render.go without being asked. While it's a legitimate
 
 ### Medium Priority
 
-8. Add test for `pnpm.go:classifyRegistryError` with 410 status code
-9. Add test for `pnpm.go:backoffDuration` with attempt > 10 (cap enforcement)
-10. Add test for `packagejson.go:GetUpdArgs` with malformed `upd` field (non-string, non-array)
-11. Add test for `packagejson.go:UpdateDependency` with section not found
-12. Add test for `packagejson.go:UpdateDependency` with dependency not found
-13. Add test for `manifest.go:compilePatterns` with invalid glob pattern
-14. Add test for `manifest.go:matchesPatterns` with only negative patterns
-15. Add test for `engine.go:versionIsGreater` with invalid semver (both sides)
-16. Add test for `render.go` color output paths (red/green/grey when noColor=false)
-17. Add test for `config.go:PrintUsage` output format
-18. Add test for `config.go:PrintVersion` output format
-19. Add test for `config.go:ShouldDisableColor` with TTY writer (hard, may need mocking)
-20. Add test for `config.go:ParseFlags` with `--dry-run` alias
-21. Add test for `engine.go:FetchAll` with duplicate package names
-22. Add test for `engine.go:ApplyUpdates` with nil result for a package
-23. Add test for `pnpm.go:FetchPackument` context cancellation
-24. Add test for `pnpm.go:FetchPackument` with Retry-After header > backoffMax
-25. Add test for `packagejson.go:Write` concurrent modification fingerprint mismatch
-26. Add benchmark for `packagejson.go:UpdateDependency` (byte-splice performance)
-27. Add benchmark for `engine.go:FetchAll` with large package list
+8. ~~Add test for `pnpm.go:classifyRegistryError` with 410 status code~~ moved to TODO_LIST #8 (classification matrix incl. 401/403/410)
+9. ~~Add test for `pnpm.go:backoffDuration` with attempt > 10 (cap enforcement)~~ done — `TestBackoffDurationCapped` (`npm_test.go:136`)
+10. ~~Add test for `packagejson.go:GetUpdArgs` with malformed `upd` field (non-string, non-array)~~ moved to TODO_LIST #6
+11. ~~Add test for `packagejson.go:UpdateDependency` with section not found~~ moved to TODO_LIST #10
+12. ~~Add test for `packagejson.go:UpdateDependency` with dependency not found~~ done — `TestUpdateDependencyNotFound` (`packagejson_test.go:65`)
+13. ~~Add test for `manifest.go:compilePatterns` with invalid glob pattern~~ done — `TestCompilePatternsWarnsOnInvalidGlob`
+14. ~~Add test for `manifest.go:matchesPatterns` with only negative patterns~~ done — `!*-dom` case (`manifest_test.go:61`)
+15. ~~Add test for `engine.go:versionIsGreater` with invalid semver (both sides)~~ moved to TODO_LIST #10
+16. ~~Add test for `render.go` color output paths (red/green/grey when noColor=false)~~ done — ANSI asserted present and absent (`render_test.go:113`–`126`) plus diff red/green tests
+17. ~~Add test for `config.go:PrintUsage` output format~~ NOT-DO — superseded: `PrintUsage` was removed by the fang/Cobra migration (`81d8c44`); help rendering is fang's
+18. ~~Add test for `config.go:PrintVersion` output format~~ done differently — superseded by `TestVersionOutput` over the Cobra version template
+19. ~~Add test for `config.go:ShouldDisableColor` with TTY writer (hard, may need mocking)~~ Won't implement — real-TTY mocking needs a pty; all three branches are covered via env/pipe/file cases
+20. ~~Add test for `config.go:ParseFlags` with `--dry-run` alias~~ done — `TestParseFlagsDryRunAlias`/`TestDryRunAliasSetsNop`
+21. ~~Add test for `engine.go:FetchAll` with duplicate package names~~ Won't implement — results map keys by name; duplicates collapse by construction
+22. ~~Add test for `engine.go:ApplyUpdates` with nil result for a package~~ moved to TODO_LIST #10 — the nil guard exists (`engine.go:resolveSpecVersion`) but no test pins it
+23. ~~Add test for `pnpm.go:FetchPackument` context cancellation~~ moved to TODO_LIST #7 (cancelled-backoff path); request cancellation rides the standard context-aware transport
+24. ~~Add test for `pnpm.go:FetchPackument` with Retry-After header > backoffMax~~ done — `TestBackoffDurationCapped` pins the cap; `TestBackoffDurationRespectsRetryAfter` pins the honor path
+25. ~~Add test for `packagejson.go:Write` concurrent modification fingerprint mismatch~~ done — `TestWriteRejectsConcurrentModification` (`packagejson_test.go:277`)
+26. ~~Add benchmark for `packagejson.go:UpdateDependency` (byte-splice performance)~~ Won't implement — O(bytes) splice; `BenchmarkReplaceVersion` covers the adjacent hot path
+27. ~~Add benchmark for `engine.go:FetchAll` with large package list~~ Won't implement — fetch is network-bound; a benchmark would measure the semaphore, not the code
 
 ### Low Priority / Polish
 
-28. Consider creating `.branching-flow.toml` to permanently suppress PHANTOM and ERRORFAMILY
-29. Consider adding `//nolint:branching-flow:phantom` directives on key types if tool supports it
-30. Add `go.mod` go directive bump to 1.27 when released (eliminates 34 stdversion warnings)
-31. Consider splitting `config.go` — it has Config, ParseFlags, usage helpers, and color detection (4 responsibilities)
-32. Consider extracting `diff.go` logic into its own package if it grows
-33. Consider adding fuzzing tests for `packagejson.go` JSON parsing
-34. Consider adding fuzzing tests for `manifest.go` version regex matching
-35. Consider adding a `.editorconfig` if not present
-36. Consider adding pre-commit hooks for golangci-lint
-37. Update FEATURES.md if test helpers or linter triage counts as newsworthy
-38. Update TODO_LIST.md with the cmd/upd test coverage gap
-39. Consider whether the `entry` struct in engine.go should be named more descriptively
-40. Consider whether `FetchResult` should use typed errors instead of `error` field
-41. Consider whether `Spec.Err` should be a typed error union
-42. Consider adding structured logging (slog) for debug output
-43. Consider adding `--version` output to include Go version and build info
-44. Consider adding `--dry-run` output that shows what would change
-45. Consider adding a `upd doctor` subcommand to check registry connectivity
-46. Consider adding shell completions (bash/zsh/fish)
-47. Consider adding a `upd init` subcommand to create the `upd` field in package.json
-48. Consider adding support for yarn.lock / pnpm-lock.yaml parsing
-49. Consider adding support for monorepo workspaces
-50. Consider adding a GitHub Action that runs `branching-flow all .` on PRs
+28. ~~Consider creating `.branching-flow.toml` to permanently suppress PHANTOM and ERRORFAMILY~~ Won't implement — verdicts documented in AGENTS.md instead (e5 rationale)
+29. ~~Consider adding `//nolint:branching-flow:phantom` directives on key types if tool supports it~~ Won't implement — same rationale
+30. ~~Add `go.mod` go directive bump to 1.27 when released (eliminates 34 stdversion warnings)~~ done at `d43f460`
+31. ~~Consider splitting `config.go` — it has Config, ParseFlags, usage helpers, and color detection (4 responsibilities)~~ Won't implement — one cohesive CLI-surface concern; usage helpers were since removed by the fang migration
+32. ~~Consider extracting `diff.go` logic into its own package if it grows~~ Won't implement — single-root-package convention; diff.go hasn't grown
+33. ~~Consider adding fuzzing tests for `packagejson.go` JSON parsing~~ Won't implement — YAGNI; the streaming decoder's error paths are unit-tested and the input source is a trusted local file
+34. ~~Consider adding fuzzing tests for `manifest.go` version regex matching~~ Won't implement — property tests (`manifest_property_test.go`, `8f8d6fd`) cover the regex space
+35. ~~Consider adding a `.editorconfig` if not present~~ done already — `.editorconfig` exists at the repo root
+36. ~~Consider adding pre-commit hooks for golangci-lint~~ Won't implement — nix-first policy; buildflow owns local gates
+37. ~~Update FEATURES.md if test helpers or linter triage counts as newsworthy~~ Won't implement — internal test infrastructure is not a user-facing feature
+38. ~~Update TODO_LIST.md with the cmd/upd test coverage gap~~ done differently — superseded by the CLI e2e suite (`8f8d6fd`); no gap remains to record
+39. ~~Consider whether the `entry` struct in engine.go should be named more descriptively~~ done — renamed to `FetchResult` with a doc comment
+40. ~~Consider whether `FetchResult` should use typed errors instead of `error` field~~ Won't implement — `errorfamily` classifies at creation; a typed union would duplicate that
+41. ~~Consider whether `Spec.Err` should be a typed error union~~ Won't implement — same rationale
+42. ~~Consider adding structured logging (slog) for debug output~~ Won't implement — TODO_LIST R12
+43. ~~Consider adding `--version` output to include Go version and build info~~ Won't implement — version template carries binary + upstream attribution; runtime details add noise
+44. ~~Consider adding `--dry-run` output that shows what would change~~ done already — `-n` renders the full old→new table
+45. ~~Consider adding a `upd doctor` subcommand to check registry connectivity~~ already in ROADMAP theme 2
+46. ~~Consider adding shell completions (bash/zsh/fish)~~ done at `81d8c44`
+47. ~~Consider adding a `upd init` subcommand to create the `upd` field in package.json~~ Won't implement — the field is one JSON line; a command for it is ceremony
+48. ~~Consider adding support for yarn.lock / pnpm-lock.yaml parsing~~ already in ROADMAP theme 3
+49. ~~Consider adding support for monorepo workspaces~~ already in ROADMAP theme 3
+50. ~~Consider adding a GitHub Action that runs `branching-flow all .` on PRs~~ Won't implement — golangci-lint + gates cover CI; branching-flow is a local audit tool, not a CI-grade dependency
 
 ---
 

@@ -8,7 +8,9 @@
 
 ## TL;DR
 
-We are **not** adopting go-error-family / bridge / samber-oops — none solve a problem `upd` has today. Instead we fixed the **nine concrete gaps** found across two audit passes, using only the standard library. No new dependencies. Every error now carries its reason to the user, registry outages are distinguished from typos, malformed sections and invalid patterns produce visible warnings instead of silent skips, and transient failures exit with code 75 so CI can retry.
+We are ~~**not** adopting go-error-family / bridge / samber-oops — none solve a problem `upd` has today.~~ Instead we fixed the **nine concrete gaps** found across two audit passes, using only the standard library. No new dependencies. Every error now carries its reason to the user, registry outages are distinguished from typos, malformed sections and invalid patterns produce visible warnings instead of silent skips, and transient failures exit with code 75 so CI can retry.
+
+> **Overturned 2026-07-16:** `go-error-family` was adopted on top of this work (`db891d0`, `3cd313e`) — the nine stdlib fixes are the foundation it wrapped. See the Status note above and the library report's overturned verdict.
 
 ---
 
@@ -161,7 +163,7 @@ golangci-lint run ./...                   # 0 issues
 
 These were considered and **not** implemented — documented so the reasoning is visible:
 
-1. **Exit non-zero when per-package errors occur but the run succeeds.** Currently a run that updates 3 packages and fails 2 still writes the file and exits 0 (errors are "soft", shown in the table). Changing this would alter exit-code semantics that CI scripts may depend on. **Recommend:** add an `--fail-on-error` flag if users request it, rather than changing the default.
+1. ~~**Exit non-zero when per-package errors occur but the run succeeds.** Currently a run that updates 3 packages and fails 2 still writes the file and exits 0 (errors are "soft", shown in the table). Changing this would alter exit-code semantics that CI scripts may depend on. **Recommend:** add an `--fail-on-error` flag if users request it, rather than changing the default.~~ superseded — `ErrPartialFailure` (`077f325`) made partial failure exit 1 by default; no flag needed (TODO_LIST R9)
 
 2. **`errors.As` for typed network-error extraction.** The exit-code logic currently keys off `ErrRegistryUnavailable` (a sentinel), which is sufficient. If finer granularity is ever needed (e.g. DNS failure vs TCP timeout vs TLS error), `errors.As(err, &net.OpError{})` can be added to `exitCode()` without restructuring.
 
@@ -174,3 +176,5 @@ These were considered and **not** implemented — documented so the reasoning is
 ## 7. When to revisit the library question
 
 The library report's revisit triggers still stand. This stdlib work does not close the door on go-error-family/oops — it raises the floor so that **if** `upd` later grows a retry loop or HTTP API, the error vocabulary is already behavioral (sentinels model retry-vs-not), and adopting a library would be an enrichment rather than a rescue.
+
+> **Resolved 2026-07-16:** the retry-loop trigger fired and adoption happened (`db891d0`, `3cd313e`) — exactly the enrichment-not-rescue scenario this section anticipated.
