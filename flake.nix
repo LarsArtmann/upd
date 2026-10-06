@@ -48,6 +48,13 @@
                 description = "Upgrade NPM package dependencies while preserving formatting";
                 homepage = "https://github.com/LarsArtmann/upd";
                 license = licenses.mit;
+                maintainers = [
+                  {
+                    name = "Lars Artmann";
+                    github = "LarsArtmann";
+                  }
+                ];
+                platforms = platforms.unix;
                 mainProgram = "upd";
               };
             };
@@ -65,6 +72,8 @@
               vhs
               ttyd
               ffmpeg
+              dprint
+              lychee
             ];
           };
 

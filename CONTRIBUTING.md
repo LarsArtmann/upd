@@ -11,7 +11,7 @@ Thanks for your interest in contributing!
 
 ## Development Setup
 
-This repo standardizes on [Nix flakes](https://nixos.wiki/wiki/Flakes) for all
+This repo standardizes on [Nix flakes](https://nix.dev/concepts/flakes) for all
 build automation — no Makefile, no justfile.
 
 ```bash

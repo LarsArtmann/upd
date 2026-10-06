@@ -27,6 +27,10 @@ func NewProgressReporter(w io.Writer, total int, _ bool) *ProgressReporter {
 	return &ProgressReporter{w: w, total: total, current: atomic.Int64{}}
 }
 
+func (p *ProgressReporter) printf(format string, args ...any) {
+	_, _ = fmt.Fprintf(p.w, format, args...) //nolint:erraudit // progress-line write; write errors are not actionable
+}
+
 func (p *ProgressReporter) Start() {
 	p.render("")
 }
@@ -37,7 +41,7 @@ func (p *ProgressReporter) Tick(msg string, _ int) {
 
 func (p *ProgressReporter) Finish() {
 	width := clearWidth()
-	_, _ = fmt.Fprintf(p.w, "\r%s\r", strings.Repeat(" ", width))
+	p.printf("\r%s\r", strings.Repeat(" ", width))
 }
 
 // clearWidth returns the number of spaces to use when clearing the progress bar
@@ -67,5 +71,5 @@ func (p *ProgressReporter) render(msg string) {
 	bar := strings.Repeat(progressComplete, filled) + strings.Repeat(progressIncomplete, progressWidth-filled)
 	percent := current * percentMultiplier / max(p.total, 1)
 
-	_, _ = fmt.Fprintf(p.w, "\rchecking: %s %3d%% %s ", bar, percent, msg)
+	p.printf("\rchecking: %s %3d%% %s ", bar, percent, msg)
 }

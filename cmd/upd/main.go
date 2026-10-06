@@ -122,8 +122,13 @@ func finalizeRun(
 	return nil
 }
 
+const warningLine = "\x1b[33mWARNING:\x1b[0m %s\n"
+
+// printWarnings writes warnings to stderr. Write errors are not actionable
+// (a closed terminal cannot be reported to), matching the renderer's
+// deliberate ignore policy.
 func printWarnings(w *os.File, warnings []string) {
 	for _, msg := range warnings {
-		_, _ = fmt.Fprintf(w, "\x1b[33mWARNING:\x1b[0m %s\n", msg)
+		_, _ = fmt.Fprintf(w, warningLine, msg) //nolint:erraudit
 	}
 }

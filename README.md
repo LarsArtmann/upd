@@ -301,7 +301,7 @@ emulating a TTY. You can always force-disable with `-C`.
 
 ## Development
 
-This repo uses [Nix flakes](https://nixos.wiki/wiki/Flakes) for all
+This repo uses [Nix flakes](https://nix.dev/concepts/flakes) for all
 build automation:
 
 ```bash

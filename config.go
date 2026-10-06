@@ -218,7 +218,8 @@ func applyEnvFlags(cmd *cobra.Command) {
 
 		original := flag.Value.String()
 		if err := cmd.Flags().Set(mapping.flag, value); err != nil {
-			_ = cmd.Flags().Set(mapping.flag, original)
+			// Restore the value read from this same flag; Set cannot fail here.
+			_ = cmd.Flags().Set(mapping.flag, original) //nolint:erraudit
 		}
 	}
 }

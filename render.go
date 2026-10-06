@@ -39,6 +39,10 @@ func NewRenderer(w io.Writer, opts RendererOptions) *Renderer {
 	return &Renderer{w: w, noColor: opts.NoColor, verbose: opts.Verbose}
 }
 
+func (r *Renderer) printf(format string, args ...any) {
+	_, _ = fmt.Fprintf(r.w, format, args...) //nolint:erraudit // terminal render write; write errors are not actionable
+}
+
 func (r *Renderer) color(code, text string) string {
 	if r.noColor {
 		return text
@@ -77,9 +81,9 @@ func (r *Renderer) RenderTable(manifest Manifest, updates, errors int, showAll b
 func (r *Renderer) renderAllUpToDate() {
 	border := strings.Repeat(boxBorderChar, terminalWidth)
 	box := r.green("ALL PACKAGE DEPENDENCIES UP-TO-DATE")
-	_, _ = fmt.Fprintf(r.w, "┌%s┐\n", border)
-	_, _ = fmt.Fprintf(r.w, "│%s│\n", centerPad(box, terminalWidth))
-	_, _ = fmt.Fprintf(r.w, "└%s┘\n", border)
+	r.printf("┌%s┐\n", border)
+	r.printf("│%s│\n", centerPad(box, terminalWidth))
+	r.printf("└%s┘\n", border)
 }
 
 func (r *Renderer) renderErrorDetails(manifest Manifest) {
@@ -102,7 +106,7 @@ func (r *Renderer) renderErrorDetails(manifest Manifest) {
 		return
 	}
 
-	_, _ = fmt.Fprintf(r.w, "\n%s\n", r.bold(r.red(fmt.Sprintf("Errors (%d):", len(entries)))))
+	r.printf("\n%s\n", r.bold(r.red(fmt.Sprintf("Errors (%d):", len(entries)))))
 
 	nameWidth := errorNameColumnWidth
 
@@ -112,7 +116,7 @@ func (r *Renderer) renderErrorDetails(manifest Manifest) {
 			msg = fmt.Sprintf("%+v", e.err)
 		}
 
-		_, _ = fmt.Fprintf(r.w, "  %s  %s\n", r.grey(padCell(e.name, nameWidth)), msg)
+		r.printf("  %s  %s\n", r.grey(padCell(e.name, nameWidth)), msg)
 	}
 }
 
@@ -126,8 +130,8 @@ func (r *Renderer) renderUpgradeTable(manifest Manifest, showAll bool) {
 	// Header
 	r.renderBorder("top", colName, colVer, colVer, colState)
 
-	_, _ = fmt.Fprintf(
-		r.w, "│%s│%s│%s│%s│\n",
+	r.printf(
+		"│%s│%s│%s│%s│\n",
 		r.bold(padCell("MODULE NAME", colName)),
 		r.bold(padCell("VERSION OLD", colVer)),
 		r.bold(padCell("VERSION NEW", colVer)),
@@ -149,8 +153,8 @@ func (r *Renderer) renderRows(manifest Manifest, colName, colVer, colState int, 
 			}
 
 			modName, oldVer, newVer, state := r.renderRow(name, spec)
-			_, _ = fmt.Fprintf(
-				r.w, "│%s│%s│%s│%s│\n",
+			r.printf(
+				"│%s│%s│%s│%s│\n",
 				padCell(modName, colName),
 				padCell(oldVer, colVer),
 				padCell(newVer, colVer),
@@ -218,7 +222,7 @@ func (r *Renderer) writeBorder(left, mid, right string, widths ...int) {
 		segments = append(segments, strings.Repeat(boxBorderChar, width))
 	}
 
-	_, _ = fmt.Fprintf(r.w, "%s%s%s\n", left, strings.Join(segments, mid), right)
+	r.printf("%s%s%s\n", left, strings.Join(segments, mid), right)
 }
 
 func (r *Renderer) markRed(text, other string) string {

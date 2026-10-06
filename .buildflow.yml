@@ -1,0 +1,8 @@
+# BuildFlow project configuration — minimal, non-default decisions only.
+# Canonical key list: buildflow skill references/commands.md.
+skip_steps:
+  # go-structure-linter suggests moving root-package files to internal/ or
+  # pkg/, but this repo's documented convention (AGENTS.md "Single root
+  # package") keeps all library code in package upd at the repo root with
+  # cmd/upd as the only executable. Revisit only if that convention changes.
+  - go-structure-linter

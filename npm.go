@@ -117,10 +117,10 @@ func (c *RegistryClient) fetchOnce(ctx context.Context, name string) (*Packument
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
-		return nil, 0, errorfamily.WrapRejection(
+		return nil, 0, errorfamily.WrapRejectionf(
 			err,
 			"registry.request_build",
-			fmt.Sprintf("build registry request for %q", name),
+			"build registry request for %q (%s)", name, reqURL,
 		)
 	}
 
@@ -146,10 +146,10 @@ func (c *RegistryClient) fetchOnce(ctx context.Context, name string) (*Packument
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, 0, errorfamily.WrapTransient(
+		return nil, 0, errorfamily.WrapTransientf(
 			err,
 			"registry.read_body",
-			fmt.Sprintf("read packument body for %q", name),
+			"read packument body for %q (%s)", name, reqURL,
 		)
 	}
 
@@ -264,13 +264,10 @@ func (p *Packument) GreatestVersion() (string, error) {
 	var greatest *semver.Version
 
 	for _, v := range versions {
-		sv, err := semver.NewVersion(v)
-		if err != nil {
-			continue
-		}
-
-		if greatest == nil || sv.GreaterThan(greatest) {
-			greatest = sv
+		if sv, err := semver.NewVersion(v); err == nil {
+			if greatest == nil || sv.GreaterThan(greatest) {
+				greatest = sv
+			}
 		}
 	}
 
