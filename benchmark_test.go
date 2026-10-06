@@ -22,7 +22,7 @@ func BenchmarkDiffChars(b *testing.B) {
 		b.Run(bm.name, func(b *testing.B) {
 			b.ReportAllocs()
 
-			for range b.N {
+			for b.Loop() {
 				diffChars(bm.old, bm.new)
 			}
 		})
@@ -43,7 +43,7 @@ func BenchmarkCompilePatterns(b *testing.B) {
 		b.Run(bm.name, func(b *testing.B) {
 			b.ReportAllocs()
 
-			for range b.N {
+			for b.Loop() {
 				_, _ = compilePatterns(bm.patterns)
 			}
 		})
@@ -65,7 +65,7 @@ func BenchmarkBuildManifest(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	for range b.N {
+	for b.Loop() {
 		_, _ = BuildManifest(pkg, nil, false)
 	}
 }
@@ -84,7 +84,7 @@ func BenchmarkReplaceVersion(b *testing.B) {
 		b.Run(c.name, func(b *testing.B) {
 			b.ReportAllocs()
 
-			for range b.N {
+			for b.Loop() {
 				replaceVersion(c.sOld, c.vOld, c.vNew)
 			}
 		})

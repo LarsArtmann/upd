@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -131,10 +132,13 @@ func TestParseFlagsDryRunAlias(t *testing.T) {
 	assertFlagTrue(t, "Nop via --dry-run", cfg.Nop)
 }
 
-func TestParseFlagsNoColorAlias(t *testing.T) {
-	cfg := mustParseFlags(t, []string{"--noColor"})
-
-	assertFlagTrue(t, "NoColor via --noColor", cfg.NoColor)
+// TestParseFlagsNoColorAlias documents that the legacy --noColor alias is no
+// longer a registered flag: the CLI rewrites it in runE (with a deprecation
+// warning) so it never reaches the flag parser.
+func TestParseFlagsNoColorAliasRejected(t *testing.T) {
+	if _, err := ParseFlags([]string{"--noColor"}); err == nil {
+		t.Error("expected --noColor to be rejected by ParseFlags (handled by CLI rewrite)")
+	}
 }
 
 func TestParseFlagsShortDryRun(t *testing.T) {
@@ -406,7 +410,7 @@ func TestNewCommandMetadata(t *testing.T) {
 	}
 
 	flags := []string{
-		"quiet", "nop", "dry-run", "no-color", "noColor", "greatest", "all",
+		"quiet", "nop", "dry-run", "no-color", "greatest", "all",
 		"pin-latest", "json", "verbose", "file", "registry", "concurrency",
 		"retries", "timeout", "version",
 	}
@@ -415,5 +419,102 @@ func TestNewCommandMetadata(t *testing.T) {
 		if cmd.Flags().Lookup(name) == nil {
 			t.Errorf("missing flag %q", name)
 		}
+	}
+}
+
+func TestApplyEnvFlagsInvalidValuesProduceWarnings(t *testing.T) {
+	t.Setenv("UPD_TIMEOUT", "30")
+	t.Setenv("UPD_CONCURRENCY", "not-a-number")
+
+	_, cfg := NewCommand(func(context.Context, *Config) error { return nil })
+
+	warnings := cfg.EnvWarnings()
+	if len(warnings) != 2 {
+		t.Fatalf("expected 2 env warnings, got %d: %q", len(warnings), warnings)
+	}
+
+	joined := strings.Join(warnings, "\n")
+	if !strings.Contains(joined, "UPD_TIMEOUT") || !strings.Contains(joined, "UPD_CONCURRENCY") {
+		t.Errorf("warnings should name the offending env vars: %q", joined)
+	}
+
+	if cfg.Timeout != defaultTimeout {
+		t.Errorf("Timeout = %v, want default %v (invalid env ignored)", cfg.Timeout, defaultTimeout)
+	}
+
+	if cfg.Concurrency != defaultConcurrency {
+		t.Errorf("Concurrency = %d, want default %d", cfg.Concurrency, defaultConcurrency)
+	}
+}
+
+func TestApplyEnvFlagsValidValuesProduceNoWarnings(t *testing.T) {
+	t.Setenv("UPD_TIMEOUT", "30s")
+	t.Setenv("UPD_CONCURRENCY", "2")
+
+	_, cfg := NewCommand(func(context.Context, *Config) error { return nil })
+
+	if warnings := cfg.EnvWarnings(); len(warnings) != 0 {
+		t.Errorf("expected no env warnings for valid values, got %q", warnings)
+	}
+
+	if cfg.Timeout != 30*time.Second {
+		t.Errorf("Timeout = %v, want 30s from UPD_TIMEOUT", cfg.Timeout)
+	}
+
+	if cfg.Concurrency != 2 {
+		t.Errorf("Concurrency = %d, want 2 from UPD_CONCURRENCY", cfg.Concurrency)
+	}
+}
+
+func TestSuggestFlagTypo(t *testing.T) {
+	t.Parallel()
+
+	candidates := []string{
+		"quiet", "nop", "dry-run", "no-color", "greatest", "all", "pin-latest",
+		"json", "verbose", "file", "registry", "concurrency", "retries", "timeout",
+	}
+
+	tests := []struct {
+		input string
+		want  string
+		found bool
+	}{
+		{"jso", "json", true},
+		{"json", "json", true},
+		{"verbos", "verbose", true},
+		{"qiet", "quiet", true},
+		{"no-colour", "no-color", true},
+		{"pin-late", "pin-latest", true},
+		{"registryy", "registry", true},
+		{"zzzzzzz", "", false},
+	}
+
+	for _, tc := range tests {
+		got, found := suggestFlag(tc.input, candidates)
+		if found != tc.found || got != tc.want {
+			t.Errorf("suggestFlag(%q) = (%q, %v), want (%q, %v)", tc.input, got, found, tc.want, tc.found)
+		}
+	}
+}
+
+func TestParseFlagsUnknownFlagSuggestsAlternative(t *testing.T) {
+	_, err := ParseFlags([]string{"--jso"})
+	if err == nil {
+		t.Fatal("expected unknown flag error")
+	}
+
+	if !strings.Contains(err.Error(), "Did you mean --json?") {
+		t.Errorf("error should contain a suggestion, got: %v", err)
+	}
+}
+
+func TestParseFlagsUnknownFlagWithoutSuggestion(t *testing.T) {
+	_, err := ParseFlags([]string{"--zzzzzzz"})
+	if err == nil {
+		t.Fatal("expected unknown flag error")
+	}
+
+	if strings.Contains(err.Error(), "Did you mean") {
+		t.Errorf("error should not contain a suggestion for a distant typo, got: %v", err)
 	}
 }

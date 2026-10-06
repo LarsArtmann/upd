@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"syscall"
 
@@ -12,16 +13,26 @@ import (
 )
 
 func main() {
-	err := run()
+	err := runE(os.Args[1:], os.Stdout, os.Stderr)
 	if err != nil {
 		os.Exit(errorfamily.ExitCode(err))
 	}
 }
 
-func run() error {
-	cmd, cfg := upd.NewCommand(executeRun)
+func runE(args []string, stdout, stderr io.Writer) error {
+	args, deprecated := deprecatedNoColorArgs(args)
+	if deprecated {
+		printWarnings(stderr, []string{noColorDeprecation})
+	}
+
+	cmd, cfg := upd.NewCommand(func(ctx context.Context, cfg *upd.Config) error {
+		return executeRun(ctx, cfg, stdout, stderr)
+	})
 	cmd.Version = upd.ProgramVersion
 	cmd.SetVersionTemplate(versionTemplate)
+	cmd.SetOut(stdout)
+	cmd.SetErr(stderr)
+	cmd.SetArgs(args)
 
 	err := fang.Execute(
 		context.Background(),
@@ -43,9 +54,9 @@ Upgrade NPM Package Dependencies
 Original: Copyright (c) 2015-2026 Dr. Ralf S. Engelschall
 Go port:  Copyright (c) 2026 Lars Artmann — MIT License`
 
-func executeRun(ctx context.Context, cfg *upd.Config) error {
+func executeRun(ctx context.Context, cfg *upd.Config, stdout, stderr io.Writer) error {
 	if !cfg.NoColor {
-		cfg.NoColor = upd.ShouldDisableColor(os.Stdout)
+		cfg.NoColor = upd.ShouldDisableColor(stdout)
 	}
 
 	pkg, err := upd.ReadPackageFile(cfg.File)
@@ -62,10 +73,10 @@ func executeRun(ctx context.Context, cfg *upd.Config) error {
 		cfg.Patterns = append(embedded, cfg.Patterns...)
 	}
 
-	manifest, warnings := upd.BuildManifest(pkg, cfg.Patterns, cfg.PinLatest)
+	manifest, buildWarnings := upd.BuildManifest(pkg, cfg.Patterns, cfg.PinLatest)
 
 	if !cfg.Quiet {
-		printWarnings(os.Stderr, warnings)
+		printWarnings(stderr, append(cfg.EnvWarnings(), buildWarnings...))
 	}
 
 	toCheck := manifest.ToCheck()
@@ -73,7 +84,7 @@ func executeRun(ctx context.Context, cfg *upd.Config) error {
 
 	showProgress := !cfg.Quiet && len(toCheck) > 0
 
-	reporter := upd.NewProgressReporter(os.Stderr, len(toCheck), cfg.NoColor)
+	reporter := upd.NewProgressReporter(stderr, len(toCheck), cfg.NoColor)
 	if showProgress {
 		reporter.Start()
 		engine = engine.WithReporter(reporter)
@@ -87,7 +98,7 @@ func executeRun(ctx context.Context, cfg *upd.Config) error {
 
 	updates, errCount := engine.ApplyUpdates(manifest, results, pkg)
 
-	return finalizeRun(cfg, manifest, pkg, updates, errCount)
+	return finalizeRun(cfg, manifest, pkg, updates, errCount, stdout)
 }
 
 func finalizeRun(
@@ -95,15 +106,16 @@ func finalizeRun(
 	manifest upd.Manifest,
 	pkg *upd.PackageFile,
 	updates, errCount int,
+	stdout io.Writer,
 ) error {
 	if !cfg.Quiet {
 		if cfg.JSON {
-			err := upd.RenderJSON(os.Stdout, manifest, updates)
+			err := upd.RenderJSON(stdout, manifest)
 			if err != nil {
 				return err
 			}
 		} else {
-			renderer := upd.NewRenderer(os.Stdout, upd.RendererOptions{NoColor: cfg.NoColor, Verbose: cfg.Verbose})
+			renderer := upd.NewRenderer(stdout, upd.RendererOptions{NoColor: cfg.NoColor, Verbose: cfg.Verbose})
 			renderer.RenderTable(manifest, updates, errCount, cfg.All)
 		}
 	}
@@ -124,10 +136,43 @@ func finalizeRun(
 
 const warningLine = "\x1b[33mWARNING:\x1b[0m %s\n"
 
+// noColorDeprecation is printed when the legacy --noColor alias is used.
+// The alias is accepted until v2 but no longer appears in help, man pages,
+// or shell completions.
+const noColorDeprecation = "--noColor is deprecated and will be removed in v2.0.0; use --no-color instead."
+
+// deprecatedNoColorArgs maps the legacy --noColor alias onto --no-color so
+// the alias keeps working without being a registered flag (which leaked it
+// into man pages and completions). It reports whether any argument was
+// rewritten.
+func deprecatedNoColorArgs(args []string) ([]string, bool) {
+	rewritten := make([]string, 0, len(args))
+
+	deprecated := false
+
+	for _, arg := range args {
+		switch arg {
+		case "--noColor":
+			rewritten = append(rewritten, "--no-color")
+			deprecated = true
+		case "--noColor=true":
+			rewritten = append(rewritten, "--no-color=true")
+			deprecated = true
+		case "--noColor=false":
+			rewritten = append(rewritten, "--no-color=false")
+			deprecated = true
+		default:
+			rewritten = append(rewritten, arg)
+		}
+	}
+
+	return rewritten, deprecated
+}
+
 // printWarnings writes warnings to stderr. Write errors are not actionable
 // (a closed terminal cannot be reported to), matching the renderer's
 // deliberate ignore policy.
-func printWarnings(w *os.File, warnings []string) {
+func printWarnings(w io.Writer, warnings []string) {
 	for _, msg := range warnings {
 		_, _ = fmt.Fprintf(w, warningLine, msg) //nolint:erraudit
 	}

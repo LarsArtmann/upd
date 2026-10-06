@@ -101,11 +101,27 @@
                   runtimeInputs = [ pkgs.go ];
                   text = ''
                     export GOEXPERIMENT=${goExperiment}
-                    go test ./... -v -count=1
+                    go test ./... -v -count=1 -race
                   '';
                 }
               );
               meta.description = "Run all tests with verbose output";
+            };
+
+            test-integration = {
+              type = "app";
+              program = pkgs.lib.getExe (
+                pkgs.writeShellApplication {
+                  name = "test-integration";
+                  runtimeInputs = [ pkgs.go ];
+                  text = ''
+                    export GOEXPERIMENT=${goExperiment}
+                    go vet -tags integration ./...
+                    go test -tags integration -run TestRealNPMRegistry ./... -v -count=1
+                  '';
+                }
+              );
+              meta.description = "Run build-tagged integration tests against the real NPM registry";
             };
 
             lint = {

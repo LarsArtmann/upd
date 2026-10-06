@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	errorfamily "github.com/larsartmann/go-error-family"
@@ -66,6 +67,8 @@ type Config struct {
 	Retries     int
 	Timeout     time.Duration
 	Patterns    []string
+
+	envWarnings []string
 }
 
 func DefaultConfig() *Config {
@@ -84,6 +87,7 @@ func DefaultConfig() *Config {
 		Retries:     defaultRetries,
 		Timeout:     defaultTimeout,
 		Patterns:    nil,
+		envWarnings: nil,
 	}
 }
 
@@ -145,6 +149,10 @@ func NewCommand(runE func(context.Context, *Config) error) (*cobra.Command, *Con
 	cmd := &cobra.Command{
 		Use:   ProgramName,
 		Short: ProgramDesc,
+		// Positional arguments are dependency-name patterns; without an
+		// explicit Args, cobra's legacyArgs rejects them as unknown commands
+		// once fang registers its hidden man/completion subcommands.
+		Args: cobra.ArbitraryArgs,
 		Long: fmt.Sprintf(`%s while preserving original JSON formatting, key order, and whitespace.
 
 %s`, ProgramDesc, ProgramURL),
@@ -164,7 +172,8 @@ func NewCommand(runE func(context.Context, *Config) error) (*cobra.Command, *Con
 	}
 
 	bindFlags(cmd, cfg)
-	applyEnvFlags(cmd)
+	cfg.envWarnings = applyEnvFlags(cmd)
+	cmd.SetFlagErrorFunc(suggestFlagOnError)
 	cmd.CompletionOptions.HiddenDefaultCmd = true
 
 	return cmd, cfg
@@ -177,8 +186,6 @@ func bindFlags(cmd *cobra.Command, cfg *Config) {
 	flags.BoolVarP(&cfg.Nop, "nop", "n", cfg.Nop, "no operation (do not modify package.json)")
 	flags.BoolVar(&cfg.Nop, "dry-run", cfg.Nop, "alias for --nop")
 	flags.BoolVarP(&cfg.NoColor, "no-color", "C", cfg.NoColor, "do not use any colors in output")
-	flags.BoolVar(&cfg.NoColor, "noColor", cfg.NoColor, "alias for --no-color")
-	flags.Lookup("noColor").Hidden = true
 	flags.BoolVarP(&cfg.Greatest, "greatest", "g", cfg.Greatest, "use greatest version (instead of latest stable)")
 	flags.BoolVarP(&cfg.All, "all", "a", cfg.All, "show all packages (not just updated ones)")
 	flags.BoolVarP(&cfg.PinLatest, "pin-latest", "P", cfg.PinLatest, "pin \"latest\" tag to exact semver version")
@@ -202,9 +209,11 @@ type envFlag struct {
 // applyEnvFlags applies environment variables to their bound flags before Cobra
 // parses CLI arguments. If an env var is set and its value is valid for the flag
 // type, it becomes the flag's default value; an explicit CLI flag then overrides
-// it. Invalid env var values are silently ignored so the program's built-in
-// defaults remain in effect.
-func applyEnvFlags(cmd *cobra.Command) {
+// it. Invalid env var values are ignored so the program's built-in defaults
+// remain in effect; each ignored value is reported as a warning string.
+func applyEnvFlags(cmd *cobra.Command) []string {
+	var warnings []string
+
 	for _, mapping := range envFlagMappings() {
 		value, ok := os.LookupEnv(mapping.env)
 		if !ok {
@@ -218,14 +227,21 @@ func applyEnvFlags(cmd *cobra.Command) {
 
 		original := flag.Value.String()
 		if err := cmd.Flags().Set(mapping.flag, value); err != nil {
+			warnings = append(warnings, fmt.Sprintf(
+				"invalid env var %s=%q is ignored (using the default): %v",
+				mapping.env, value, err,
+			))
+
 			// Restore the value read from this same flag; Set cannot fail here.
 			_ = cmd.Flags().Set(mapping.flag, original) //nolint:erraudit
 		}
 	}
+
+	return warnings
 }
 
 // envFlagMappings returns the list of flags that may be read from environment
-// variables. The hidden --noColor alias and --version are intentionally omitted.
+// variables. The --version flag is intentionally omitted.
 func envFlagMappings() []envFlag {
 	return []envFlag{
 		{"quiet", EnvQuiet},
@@ -258,7 +274,9 @@ func ParseFlags(args []string) (*Config, error) {
 			return nil, ErrHelp
 		}
 
-		return nil, errorfamily.WrapRejection(err, "cli.parse_flags", "parse flags")
+		// cobra applies the flag-error hook in execute() only; apply it here
+		// as well so library callers get the same suggestion.
+		return nil, errorfamily.WrapRejection(suggestFlagOnError(cmd, err), "cli.parse_flags", "parse flags")
 	}
 
 	if flag := cmd.Flag("version"); flag != nil && flag.Changed {
@@ -268,4 +286,102 @@ func ParseFlags(args []string) (*Config, error) {
 	cfg.Patterns = cmd.Flags().Args()
 
 	return cfg, nil
+}
+
+// EnvWarnings returns one warning per UPD_* environment variable that was set
+// to an invalid value and ignored in favor of the built-in default.
+func (c *Config) EnvWarnings() []string {
+	return c.envWarnings
+}
+
+// suggestFlagOnError is the cobra flag-error hook: it appends a "did you mean"
+// suggestion for unknown long flags so typos like --jso point at --json.
+func suggestFlagOnError(cmd *cobra.Command, err error) error {
+	msg := err.Error()
+
+	name, ok := strings.CutPrefix(msg, "unknown flag: --")
+	if !ok || name == "" || strings.ContainsAny(name, " =") {
+		return err
+	}
+
+	suggestion, found := suggestFlag(name, flagNames(cmd))
+	if !found {
+		return err
+	}
+
+	return fmt.Errorf("%w\n\nDid you mean --%s?", err, suggestion)
+}
+
+// flagNames lists all long flag names declared on the command.
+func flagNames(cmd *cobra.Command) []string {
+	names := make([]string, 0, cmd.Flags().NFlag())
+
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		names = append(names, f.Name)
+	})
+
+	return names
+}
+
+// suggestFlag returns the closest candidate for a mistyped flag name,
+// accepting edits up to Levenshtein distance 2 or a shared prefix. The second
+// return value reports whether a suggestion was found.
+func suggestFlag(name string, candidates []string) (string, bool) {
+	best := ""
+	bestDistance := maxFlagTypoDistance + 1
+
+	for _, candidate := range candidates {
+		if candidate == name {
+			return candidate, true
+		}
+
+		if strings.HasPrefix(candidate, name) || strings.HasPrefix(name, candidate) {
+			return candidate, true
+		}
+
+		distance := levenshteinDistance(name, candidate)
+		if distance < bestDistance {
+			best = candidate
+			bestDistance = distance
+		}
+	}
+
+	if bestDistance <= maxFlagTypoDistance {
+		return best, true
+	}
+
+	return "", false
+}
+
+// maxFlagTypoDistance is the largest edit distance still considered a typo
+// rather than a different word.
+const maxFlagTypoDistance = 2
+
+func levenshteinDistance(from, to string) int {
+	fromRunes, toRunes := []rune(from), []rune(to)
+
+	prev := make([]int, 0, len(toRunes)+1)
+	curr := make([]int, 0, len(toRunes)+1)
+
+	for j := range len(toRunes) + 1 {
+		prev = append(prev, j)
+	}
+
+	for i := range fromRunes {
+		curr = append(curr, i+1)
+
+		for j := range toRunes {
+			cost := 1
+			if fromRunes[i] == toRunes[j] {
+				cost = 0
+			}
+
+			curr = append(curr, min(prev[j+1]+1, curr[j]+1, prev[j]+cost))
+		}
+
+		prev, curr = curr, prev
+		curr = curr[:0]
+	}
+
+	return prev[len(toRunes)]
 }

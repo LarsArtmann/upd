@@ -7,12 +7,12 @@ import (
 	"testing"
 )
 
-func renderJSONAndParse(t *testing.T, manifest Manifest, updates int) jsonOutput {
+func renderJSONAndParse(t *testing.T, manifest Manifest) jsonOutput {
 	t.Helper()
 
 	var buf bytes.Buffer
 
-	err := RenderJSON(&buf, manifest, updates)
+	err := RenderJSON(&buf, manifest)
 	if err != nil {
 		t.Fatalf("RenderJSON failed: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestRenderJSONBasicOutput(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := RenderJSON(&buf, manifest, 1)
+	err := RenderJSON(&buf, manifest)
 	if err != nil {
 		t.Fatalf("RenderJSON failed: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestRenderJSONIncludesErrors(t *testing.T) {
 	manifest["ghost"][0].State = StateError
 	manifest["ghost"][0].Err = ErrPackageNotFound
 
-	result := renderJSONAndParse(t, manifest, 0)
+	result := renderJSONAndParse(t, manifest)
 
 	if len(result.Errors) != 1 {
 		t.Fatalf("expected 1 error entry, got %d", len(result.Errors))
@@ -135,7 +135,7 @@ func TestRenderJSONNoErrorsOmitsField(t *testing.T) {
 	manifest, _ := BuildManifest(pkg, nil, false)
 	manifest["react"][0].State = StateUpdated
 
-	result := renderJSONAndParse(t, manifest, 1)
+	result := renderJSONAndParse(t, manifest)
 
 	// Top-level errors array must be nil/empty, not a populated array
 	if len(result.Errors) != 0 {

@@ -243,14 +243,62 @@ func TestDryRunAliasSetsNop(t *testing.T) {
 	}
 }
 
-func TestNoColorAliasStillParses(t *testing.T) {
-	cfg, err := upd.ParseFlags([]string{"--noColor"})
-	if err != nil {
-		t.Fatalf("ParseFlags returned error: %v", err)
+// TestNoColorAliasRejectedByParser documents that the legacy --noColor alias
+// is rewritten by the CLI layer (see deprecatedNoColorArgs) instead of being
+// a registered flag, so the parser no longer knows it.
+func TestNoColorAliasRejectedByParser(t *testing.T) {
+	if _, err := upd.ParseFlags([]string{"--noColor"}); err == nil {
+		t.Error("expected --noColor to be rejected by ParseFlags (handled by CLI rewrite)")
+	}
+}
+
+func TestDeprecatedNoColorArgsRewritesAlias(t *testing.T) {
+	t.Parallel()
+
+	got, deprecated := deprecatedNoColorArgs([]string{"--noColor", "--file", "x", "--noColor=false", "-n"})
+
+	want := []string{"--no-color", "--file", "x", "--no-color=false", "-n"}
+	if deprecated != true {
+		t.Error("expected deprecated=true for rewritten alias")
 	}
 
-	if !cfg.NoColor {
-		t.Error("expected NoColor to be true for --noColor")
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("arg[%d] = %q, want %q (full: %q)", i, got[i], want[i], got)
+		}
+	}
+}
+
+func TestDeprecatedNoColorArgsPassthrough(t *testing.T) {
+	t.Parallel()
+
+	args := []string{"--no-color", "-q", "--file=x"}
+
+	got, deprecated := deprecatedNoColorArgs(args)
+
+	if deprecated {
+		t.Error("expected no rewrite for canonical flags")
+	}
+
+	for i := range args {
+		if got[i] != args[i] {
+			t.Fatalf("arg[%d] = %q, want %q", i, got[i], args[i])
+		}
+	}
+}
+
+func TestRunEUnknownFlagSuggestsAlternative(t *testing.T) {
+	t.Parallel()
+
+	var stdout, stderr bytes.Buffer
+
+	err := runE([]string{"--jso"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected unknown flag error")
+	}
+
+	if !strings.Contains(err.Error(), "Did you mean --json?") {
+		t.Errorf("error should contain a suggestion, got: %v", err)
 	}
 }
 

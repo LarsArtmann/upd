@@ -333,8 +333,8 @@ type jsonOutput struct {
 
 // RenderJSON writes machine-readable JSON to w. Intended for CI pipelines and
 // editor integrations where the table output is difficult to parse.
-func RenderJSON(w io.Writer, manifest Manifest, updates int) error {
-	summary := jsonSummary{Updated: updates, Kept: 0, Errors: 0, Total: 0}
+func RenderJSON(w io.Writer, manifest Manifest) error {
+	summary := jsonSummary{Updated: 0, Kept: 0, Errors: 0, Total: 0}
 	packages := make([]jsonPackage, 0, len(manifest))
 
 	var jsonErrors []jsonError
@@ -349,6 +349,10 @@ func RenderJSON(w io.Writer, manifest Manifest, updates int) error {
 				State:   string(spec.State),
 			})
 			summary.Total++
+
+			if spec.State == StateUpdated {
+				summary.Updated++
+			}
 
 			if spec.State == StateKept {
 				summary.Kept++

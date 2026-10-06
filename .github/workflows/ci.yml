@@ -28,7 +28,18 @@ jobs:
         run: go vet ./...
 
       - name: Test
-        run: go test -race ./... -v -count=1
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./... -v -count=1 -timeout 120s
+
+      - name: go mod tidy check
+        run: go mod tidy -diff
+
+      - name: go mod verify
+        run: go mod verify
+
+      - name: Coverage gate (80% minimum)
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {sub(/%/,"",$3); print $3}')
+          awk -v t="$total" 'BEGIN { if (t+0 < 80.0) { printf "Coverage %s%% is below the 80%% gate\n", t; exit 1 } printf "Coverage %s%% passes the 80%% gate\n", t }'
 
   lint:
     runs-on: ubuntu-latest
@@ -47,9 +58,18 @@ jobs:
           version: v2.14.0
           args: --timeout 5m
 
+  nix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: cachix/install-nix-action@4cbb444a961f7f17a9ce421956b09f42343cf780 # v9
+
+      - name: nix flake check
+        run: nix flake check
+
   vulncheck:
     runs-on: ubuntu-latest
-    continue-on-error: true
     env:
       GOEXPERIMENT: jsonv2
     steps:
