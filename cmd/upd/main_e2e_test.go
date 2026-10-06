@@ -125,6 +125,10 @@ func TestRunEEndToEndPartialFailureWritesUpdatesAndExitsOne(t *testing.T) {
 		t.Errorf("expected exit code 1, got %d", code)
 	}
 
+	if !errors.Is(err, upd.ErrPackageNotFound) {
+		t.Errorf("joined error should expose the concrete package failure, got %v", err)
+	}
+
 	if got := readE2EPackage(t, file); got != pkgAfter {
 		t.Errorf("successful update lost on partial failure:\nwant %q\ngot  %q", pkgAfter, got)
 	}

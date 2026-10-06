@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -134,10 +135,28 @@ func finalizeRun(
 	}
 
 	if errCount > 0 {
-		return upd.ErrPartialFailure.WithContextf("error_count", "%d", errCount)
+		return aggregateFailures(manifest, errCount)
 	}
 
 	return nil
+}
+
+// aggregateFailures joins the overall partial-failure signal with every
+// concrete package error so programmatic consumers can inspect all failures
+// through the returned error instead of parsing rendered output.
+func aggregateFailures(manifest upd.Manifest, errCount int) error {
+	errs := make([]error, 0, errCount+1)
+	errs = append(errs, upd.ErrPartialFailure.WithContextf("error_count", "%d", errCount))
+
+	for _, name := range manifest.SortedNames() {
+		for _, spec := range manifest[name] {
+			if spec.State == upd.StateError && spec.Err != nil {
+				errs = append(errs, spec.Err)
+			}
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 const warningLine = "\x1b[33mWARNING:\x1b[0m %s\n"
