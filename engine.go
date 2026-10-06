@@ -205,23 +205,13 @@ func pickVersion(pkg *Packument, cfg *Config) (string, error) {
 }
 
 func shouldUpdate(spec *Spec) bool {
-	if spec.VOld == spec.VNew {
-		spec.State = StateKept
-
-		return false
-	}
-
-	if spec.IsLatest {
+	if spec.VOld != spec.VNew && (spec.IsLatest || versionIsGreater(spec.VOld, spec.VNew)) {
 		return true
 	}
 
-	if !versionIsGreater(spec.VOld, spec.VNew) {
-		spec.State = StateKept
+	spec.State = StateKept
 
-		return false
-	}
-
-	return true
+	return false
 }
 
 func versionIsGreater(oldVer, newVer string) bool {

@@ -2,8 +2,9 @@ package upd
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/gobwas/glob"
@@ -125,14 +126,7 @@ func (m Manifest) ToCheck() []string {
 }
 
 func (m Manifest) SortedNames() []string {
-	names := make([]string, 0, len(m))
-	for name := range m {
-		names = append(names, name)
-	}
-
-	sort.Strings(names)
-
-	return names
+	return slices.Sorted(maps.Keys(m))
 }
 
 type compiledPatterns struct {

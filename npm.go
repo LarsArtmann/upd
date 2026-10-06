@@ -6,9 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
-	"sort"
+	"slices"
 	"strconv"
 	"time"
 
@@ -294,12 +295,5 @@ func (p *Packument) VersionKeys() []string {
 		return nil
 	}
 
-	keys := make([]string, 0, len(v.Versions))
-	for k := range v.Versions {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-
-	return keys
+	return slices.Sorted(maps.Keys(v.Versions))
 }

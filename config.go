@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -387,14 +389,7 @@ func deprecatedFlagSuggestions() map[string]string {
 }
 
 func deprecatedFlagNames() []string {
-	suggestions := deprecatedFlagSuggestions()
-	names := make([]string, 0, len(suggestions))
-
-	for name := range suggestions {
-		names = append(names, name)
-	}
-
-	return names
+	return slices.Collect(maps.Keys(deprecatedFlagSuggestions()))
 }
 
 // flagNames lists all long flag names declared on the command.

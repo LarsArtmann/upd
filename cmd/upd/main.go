@@ -156,7 +156,9 @@ func aggregateFailures(manifest upd.Manifest, errCount int) error {
 		}
 	}
 
-	return errors.Join(errs...)
+	// errCount context is already attached above via ErrPartialFailure
+	// ("error_count"); erraudit cannot track it through the joined slice.
+	return errors.Join(errs...) //nolint:erraudit
 }
 
 const warningLine = "\x1b[33mWARNING:\x1b[0m %s\n"
