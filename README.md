@@ -20,7 +20,11 @@ number inside each constraint string changes. Nothing else is touched.
 
 ## Demo
 
-![upd demo](https://vhs.charm.sh/vhs-44iono1WluRIVsM2ddBpRc.gif)
+![upd demo](https://vhs.charm.sh/vhs-5FaTqsiO5FAMqdWA852aas.gif)
+
+More focused demos: [pattern filtering](https://vhs.charm.sh/vhs-2a0rZN1IG4W24uCDENSUcu.gif),
+[greatest version](https://vhs.charm.sh/vhs-7DG6VHVnaB1Vxm196fEeTI.gif),
+[latest pinning](https://vhs.charm.sh/vhs-fqjsUblW65STfzEX7MFZZ.gif).
 
 [![Made with VHS](https://stuff.charm.sh/vhs/badge.svg)](https://github.com/charmbracelet/vhs)
 
@@ -121,7 +125,7 @@ published releases are on the [GitHub Releases page](https://github.com/LarsArtm
 ## Usage
 
 ```
-upd [-h] [-V] [-q] [-n|--dry-run] [-C] [-f <file>] [-r <registry>] [-g] [-a] [-c <concurrency>] [-P] [-t <timeout>] [--retries <n>] [--json] [--verbose] [<pattern> ...]
+upd [-h] [-V] [-q|-s] [-n|--dry-run] [-C] [-f <file>] [-r <registry>] [-g] [-a] [-c <concurrency>] [-P] [-t <timeout>] [--retries <n>] [--format <table|json>] [--verbose] [<pattern> ...]
 ```
 
 | Flag | Long form       | Description                                                   |
@@ -129,9 +133,10 @@ upd [-h] [-V] [-q] [-n|--dry-run] [-C] [-f <file>] [-r <registry>] [-g] [-a] [-c
 | `-h` | `--help`        | Show usage help.                                              |
 | `-V` | `--version`     | Show program version.                                         |
 | `-q` | `--quiet`       | Suppress output (no progress bar, no table, no warnings).     |
+| `-s` | `--silent`      | Alias for `--quiet`.                                          |
 | `-n` | `--nop`         | Dry run — do not modify `package.json`.                       |
 |      | `--dry-run`     | Alias for `--nop`.                                            |
-| `-C` | `--no-color`    | Disable ANSI colors in output. `--noColor` is a hidden alias. |
+| `-C` | `--no-color`    | Disable ANSI colors in output. `--noColor` is a deprecated alias (removed in v2). |
 | `-f` | `--file`        | Path to package config (default: `package.json`).             |
 | `-r` | `--registry`    | NPM registry base URL (default: `registry.npmjs.org`).        |
 | `-g` | `--greatest`    | Use greatest published version instead of `latest` tag.       |
@@ -140,7 +145,7 @@ upd [-h] [-V] [-q] [-n|--dry-run] [-C] [-f <file>] [-r <registry>] [-g] [-a] [-c
 | `-P` | `--pin-latest`  | Pin bare `latest` tags to exact semver.                       |
 | `-t` | `--timeout`     | Per-request timeout (default: `20s`).                         |
 |      | `--retries`     | Max retries for transient 429/5xx failures (default: 3).      |
-|      | `--json`        | Machine-readable JSON output for CI/scripts.                  |
+|      | `--format`      | Output format: `table` (default) or `json` for CI/scripts. `--json` is a deprecated alias (removed in v2). |
 |      | `--verbose`     | Show full error chains in the error detail block.             |
 |      | `<pattern>`     | Glob pattern for dependency names. `!` prefix excludes.       |
 
@@ -220,6 +225,19 @@ Now `upd` is equivalent to `upd react* !react-dom -c 16`. CLI flags
 override or supplement these defaults. The field accepts a string or an
 array.
 
+### `.npmrc`
+
+`upd` reads `.npmrc` from your home directory and from the directory of the
+package file (project-local wins). It consumes:
+
+- `registry=<url>` — default registry when `--registry`/`UPD_REGISTRY` is
+  not set.
+- `//<registry-host>/:_authToken=<token>` — sent as a bearer token for
+  private registries. Token values are never printed or logged.
+
+Malformed or unsupported entries (e.g. legacy `_auth`, scoped
+`@scope:registry`) produce a warning; they never silently break auth.
+
 ### Environment variables
 
 Every public flag can also be set via an environment variable with the
@@ -239,7 +257,8 @@ Every public flag can also be set via an environment variable with the
 | `UPD_GREATEST`    | `--greatest`    |
 | `UPD_ALL`         | `--all`         |
 | `UPD_PIN_LATEST`  | `--pin-latest`  |
-| `UPD_JSON`        | `--json`        |
+| `UPD_JSON`        | `--json` (deprecated; use `UPD_FORMAT`) |
+| `UPD_FORMAT`      | `--format`      |
 | `UPD_VERBOSE`     | `--verbose`     |
 
 For example:

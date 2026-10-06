@@ -23,7 +23,7 @@
 | `-q` / `--quiet`          | 🟢 `FULLY_FUNCTIONAL`     | Suppresses progress bar, table output, AND warnings. `config.go`.                                                                                                                            |
 | `-n` / `--nop` (dry run)  | 🟢 `FULLY_FUNCTIONAL`     | Previews changes without writing. Tested: `TestEngineApplyUpdatesNop`, `TestFullPipelineDryRunDoesNotWrite`.                                                                                 |
 | `--dry-run` alias         | 🟢 `FULLY_FUNCTIONAL`     | Alias for `--nop`. Tested: `TestParseFlagsDryRunAlias`, `TestDryRunAliasSetsNop`.                                                                                                            |
-| `-C` / `--no-color`       | 🟢 `FULLY_FUNCTIONAL`     | Canonical long form. Disables upd's own ANSI colors AND fang's styled help/error colors via `ColorSchemeFunc` (`cmd/upd/theme.go`). `--noColor` remains a hidden backwards-compatible alias. |
+| `-C` / `--no-color`       | 🟢 `FULLY_FUNCTIONAL`     | Canonical long form. Disables upd's own ANSI colors AND fang's styled help/error colors via `ColorSchemeFunc` (`cmd/upd/theme.go`). `--noColor` is a deprecated alias rewritten by the CLI with a warning (removed in v2). |
 | `-f` / `--file`           | 🟢 `FULLY_FUNCTIONAL`     | Custom package.json path. Default: `package.json`.                                                                                                                                           |
 | `-r` / `--registry`       | 🟢 `FULLY_FUNCTIONAL`     | Custom/private NPM registry URL. `npm.go:NewRegistryClient`. Tested: `TestParseFlagsRegistryFlag`.                                                                                           |
 | `-g` / `--greatest`       | 🟢 `FULLY_FUNCTIONAL`     | Uses highest semver across all versions instead of `dist-tags.latest`.                                                                                                                       |
@@ -32,11 +32,11 @@
 | `-P` / `--pin-latest`     | 🟢 `FULLY_FUNCTIONAL`     | Pins bare `"latest"` tags to exact resolved semver.                                                                                                                                          |
 | `-t` / `--timeout`        | 🟢 `FULLY_FUNCTIONAL`     | Per-request HTTP timeout (default: 20s). Non-positive values clamped to default (`npm.go:NewRegistryClient`). Tested: `TestParseFlagsTimeoutFlag`.                                           |
 | `--retries`               | 🟢 `FULLY_FUNCTIONAL`     | Max retries for transient 429/5xx failures (default: 3). Exponential backoff + Retry-After header support. Tested: `TestFetchPackumentRetriesOn503`, `TestFetchPackumentDoesNotRetry404`.    |
-| `--json` output           | 🟢 `FULLY_FUNCTIONAL`     | Machine-readable JSON output for CI/scripting. `render.go:RenderJSON`. Tested: `TestRenderJSONBasicOutput`, `TestRenderJSONIncludesErrors`, `TestRenderJSONNoErrorsOmitsField`.              |
+| `--format` output         | 🟢 `FULLY_FUNCTIONAL`     | `--format=table\|json` for CI/scripting; invalid values rejected early. `--json` is a deprecated alias rewritten by the CLI with a warning. JSON error entries carry errorfamily `code`/`family`. `render.go:RenderJSON`. |
 | `--verbose`               | 🟢 `FULLY_FUNCTIONAL`     | Shows full error chains (`%+v`) in the error detail block. Tested: `TestRenderVerboseShowsFullErrorChain`.                                                                                   |
-| Environment variables     | 🟢 `FULLY_FUNCTIONAL`     | Every public flag settable via `UPD_*` env vars; CLI flags override (`config.go:applyEnvFlags`). Invalid env values silently fall back to defaults (known gap, TODO_LIST #8).                |
+| Environment variables     | 🟢 `FULLY_FUNCTIONAL`     | Every public flag settable via `UPD_*` env vars; CLI flags override (`config.go:applyEnvFlags`). Invalid env values warn and fall back to defaults (`Config.EnvWarnings`). Deprecated `UPD_JSON` maps onto `UPD_FORMAT=json` with a warning. |
 | Styled error output       | 🟢 `FULLY_FUNCTIONAL`     | fang renders errors with `errorfamily` message templates (`messages.go`); `HandleError` classifies and exits.                                                                                |
-| Man pages                 | 🟡 `PARTIALLY_FUNCTIONAL` | Hidden `upd man` emits roff via mango (tested: `TestManCommandOutput`). Gap: hidden `--noColor` alias leaks into the roff; mango ignores Cobra's hidden-flag marker.                         |
+| Man pages                 | 🟢 `FULLY_FUNCTIONAL`     | Hidden `upd man` emits roff via mango (tested: `TestManCommandOutput`). The former `--noColor` roff leak is fixed: deprecated aliases are no longer registered flags.                        |
 | Shell completions         | 🟢 `FULLY_FUNCTIONAL`     | Hidden `upd completion <bash\|zsh\|fish>` via Cobra. Bash output test-verified (`TestCompletionBashOutput`); zsh/fish untested but generated by the same Cobra machinery.                    |
 | Auto color detection      | 🟢 `FULLY_FUNCTIONAL`     | `NO_COLOR` env var and non-TTY stdout auto-disable colors. `config.go:ShouldDisableColor`. 3 dedicated tests.                                                                                |
 
@@ -63,7 +63,7 @@
 | Write gate (no-op when dry)   | 🟢 `FULLY_FUNCTIONAL` | File written only when `updates > 0 && !cfg.Nop`.                                                                                                                 |
 | JSON validation on read       | 🟢 `FULLY_FUNCTIONAL` | `jsontext.Value.IsValid()` check on read.                                                                                                                         |
 | Zero-value config hardening   | 🟢 `FULLY_FUNCTIONAL` | `Config.Validate` clamps `Concurrency<=0`, `Timeout<=0`, `Retries<0`, empty `Registry`; `NewEngine` always validates. Prevents the FetchAll deadlock (`59bcb48`). |
-| `.npmrc` parsing              | ⚪ `PLANNED`          | No `.npmrc` support. Registry URL configurable via `--registry` flag.                                                                                             |
+| `.npmrc` parsing              | 🟢 `FULLY_FUNCTIONAL` | Registry URL + `//host/:_authToken` bearer tokens read from home and package-file directories (project-local wins); `--registry`/`UPD_REGISTRY` takes precedence. `npmrc.go`. Tested: `npmrc_test.go` + e2e auth test. Scope registries (`@scope:registry`) unsupported. |
 
 ## Error Handling
 
@@ -88,7 +88,7 @@
 | "All up-to-date" box            | 🟢 `FULLY_FUNCTIONAL` | Green centered message when no updates.                                                                          |
 | Progress bar                    | 🟢 `FULLY_FUNCTIONAL` | Unicode bar on stderr during fetch. Terminal width detected via `COLUMNS` env var (fallback: 80). `progress.go`. |
 | Auto color detection (NO_COLOR) | 🟢 `FULLY_FUNCTIONAL` | `NO_COLOR` env var and non-TTY stdout automatically disable colors. `config.go:ShouldDisableColor`.              |
-| JSON output mode                | 🟢 `FULLY_FUNCTIONAL` | `--json` emits structured JSON: summary, packages, errors. `render.go:RenderJSON`.                               |
+| JSON output mode                | 🟢 `FULLY_FUNCTIONAL` | `--format=json` emits structured JSON: summary, packages, errors (with `code`/`family`). `render.go:RenderJSON`.                               |
 
 ## Infrastructure
 

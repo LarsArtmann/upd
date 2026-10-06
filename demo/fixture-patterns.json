@@ -1,0 +1,10 @@
+{
+  "name": "demo-patterns",
+  "version": "1.0.0",
+  "description": "Demo fixture for pattern filtering",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "express": "^4.18.0"
+  }
+}

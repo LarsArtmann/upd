@@ -1,0 +1,9 @@
+{
+  "name": "demo-greatest",
+  "version": "1.0.0",
+  "description": "Demo fixture for greatest-version selection",
+  "dependencies": {
+    "lodash": "^4.17.20",
+    "chalk": "^5.3.0"
+  }
+}
