@@ -297,6 +297,44 @@ func TestRunEUnknownFlagWithPositionalArgSuggestsFlag(t *testing.T) {
 	}
 }
 
+func TestRunEEndToEndNpmrcRegistryAndAuth(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	var gotAuth, gotPath string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotPath = r.URL.Path
+
+		_, _ = w.Write([]byte(e2ePackument)) //nolint:erraudit // test server: client cancellation is not actionable
+	}))
+	t.Cleanup(server.Close)
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "package.json")
+	writeE2EPackage(t, file, e2ePkgBefore)
+
+	npmrcContent := "registry=" + server.URL + "\n" +
+		"//" + server.URL[len("http://"):] + "/:_authToken=e2e-secret\n"
+	if err := os.WriteFile(filepath.Join(dir, ".npmrc"), []byte(npmrcContent), 0o600); err != nil {
+		t.Fatalf("write .npmrc: %v", err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	err := runE([]string{"--file", file, "--no-color"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("runE returned error: %v", err)
+	}
+
+	if gotPath != "/left-pad" {
+		t.Errorf("registry from .npmrc not used, request path: %q", gotPath)
+	}
+
+	if gotAuth != "Bearer e2e-secret" {
+		t.Errorf("Authorization = %q, want bearer token from .npmrc", gotAuth)
+	}
+}
+
 func TestRunEEndToEndQuietSuppressesOutput(t *testing.T) {
 	t.Parallel()
 

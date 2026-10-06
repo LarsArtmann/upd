@@ -28,6 +28,7 @@ const (
 type RegistryClient struct {
 	baseURL    string
 	userAgent  string
+	authToken  string
 	maxRetries int
 	http       *http.Client
 	sleep      sleeper
@@ -42,6 +43,7 @@ func NewRegistryClient(cfg *Config) *RegistryClient {
 	return &RegistryClient{
 		baseURL:    cfg.Registry,
 		userAgent:  cfg.UserAgent(),
+		authToken:  cfg.RegistryToken,
 		maxRetries: cfg.Retries,
 		http: &http.Client{
 			Timeout: timeout,
@@ -126,6 +128,10 @@ func (c *RegistryClient) fetchOnce(ctx context.Context, name string) (*Packument
 
 	req.Header.Set("User-Agent", c.userAgent)
 	req.Header.Set("Accept", "application/json")
+
+	if c.authToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.authToken)
+	}
 
 	resp, err := c.http.Do(req)
 	if err != nil {

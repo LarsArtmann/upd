@@ -62,41 +62,43 @@ var (
 )
 
 type Config struct {
-	File        string
-	Registry    string
-	Greatest    bool
-	All         bool
-	Quiet       bool
-	Nop         bool
-	NoColor     bool
-	PinLatest   bool
-	Format      string
-	Verbose     bool
-	Concurrency int
-	Retries     int
-	Timeout     time.Duration
-	Patterns    []string
+	File          string
+	Registry      string
+	Greatest      bool
+	All           bool
+	Quiet         bool
+	Nop           bool
+	NoColor       bool
+	PinLatest     bool
+	Format        string
+	Verbose       bool
+	Concurrency   int
+	Retries       int
+	Timeout       time.Duration
+	Patterns      []string
+	RegistryToken string
 
 	envWarnings []string
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		File:        "package.json",
-		Registry:    defaultRegistryURL,
-		Greatest:    false,
-		All:         false,
-		Quiet:       false,
-		Nop:         false,
-		NoColor:     false,
-		PinLatest:   false,
-		Format:      defaultFormat,
-		Verbose:     false,
-		Concurrency: defaultConcurrency,
-		Retries:     defaultRetries,
-		Timeout:     defaultTimeout,
-		Patterns:    nil,
-		envWarnings: nil,
+		File:          "package.json",
+		Registry:      defaultRegistryURL,
+		Greatest:      false,
+		All:           false,
+		Quiet:         false,
+		Nop:           false,
+		NoColor:       false,
+		PinLatest:     false,
+		Format:        defaultFormat,
+		Verbose:       false,
+		Concurrency:   defaultConcurrency,
+		Retries:       defaultRetries,
+		Timeout:       defaultTimeout,
+		Patterns:      nil,
+		RegistryToken: "",
+		envWarnings:   nil,
 	}
 }
 

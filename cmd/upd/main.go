@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"charm.land/fang/v2"
@@ -61,6 +62,9 @@ func executeRun(ctx context.Context, cfg *upd.Config, stdout, stderr io.Writer) 
 		cfg.NoColor = upd.ShouldDisableColor(stdout)
 	}
 
+	npmrc, npmrcWarnings := upd.LoadNpmrc(filepath.Dir(cfg.File))
+	cfg.ApplyNpmrc(npmrc)
+
 	pkg, err := upd.ReadPackageFile(cfg.File)
 	if err != nil {
 		return err
@@ -78,7 +82,7 @@ func executeRun(ctx context.Context, cfg *upd.Config, stdout, stderr io.Writer) 
 	manifest, buildWarnings := upd.BuildManifest(pkg, cfg.Patterns, cfg.PinLatest)
 
 	if !cfg.Quiet {
-		printWarnings(stderr, append(cfg.EnvWarnings(), buildWarnings...))
+		printWarnings(stderr, append(append(cfg.EnvWarnings(), buildWarnings...), npmrcWarnings...))
 	}
 
 	toCheck := manifest.ToCheck()
