@@ -314,8 +314,10 @@ type jsonPackage struct {
 }
 
 type jsonError struct {
-	Name  string `json:"name"`
-	Error string `json:"error"`
+	Name   string `json:"name"`
+	Error  string `json:"error"`
+	Code   string `json:"code,omitempty"`
+	Family string `json:"family,omitempty"`
 }
 
 type jsonSummary struct {
@@ -360,8 +362,10 @@ func RenderJSON(w io.Writer, manifest Manifest) error {
 
 			if spec.State == StateError && spec.Err != nil {
 				jsonErrors = append(jsonErrors, jsonError{
-					Name:  name,
-					Error: spec.Err.Error(),
+					Name:   name,
+					Error:  spec.Err.Error(),
+					Code:   errorfamily.Code(spec.Err),
+					Family: errorfamily.Classify(spec.Err).String(),
 				})
 			}
 		}

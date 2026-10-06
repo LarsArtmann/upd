@@ -127,6 +127,14 @@ func TestRenderJSONIncludesErrors(t *testing.T) {
 	if !strings.Contains(result.Errors[0].Error, "not found") {
 		t.Errorf("errors[0].error should contain 'not found', got %q", result.Errors[0].Error)
 	}
+
+	if result.Errors[0].Code != "registry.package_not_found" {
+		t.Errorf("errors[0].code = %q, want registry.package_not_found", result.Errors[0].Code)
+	}
+
+	if result.Errors[0].Family != "rejection" {
+		t.Errorf("errors[0].family = %q, want rejection", result.Errors[0].Family)
+	}
 }
 
 func TestRenderJSONNoErrorsOmitsField(t *testing.T) {
