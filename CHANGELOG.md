@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [1.5.0] - 2026-10-06
 
 ### Added
 
@@ -70,6 +70,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   a SIGINT cancellation test, property tests for the version regexes,
   compile-verified package example, and opt-in integration tests against
   the real NPM registry (`nix run .#test-integration`).
+
+## [Unreleased]
+
+### Added
+
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
 
 ## [1.4.0] - 2026-10-05
 
@@ -258,7 +268,8 @@ First stable release of the Go port.
 
 - All original JavaScript source files
 
-[Unreleased]: https://github.com/LarsArtmann/upd/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/LarsArtmann/upd/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/LarsArtmann/upd/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/LarsArtmann/upd/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/LarsArtmann/upd/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/LarsArtmann/upd/compare/v1.1.0...v1.2.0

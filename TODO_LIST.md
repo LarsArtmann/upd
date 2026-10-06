@@ -5,16 +5,15 @@
 > De-duplicated. **Open items only** — completed work lives in `CHANGELOG.md`.
 > Swept 2026-10-06: 24 of the 28 open items completed; a second docs-health sweep
 > the same day annotated and archived every `2026-0*` status report and
-> harvested items #5–#11 below.
+> harvested items #5–#11 below. v1.5.0 cut the same day (see `CHANGELOG.md`).
 
 ---
 
 ## Release
 
-| # | Task                                                                                                                         | Source                 | Notes                                                          |
-| - | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------- |
-| 1 | Cut the next release (v1.5.0) from current master — patterns fix, `--format`, `.npmrc`, JSON error codes, release automation | 2026-10-06 sweep       | Gates must be green first; `docs/RELEASING.md` has the ritual. |
-| 2 | Add signing/provenance to goreleaser artifacts (cosign keyless or checksum signature)                                        | TODO_LIST #3 (partial) | `SHA256SUMS` exists; signatures not yet generated.             |
+| # | Task                                                                                        | Source                 | Notes                                                             |
+| - | --------------------------------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------- |
+| 2 | Add signing/provenance to goreleaser artifacts (cosign keyless or checksum signature)         | TODO_LIST #3 (partial) | `SHA256SUMS` exists; signatures not yet generated.                  |
 
 ## Product
 
