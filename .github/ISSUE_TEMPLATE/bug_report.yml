@@ -1,0 +1,44 @@
+name: Bug report
+description: Report a problem with upd
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to file a bug. Please fill in the details below so the problem can be reproduced.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include the exact command you ran and the full output (redact any auth tokens).
+      placeholder: "upd react* --format=json"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: upd version
+      description: Output of `upd --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install upd?
+      options:
+        - Nix (nix run / flake)
+        - go install
+        - Prebuilt binary
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: package.json excerpt (redact tokens), registry details (private registry? proxy?), OS.
