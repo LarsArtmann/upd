@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 )
 
@@ -21,10 +22,15 @@ type ProgressReporter struct {
 	w       io.Writer
 	total   int
 	current atomic.Int64
+
+	// mu serializes writes to w: Tick is called from concurrent fetch
+	// goroutines, and concurrent Fprintf calls corrupt the output (and
+	// trip the race detector on non-thread-safe writers).
+	mu sync.Mutex
 }
 
 func NewProgressReporter(w io.Writer, total int, _ bool) *ProgressReporter {
-	return &ProgressReporter{w: w, total: total, current: atomic.Int64{}}
+	return &ProgressReporter{w: w, total: total, current: atomic.Int64{}, mu: sync.Mutex{}}
 }
 
 func (p *ProgressReporter) printf(format string, args ...any) {
@@ -40,6 +46,9 @@ func (p *ProgressReporter) Tick(msg string, _ int) {
 }
 
 func (p *ProgressReporter) Finish() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	width := clearWidth()
 	p.printf("\r%s\r", strings.Repeat(" ", width))
 }
@@ -61,6 +70,9 @@ func clearWidth() int {
 }
 
 func (p *ProgressReporter) render(msg string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	current := min(int(p.current.Add(1)), p.total)
 
 	filled := progressWidth * current / max(p.total, 1)

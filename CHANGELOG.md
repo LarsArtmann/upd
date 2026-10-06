@@ -43,6 +43,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **Data race in the progress bar** — concurrent fetches each wrote the
+  progress line without synchronization, corrupting output (and failing the
+  new local `-race` gate). Progress writes are now serialized.
 - **Unknown-flag suggestions now fire with positional arguments** —
   `upd --jso -f package.json` previously reported `unknown command
   "package.json"` because cobra's command lookup failed before flag parsing.
